@@ -9,7 +9,10 @@ pub struct InstantiateMsg {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub enum QueryMsg {}
+pub enum QueryMsg {
+    ProgramFunding { program_id: u64 },
+    EpochInfo {program_id: u64, epoch_number: u64}
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub enum ExecuteMsg {

@@ -1,8 +1,9 @@
 use crate::contract::{execute, instantiate, query};
-use crate::msgs::InstantiateMsg;
+use crate::msgs::{InstantiateMsg, QueryMsg};
 use cosmwasm_std::testing::{mock_env, MockApi};
 use cosmwasm_std::{Addr, Coin, Empty};
 use cw_multi_test::{App, BankKeeper, BankSudo, Contract, ContractWrapper, Executor};
+use crate::state::{EpochInfo, Funding};
 
 fn mock_app() -> App {
     App::default()
@@ -93,7 +94,7 @@ fn flow() {
         &crate::msgs::ExecuteMsg::CreateProgram {
             denom: "NIBI_LP".to_string(),
             epochs: 5,
-            epoch_block_duration: 1,
+            epoch_block_duration: 5,
             min_lockup_blocks: 50,
             start_block: app.block_info().height,
         },
@@ -117,6 +118,22 @@ fn flow() {
             .unwrap()
     );
 
-    app.next_block();
+    let funding: Vec<Funding> = app.wrap().query_wasm_smart(incentives_addr.as_str(), &QueryMsg::ProgramFunding { program_id:1}).unwrap();
+    println!("{:?}", funding);
 
+    app.update_block(|block| {
+        block.height = block.height + 6;
+    });
+
+    app.execute_contract(
+        owner.clone(),
+        incentives_addr.clone(),
+        &crate::msgs::ExecuteMsg::ProcessEpoch {
+            id: 1,
+        },
+        &[],
+    ).unwrap();
+
+    let epoch_info: EpochInfo = app.wrap().query_wasm_smart(incentives_addr.as_str(), &QueryMsg::EpochInfo{ program_id:1, epoch_number: 1}).unwrap();
+    println!("{:?}", epoch_info)
 }

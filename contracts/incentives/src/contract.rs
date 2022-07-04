@@ -7,8 +7,8 @@ use crate::state::{
     LOCKUP_ADDR, PROGRAMS, PROGRAMS_ID,
 };
 use cosmwasm_std::{
-    Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult,
-    Timestamp, Uint128, Uint64,
+    to_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
+    StdResult, Timestamp, Uint128, Uint64,
 };
 use cw_storage_plus::Bound;
 use lockup::msgs::QueryMsg as LockupQueryMsg;
@@ -18,7 +18,20 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    todo!()
+    match msg {
+        QueryMsg::ProgramFunding { program_id: id } => to_binary(
+            &funding()
+                .idx
+                .pay_from_epoch
+                .sub_prefix(id)
+                .range(deps.storage, None, None, Order::Ascending)
+                .map(|res| -> Funding { res.unwrap().1 })
+                .collect::<Vec<Funding>>(),
+        ),
+        QueryMsg::EpochInfo { program_id, epoch_number } => {
+            to_binary(&EPOCH_INFO.load(deps.storage, (program_id, epoch_number))?)
+        }
+    }
 }
 
 pub fn instantiate(
@@ -29,7 +42,9 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     PROGRAMS_ID.save(deps.storage, &0).unwrap();
     FUNDING_ID.save(deps.storage, &0).unwrap();
-    LOCKUP_ADDR.save(deps.storage, &msg.lockup_contract_address).unwrap(); // TODO(mercilex): maybe check if addr exist in wasm
+    LOCKUP_ADDR
+        .save(deps.storage, &msg.lockup_contract_address)
+        .unwrap(); // TODO(mercilex): maybe check if addr exist in wasm
 
     Ok(Response::new())
 }
