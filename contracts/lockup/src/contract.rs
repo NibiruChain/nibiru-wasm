@@ -150,6 +150,7 @@ pub(crate) fn execute_lock(
 
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
+        // TODO(this needs to accrue for lockup time after lock too)
         QueryMsg::LocksByDenomAndAddressUnlockingAfter {
             denom,
             unlocking_after,
@@ -166,9 +167,16 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                     Order::Ascending,
                 )
                 .map(|lock| -> Lock { lock.unwrap().1 })
+                .filter(|lock| -> bool {
+                    if env.block.height + lock.duration_blocks <= unlocking_after {
+                        return false
+                    }
+                    true
+                })
                 .collect::<Vec<Lock>>(),
         )?),
 
+        // TODO: this needs to accrue for locked time after unlock
         QueryMsg::LocksByDenomUnlockingAfter {
             denom,
             unlocking_after,
@@ -184,6 +192,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                     Order::Ascending,
                 )
                 .map(|lock| -> Lock { lock.unwrap().1 })
+                .filter(|lock| -> bool { // TODO: make this more efficient by indexing this in state
+                    if env.block.height + lock.duration_blocks <= unlocking_after {
+                        return false
+                    }
+                    true
+                })
                 .collect::<Vec<Lock>>(),
         )?),
     }
@@ -248,7 +262,7 @@ mod tests {
                     env.clone(),
                     QueryMsg::LocksByDenomUnlockingAfter {
                         denom: "ATOM".to_string(),
-                        unlocking_after: 0
+                        unlocking_after: 1_000_000
                     }
                 )
                 .unwrap()
@@ -267,7 +281,7 @@ mod tests {
                     env.clone(),
                     QueryMsg::LocksByDenomAndAddressUnlockingAfter {
                         denom: "ATOM".to_string(),
-                        unlocking_after: 0,
+                        unlocking_after: 1_000_000,
                         address: lock_1.owner,
                     }
                 )

@@ -2,10 +2,7 @@ use crate::add_coins;
 use crate::error::ContractError;
 use crate::events::{new_incentives_program_event, new_program_funding};
 use crate::msgs::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{
-    funding, EpochInfo, Funding, Program, EPOCH_INFO, FUNDING_ID, LAST_EPOCH_PROCESSED,
-    LOCKUP_ADDR, PROGRAMS, PROGRAMS_ID,
-};
+use crate::state::{funding, EpochInfo, Funding, Program, EPOCH_INFO, FUNDING_ID, LAST_EPOCH_PROCESSED, LOCKUP_ADDR, PROGRAMS, PROGRAMS_ID, WITHDRAWALS};
 use cosmwasm_std::{
     to_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
     StdResult, Timestamp, Uint128, Uint64,
@@ -170,9 +167,81 @@ fn execute_withdraw_rewards(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    id: u64,
+    program_id: u64,
 ) -> Result<Response, ContractError> {
-    todo!()
+    // fetch the program
+    let program = PROGRAMS.load(deps.storage, program_id)?;
+
+    // find epochs that need to be paid for this addr
+    let epochs_to_pay = EPOCH_INFO
+        .prefix(program_id)
+        .range(deps.storage,
+        Some(
+            WITHDRAWALS.load(deps.storage, (program_id, info.sender.clone()))
+                .map_or_else(|_| -> Bound<'_, _> {
+                    Bound::inclusive(0 as u64)
+                }, |last_withdrawal| -> Bound<'_, _> {
+                    Bound::exclusive(last_withdrawal)
+                })
+        ),
+        None,
+        Order::Ascending)
+        .map(|epoch| -> EpochInfo {
+            epoch.unwrap().1
+        })
+        .collect::<Vec<EpochInfo>>();
+
+        let mut last_paid_epoch = 0;
+        let mut to_distribute: Vec<Coin> = vec![];
+        for epoch in epochs_to_pay {
+            // query lockup to check if the user has some qualified locks
+            let epoch_qualified_locks: Vec<Lock> = deps.querier.query_wasm_smart(
+                    LOCKUP_ADDR.load(deps.storage).unwrap(),
+                    &lockup::msgs::QueryMsg::LocksByDenomAndAddressUnlockingAfter {
+                        denom: program.lockup_denom.clone(),
+                        unlocking_after: epoch.for_coins_unlocking_after,
+                        address: info.sender.clone(),
+                    })?;
+
+            println!("{:?}", epoch_qualified_locks.clone());
+
+            // get the total amount of locked coins
+            let qualified_locked_amount = epoch_qualified_locks
+                .iter()
+                .map(|lock| -> Uint128 { lock.coin.amount})
+                .sum::<Uint128>();
+
+            // now for each coin to distribute
+            // we compute the weight of the
+            // of the sender in the qualified locks
+            println!("qualified locked amount: {:?}, {:?}", qualified_locked_amount, env.block.height);
+            let user_ownership_ratio = qualified_locked_amount / epoch.total_locked;
+            println!("ownership ratio: {:?}", user_ownership_ratio.to_string());
+            for coin in epoch.to_distribute {
+                add_coins(&mut to_distribute, Coin{
+                    denom: coin.denom,
+                    amount: coin.amount * user_ownership_ratio,
+                })
+            }
+
+            last_paid_epoch = epoch.epoch_identifier;
+        }
+
+    if last_paid_epoch == 0 {
+        return Err(ContractError::NothingToWithdraw("".to_string()))
+    }
+
+    WITHDRAWALS.save(deps.storage, (program_id, info.sender.clone()), &last_paid_epoch).unwrap();
+
+
+    println!("distributing: {:?}", &to_distribute);
+    Ok(Response::new().add_message(
+        BankMsg::Send {
+            to_address: info.sender.to_string(),
+            amount: to_distribute,
+        }
+    ))
+
 }
 
 fn execute_process_epoch(

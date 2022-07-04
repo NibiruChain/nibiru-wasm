@@ -1,7 +1,7 @@
 use crate::contract::{execute, instantiate, query};
 use crate::msgs::{InstantiateMsg, QueryMsg};
 use cosmwasm_std::testing::{mock_env, MockApi};
-use cosmwasm_std::{Addr, Coin, Empty};
+use cosmwasm_std::{Addr, Coin, coin, Empty};
 use cw_multi_test::{App, BankKeeper, BankSudo, Contract, ContractWrapper, Executor};
 use crate::state::{EpochInfo, Funding};
 
@@ -135,5 +135,21 @@ fn flow() {
     ).unwrap();
 
     let epoch_info: EpochInfo = app.wrap().query_wasm_smart(incentives_addr.as_str(), &QueryMsg::EpochInfo{ program_id:1, epoch_number: 1}).unwrap();
-    println!("{:?}", epoch_info)
+    println!("{:?}", epoch_info);
+
+    // withdraw rewards
+    // expected: 200 coins
+
+    app.execute_contract(
+        alice.clone(),
+        incentives_addr.clone(),
+        &crate::msgs::ExecuteMsg::WithdrawRewards {
+            id: 1
+        },
+        &[],
+    ).unwrap();
+
+    let owned_coins = app.wrap().query_balance(alice.to_string(), "ATOM".to_string()).unwrap();
+
+    println!("{:?}", owned_coins)
 }

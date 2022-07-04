@@ -1,3 +1,4 @@
+use std::ops::Add;
 use cosmwasm_std::{Addr, Coin, Timestamp, Uint128};
 use cw_storage_plus::{Index, IndexList, IndexedMap, Item, Map, MultiIndex};
 use schemars::JsonSchema;
@@ -33,11 +34,15 @@ pub struct EpochInfo {
     pub total_locked: Uint128,
 }
 
-pub const EPOCH_INFO: Map<(u64, u64), EpochInfo> = Map::new("epoch_info");
 pub const LOCKUP_ADDR: Item<Addr> = Item::new("lockup_contract");
+
 pub const PROGRAMS: Map<u64, Program> = Map::new("programs");
 pub const PROGRAMS_ID: Item<u64> = Item::new("programs_id");
+
 pub const LAST_EPOCH_PROCESSED: Map<u64, u64> = Map::new("last_epoch_processed");
+pub const EPOCH_INFO: Map<(u64, u64), EpochInfo> = Map::new("epoch_info");
+
+pub const WITHDRAWALS: Map<(u64, Addr), u64> = Map::new("withdraw_snapshots");
 
 // keeps track of funding information of various programs
 pub const FUNDING_ID: Item<u64> = Item::new("funding_id");
