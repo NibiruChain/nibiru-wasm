@@ -1,9 +1,9 @@
 use crate::contract::{execute, instantiate, query};
 use crate::msgs::{InstantiateMsg, QueryMsg};
-use cosmwasm_std::testing::{mock_env, MockApi};
-use cosmwasm_std::{Addr, Coin, coin, Empty};
-use cw_multi_test::{App, BankKeeper, BankSudo, Contract, ContractWrapper, Executor};
 use crate::state::{EpochInfo, Funding};
+use cosmwasm_std::testing::{mock_env, MockApi};
+use cosmwasm_std::{coin, Addr, Coin, Empty};
+use cw_multi_test::{App, BankKeeper, BankSudo, Contract, ContractWrapper, Executor};
 
 fn mock_app() -> App {
     App::default()
@@ -69,12 +69,21 @@ fn flow() {
     app.sudo(
         BankSudo::Mint {
             to_address: owner.to_string(),
-            amount: vec![Coin::new(1_000_000, "ATOM")],
+            amount: vec![Coin::new(1_000_000, "ATOM"), Coin::new(1_000_000, "OSMO")],
+        }
+        .into(),
+    )
+    .unwrap();
+    app.sudo(
+        BankSudo::Mint {
+            to_address: bob.to_string(),
+            amount: vec![Coin::new(1_000_000, "NIBI_LP")],
         }
         .into(),
     )
     .unwrap();
 
+    // deploy contracts
     let lockup_addr = deploy_lockup(&mut app);
     let incentives_addr = deploy_incentives(&mut app, &lockup_addr);
 
@@ -118,7 +127,13 @@ fn flow() {
             .unwrap()
     );
 
-    let funding: Vec<Funding> = app.wrap().query_wasm_smart(incentives_addr.as_str(), &QueryMsg::ProgramFunding { program_id:1}).unwrap();
+    let funding: Vec<Funding> = app
+        .wrap()
+        .query_wasm_smart(
+            incentives_addr.as_str(),
+            &QueryMsg::ProgramFunding { program_id: 1 },
+        )
+        .unwrap();
     println!("{:?}", funding);
 
     app.update_block(|block| {
@@ -128,28 +143,139 @@ fn flow() {
     app.execute_contract(
         owner.clone(),
         incentives_addr.clone(),
-        &crate::msgs::ExecuteMsg::ProcessEpoch {
-            id: 1,
-        },
+        &crate::msgs::ExecuteMsg::ProcessEpoch { id: 1 },
         &[],
-    ).unwrap();
+    )
+    .unwrap();
 
-    let epoch_info: EpochInfo = app.wrap().query_wasm_smart(incentives_addr.as_str(), &QueryMsg::EpochInfo{ program_id:1, epoch_number: 1}).unwrap();
+    let epoch_info: EpochInfo = app
+        .wrap()
+        .query_wasm_smart(
+            incentives_addr.as_str(),
+            &QueryMsg::EpochInfo {
+                program_id: 1,
+                epoch_number: 1,
+            },
+        )
+        .unwrap();
     println!("{:?}", epoch_info);
 
-    // withdraw rewards
-    // expected: 200 coins
-
+    // withdraw rewards for alice at epoch 1
     app.execute_contract(
         alice.clone(),
         incentives_addr.clone(),
-        &crate::msgs::ExecuteMsg::WithdrawRewards {
-            id: 1
-        },
+        &crate::msgs::ExecuteMsg::WithdrawRewards { id: 1 },
         &[],
-    ).unwrap();
+    )
+    .unwrap();
 
-    let owned_coins = app.wrap().query_balance(alice.to_string(), "ATOM".to_string()).unwrap();
+    // expected: 200ATOM coins
+    assert_eq!(
+        Coin::new(200, "ATOM"),
+        app.wrap()
+            .query_balance(alice.to_string(), "ATOM".to_string())
+            .unwrap()
+    );
 
-    println!("{:?}", owned_coins)
+    // add bob lock
+    app.execute_contract(
+        bob.clone(),
+        lockup_addr.clone(),
+        &lockup::msgs::ExecuteMsg::Lock { blocks: 300 },
+        &[Coin::new(200, "NIBI_LP")],
+    )
+    .unwrap();
+
+    // bob qualifies for next epoch
+    app.update_block(|block| {
+        block.height = block.height + 6;
+    });
+
+    // process epoch
+    app.execute_contract(
+        owner.clone(),
+        incentives_addr.clone(),
+        &crate::msgs::ExecuteMsg::ProcessEpoch { id: 1 },
+        &[],
+    )
+    .unwrap();
+
+    let epoch_info: EpochInfo = app
+        .wrap()
+        .query_wasm_smart(
+            incentives_addr.as_str(),
+            &QueryMsg::EpochInfo {
+                program_id: 1,
+                epoch_number: 2,
+            },
+        )
+        .unwrap();
+    println!("{:?}", epoch_info);
+
+    // withdraw rewards for alice at epoch 2
+    app.execute_contract(
+        alice.clone(),
+        incentives_addr.clone(),
+        &crate::msgs::ExecuteMsg::WithdrawRewards { id: 1 },
+        &[],
+    )
+    .unwrap();
+
+    // expected: 200 + 0.33*200 ATOM coins
+    assert_eq!(
+        Coin::new(200 + 66, "ATOM"),
+        app.wrap()
+            .query_balance(alice.to_string(), "ATOM".to_string())
+            .unwrap()
+    );
+
+    // withdraw rewards for bob at epoch 2
+    app.execute_contract(
+        bob.clone(),
+        incentives_addr.clone(),
+        &crate::msgs::ExecuteMsg::WithdrawRewards { id: 1 },
+        &[],
+    )
+    .unwrap();
+
+    // expected: 200 * 0.66666666 ATOM
+    assert_eq!(
+        Coin::new(133, "ATOM"),
+        app.wrap()
+            .query_balance(bob.to_string(), "ATOM".to_string())
+            .unwrap()
+    );
+
+    app.update_block(|block| block.height += 1);
+
+    // add more funding
+    app.execute_contract(
+        owner.clone(),
+        incentives_addr.clone(),
+        &crate::msgs::ExecuteMsg::FundProgram { id: 1 },
+        &[Coin::new(1000, "OSMO")],
+    )
+    .unwrap();
+
+    // go to epoch 3 block and process it
+    app.update_block(|block| block.height += 5);
+    app.execute_contract(
+        owner.clone(),
+        incentives_addr.clone(),
+        &crate::msgs::ExecuteMsg::ProcessEpoch { id: 1 },
+        &[],
+    )
+    .unwrap();
+
+    let epoch_info: EpochInfo = app
+        .wrap()
+        .query_wasm_smart(
+            incentives_addr.as_str(),
+            &QueryMsg::EpochInfo {
+                program_id: 1,
+                epoch_number: 3,
+            },
+        )
+        .unwrap();
+    println!("{:?}", epoch_info);
 }

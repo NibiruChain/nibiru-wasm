@@ -25,4 +25,15 @@ pub enum QueryMsg {
         unlocking_after: u64,
         address: Addr,
     },
+    LocksByDenomBetween {
+        denom: String,
+        locked_before: u64,
+        unlocking_after: u64,
+    },
+    LocksByDenomAndAddressBetween {
+        denom: String,
+        address: Addr,
+        locked_before: u64,
+        unlocking_after: u64,
+    }
 }

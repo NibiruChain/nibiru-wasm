@@ -1,8 +1,8 @@
-use std::ops::Add;
 use cosmwasm_std::{Addr, Coin, Timestamp, Uint128};
 use cw_storage_plus::{Index, IndexList, IndexedMap, Item, Map, MultiIndex};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::ops::Add;
 use std::process::Output;
 use std::time::Duration;
 
@@ -29,6 +29,7 @@ pub struct Program {
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 pub struct EpochInfo {
     pub epoch_identifier: u64,
+    pub for_coins_locked_before: u64,
     pub for_coins_unlocking_after: u64,
     pub to_distribute: Vec<Coin>,
     pub total_locked: Uint128,

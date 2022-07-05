@@ -2,10 +2,13 @@ use crate::add_coins;
 use crate::error::ContractError;
 use crate::events::{new_incentives_program_event, new_program_funding};
 use crate::msgs::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{funding, EpochInfo, Funding, Program, EPOCH_INFO, FUNDING_ID, LAST_EPOCH_PROCESSED, LOCKUP_ADDR, PROGRAMS, PROGRAMS_ID, WITHDRAWALS};
+use crate::state::{
+    funding, EpochInfo, Funding, Program, EPOCH_INFO, FUNDING_ID, LAST_EPOCH_PROCESSED,
+    LOCKUP_ADDR, PROGRAMS, PROGRAMS_ID, WITHDRAWALS,
+};
 use cosmwasm_std::{
-    to_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
-    StdResult, Timestamp, Uint128, Uint64,
+    to_binary, Addr, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Order,
+    Response, StdResult, Timestamp, Uint128, Uint64,
 };
 use cw_storage_plus::Bound;
 use lockup::msgs::QueryMsg as LockupQueryMsg;
@@ -25,9 +28,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 .map(|res| -> Funding { res.unwrap().1 })
                 .collect::<Vec<Funding>>(),
         ),
-        QueryMsg::EpochInfo { program_id, epoch_number } => {
-            to_binary(&EPOCH_INFO.load(deps.storage, (program_id, epoch_number))?)
-        }
+        QueryMsg::EpochInfo {
+            program_id,
+            epoch_number,
+        } => to_binary(&EPOCH_INFO.load(deps.storage, (program_id, epoch_number))?),
     }
 }
 
@@ -103,13 +107,8 @@ fn execute_fund_program(
     let response = Response::new().add_event(new_program_funding(program_id, &info.funds));
 
     // update funding associated with the program id for this block
-    let mut epochs_to_pay = (program.end_block - env.block.height) / program.epoch_duration;
-    // if it's 0 it means that the division was < 1
-    // which means this funding applies only to the last epoch
-    if epochs_to_pay == 0 {
-        epochs_to_pay = 1
-    }
-    let pay_from_epoch = program.epochs - epochs_to_pay + 1;
+    let mut pay_from_epoch = calc_epoch_to_pay_from(env.block.height, &program);
+    println!("pays from epoch {}", pay_from_epoch);
 
     for coin in info.funds {
         let funding_id = FUNDING_ID
@@ -126,7 +125,8 @@ fn execute_fund_program(
                     pay_from_epoch,
                     denom: coin.denom,
                     initial_amount: coin.amount,
-                    to_pay_each_epoch: coin.amount / Uint128::from(epochs_to_pay),
+                    to_pay_each_epoch: coin.amount
+                        / Uint128::from(program.epochs - pay_from_epoch + 1),
                 },
             )
             .unwrap();
@@ -175,73 +175,83 @@ fn execute_withdraw_rewards(
     // find epochs that need to be paid for this addr
     let epochs_to_pay = EPOCH_INFO
         .prefix(program_id)
-        .range(deps.storage,
-        Some(
-            WITHDRAWALS.load(deps.storage, (program_id, info.sender.clone()))
-                .map_or_else(|_| -> Bound<'_, _> {
-                    Bound::inclusive(0 as u64)
-                }, |last_withdrawal| -> Bound<'_, _> {
-                    Bound::exclusive(last_withdrawal)
-                })
-        ),
-        None,
-        Order::Ascending)
-        .map(|epoch| -> EpochInfo {
-            epoch.unwrap().1
-        })
+        .range(
+            deps.storage,
+            Some(
+                WITHDRAWALS
+                    .load(deps.storage, (program_id, info.sender.clone()))
+                    .map_or_else(
+                        |_| -> Bound<'_, _> { Bound::inclusive(0 as u64) },
+                        |last_withdrawal| -> Bound<'_, _> { Bound::exclusive(last_withdrawal) },
+                    ),
+            ),
+            None,
+            Order::Ascending,
+        )
+        .map(|epoch| -> EpochInfo { epoch.unwrap().1 })
         .collect::<Vec<EpochInfo>>();
 
-        let mut last_paid_epoch = 0;
-        let mut to_distribute: Vec<Coin> = vec![];
-        for epoch in epochs_to_pay {
-            // query lockup to check if the user has some qualified locks
-            let epoch_qualified_locks: Vec<Lock> = deps.querier.query_wasm_smart(
-                    LOCKUP_ADDR.load(deps.storage).unwrap(),
-                    &lockup::msgs::QueryMsg::LocksByDenomAndAddressUnlockingAfter {
-                        denom: program.lockup_denom.clone(),
-                        unlocking_after: epoch.for_coins_unlocking_after,
-                        address: info.sender.clone(),
-                    })?;
+    let mut last_paid_epoch = 0;
+    let mut to_distribute: Vec<Coin> = vec![];
+    for epoch in epochs_to_pay {
+        // query lockup to check if the user has some qualified locks
+        let epoch_qualified_locks: Vec<Lock> = deps.querier.query_wasm_smart(
+            LOCKUP_ADDR.load(deps.storage).unwrap(),
+            &lockup::msgs::QueryMsg::LocksByDenomAndAddressBetween {
+                denom: program.lockup_denom.clone(),
+                unlocking_after: epoch.for_coins_unlocking_after,
+                address: info.sender.clone(),
+                locked_before: epoch.for_coins_locked_before,
+            },
+        )?;
 
-            println!("{:?}", epoch_qualified_locks.clone());
+        println!("{:?}", epoch_qualified_locks.clone());
 
-            // get the total amount of locked coins
-            let qualified_locked_amount = epoch_qualified_locks
-                .iter()
-                .map(|lock| -> Uint128 { lock.coin.amount})
-                .sum::<Uint128>();
+        // get the total amount of locked coins
+        let qualified_locked_amount = epoch_qualified_locks
+            .iter()
+            .map(|lock| -> Uint128 { lock.coin.amount })
+            .sum::<Uint128>();
 
-            // now for each coin to distribute
-            // we compute the weight of the
-            // of the sender in the qualified locks
-            println!("qualified locked amount: {:?}, {:?}", qualified_locked_amount, env.block.height);
-            let user_ownership_ratio = qualified_locked_amount / epoch.total_locked;
-            println!("ownership ratio: {:?}", user_ownership_ratio.to_string());
-            for coin in epoch.to_distribute {
-                add_coins(&mut to_distribute, Coin{
+        // now for each coin to distribute
+        // we compute the weight of the
+        // of the sender in the qualified locks
+        println!(
+            "qualified locked amount: {:?}, {:?}",
+            qualified_locked_amount, env.block.height
+        );
+        let user_ownership_ratio = Decimal::from_ratio(qualified_locked_amount, epoch.total_locked);
+        println!("ownership ratio: {:?}", user_ownership_ratio.to_string());
+        for coin in epoch.to_distribute {
+            add_coins(
+                &mut to_distribute,
+                Coin {
                     denom: coin.denom,
                     amount: coin.amount * user_ownership_ratio,
-                })
-            }
-
-            last_paid_epoch = epoch.epoch_identifier;
+                },
+            )
         }
 
-    if last_paid_epoch == 0 {
-        return Err(ContractError::NothingToWithdraw("".to_string()))
+        last_paid_epoch = epoch.epoch_identifier;
     }
 
-    WITHDRAWALS.save(deps.storage, (program_id, info.sender.clone()), &last_paid_epoch).unwrap();
+    if last_paid_epoch == 0 {
+        return Err(ContractError::NothingToWithdraw("".to_string()));
+    }
 
+    WITHDRAWALS
+        .save(
+            deps.storage,
+            (program_id, info.sender.clone()),
+            &last_paid_epoch,
+        )
+        .unwrap();
 
     println!("distributing: {:?}", &to_distribute);
-    Ok(Response::new().add_message(
-        BankMsg::Send {
-            to_address: info.sender.to_string(),
-            amount: to_distribute,
-        }
-    ))
-
+    Ok(Response::new().add_message(BankMsg::Send {
+        to_address: info.sender.to_string(),
+        amount: to_distribute,
+    }))
 }
 
 fn execute_process_epoch(
@@ -284,8 +294,9 @@ fn execute_process_epoch(
     // the lockup denom before a certain block height
     let locks: Vec<Lock> = deps.querier.query_wasm_smart(
         LOCKUP_ADDR.load(deps.storage).unwrap(),
-        &LockupQueryMsg::LocksByDenomUnlockingAfter {
+        &LockupQueryMsg::LocksByDenomBetween {
             denom: program.lockup_denom,
+            locked_before: epoch_process_block,
             unlocking_after: lockup_qualification_block,
         },
     )?;
@@ -307,8 +318,8 @@ fn execute_process_epoch(
         .sub_prefix(program_id)
         .range(
             deps.storage,
-            Some(Bound::inclusive((epoch_to_process, 0))),
-            None,
+            None, //
+            Some(Bound::inclusive((epoch_to_process, u64::MAX))),
             Order::Ascending,
         )
         .map(|funds| -> Coin {
@@ -330,6 +341,7 @@ fn execute_process_epoch(
         (program_id, epoch_to_process),
         &EpochInfo {
             epoch_identifier: epoch_to_process,
+            for_coins_locked_before: epoch_process_block,
             for_coins_unlocking_after: lockup_qualification_block,
             to_distribute,
             total_locked,
@@ -337,6 +349,19 @@ fn execute_process_epoch(
     )?;
 
     Ok(Response::new())
+}
+
+// todo: this is extremely inefficient and could be solved by simple
+// math but rn brain too fried to do divisions
+fn calc_epoch_to_pay_from(funding_block: u64, program: &Program) -> u64 {
+    for i in 1..=program.epochs {
+        let epoch_block = i * program.epoch_duration + program.start_block;
+        if epoch_block > funding_block {
+            return i;
+        }
+    }
+
+    todo!("cover")
 }
 
 #[cfg(test)]

@@ -150,7 +150,6 @@ pub(crate) fn execute_lock(
 
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        // TODO(this needs to accrue for lockup time after lock too)
         QueryMsg::LocksByDenomAndAddressUnlockingAfter {
             denom,
             unlocking_after,
@@ -176,7 +175,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 .collect::<Vec<Lock>>(),
         )?),
 
-        // TODO: this needs to accrue for locked time after unlock
         QueryMsg::LocksByDenomUnlockingAfter {
             denom,
             unlocking_after,
@@ -200,6 +198,44 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 })
                 .collect::<Vec<Lock>>(),
         )?),
+
+        QueryMsg::LocksByDenomBetween { denom, locked_before, unlocking_after } => {
+            Ok(to_binary(
+                &locks()
+                    .idx
+                    .denom_start
+                    .sub_prefix(denom)
+                    .range(
+                        deps.storage,
+                        None,
+                        Some(Bound::exclusive((locked_before, u64::MAX))),
+                            Order::Ascending,
+                    )
+                    .map(|lock| -> Lock {
+                        lock.unwrap().1
+                    })
+                    .filter(|lock| -> bool { return env.block.height + lock.duration_blocks > unlocking_after })
+                    .collect::<Vec<Lock>>()
+            )?)
+        },
+
+        QueryMsg::LocksByDenomAndAddressBetween { denom, address, locked_before, unlocking_after } => {
+            Ok(to_binary(
+                &locks()
+                    .idx
+                    .addr_denom_start
+                    .sub_prefix((address, denom))
+                    .range(
+                        deps.storage,
+                        None,
+                        Some(Bound::exclusive((locked_before, u64::MAX))),
+                        Order::Ascending,
+                    )
+                    .map(|lock| -> Lock { lock.unwrap().1 })
+                    .filter(|lock| -> bool { lock.duration_blocks + env.block.height > unlocking_after})
+                    .collect::<Vec<Lock>>()
+            )?)
+        }
     }
 }
 

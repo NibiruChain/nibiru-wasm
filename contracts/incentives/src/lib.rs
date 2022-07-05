@@ -1,3 +1,5 @@
+extern crate core;
+
 use cosmwasm_std::Coin;
 
 mod contract;
