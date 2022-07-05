@@ -1,281 +1,264 @@
-use crate::contract::{execute, instantiate, query};
-use crate::msgs::{InstantiateMsg, QueryMsg};
-use crate::state::{EpochInfo, Funding};
-use cosmwasm_std::testing::{mock_env, MockApi};
-use cosmwasm_std::{coin, Addr, Coin, Empty};
-use cw_multi_test::{App, BankKeeper, BankSudo, Contract, ContractWrapper, Executor};
+#[cfg(test)]
+mod integration_test {
+    use crate::contract::{execute, instantiate, query};
+    use crate::msgs::{ExecuteMsg, InstantiateMsg, QueryMsg};
+    use crate::state::{EpochInfo, Funding};
+    use cosmwasm_std::testing::{mock_env, MockApi};
+    use cosmwasm_std::{coin, from_binary, Addr, Coin, Empty};
+    use cw_multi_test::{App, BankKeeper, BankSudo, Contract, ContractWrapper, Executor};
 
-fn mock_app() -> App {
-    App::default()
-}
+    const ROOT: &str = "root";
+    const INCENTIVES: &str = "contract1";
+    const LOCKUP: &str = "contract0";
 
-fn incentives_contract() -> Box<dyn Contract<Empty>> {
-    Box::new(ContractWrapper::new(execute, instantiate, query))
-}
-
-fn deploy_incentives(app: &mut App, lockup_addr: &Addr) -> Addr {
-    let contract = Box::new(ContractWrapper::new(execute, instantiate, query));
-
-    let code = app.store_code(contract);
-    app.instantiate_contract(
-        code,
-        Addr::unchecked("owner"),
-        &InstantiateMsg {
-            lockup_contract_address: lockup_addr.clone(),
-        },
-        &[],
-        "incentives",
-        None,
-    )
-    .unwrap()
-}
-
-fn deploy_lockup(app: &mut App) -> Addr {
-    let contract = Box::new(ContractWrapper::new(
-        lockup::contract::execute,
-        lockup::contract::instantiate,
-        lockup::contract::query,
-    ));
-
-    let code = app.store_code(contract);
-
-    app.instantiate_contract(
-        code,
-        Addr::unchecked("owner"),
-        &lockup::msgs::InstantiateMsg {},
-        &[],
-        "lockup",
-        None,
-    )
-    .unwrap()
-}
-
-#[test]
-fn flow() {
-    let mut app = mock_app();
-    let owner = Addr::unchecked("owner");
-    let alice = Addr::unchecked("alice");
-    let bob = Addr::unchecked("bob");
-
-    // mint coins
-    app.sudo(
-        BankSudo::Mint {
-            to_address: alice.to_string(),
-            amount: vec![Coin::new(1_000_000, "NIBI_LP")],
-        }
-        .into(),
-    )
-    .unwrap();
-    app.sudo(
-        BankSudo::Mint {
-            to_address: owner.to_string(),
-            amount: vec![Coin::new(1_000_000, "ATOM"), Coin::new(1_000_000, "OSMO")],
-        }
-        .into(),
-    )
-    .unwrap();
-    app.sudo(
-        BankSudo::Mint {
-            to_address: bob.to_string(),
-            amount: vec![Coin::new(1_000_000, "NIBI_LP")],
-        }
-        .into(),
-    )
-    .unwrap();
-
-    // deploy contracts
-    let lockup_addr = deploy_lockup(&mut app);
-    let incentives_addr = deploy_incentives(&mut app, &lockup_addr);
-
-    // we make alice lock some atoms
-    app.execute_contract(
-        alice.clone(),
-        lockup_addr.clone(),
-        &lockup::msgs::ExecuteMsg::Lock { blocks: 100 },
-        &[Coin::new(100, "NIBI_LP")],
-    )
-    .unwrap();
-
-    // now we create a new incentives program
-    app.execute_contract(
-        owner.clone(),
-        incentives_addr.clone(),
-        &crate::msgs::ExecuteMsg::CreateProgram {
-            denom: "NIBI_LP".to_string(),
-            epochs: 5,
-            epoch_block_duration: 5,
-            min_lockup_blocks: 50,
-            start_block: app.block_info().height,
-        },
-        &[],
-    )
-    .unwrap();
-
-    // now we fund the incentives program
-    app.execute_contract(
-        owner.clone(),
-        incentives_addr.clone(),
-        &crate::msgs::ExecuteMsg::FundProgram { id: 1 },
-        &[Coin::new(1_000, "ATOM")],
-    )
-    .unwrap();
-
-    println!(
-        "{:?}",
-        app.wrap()
-            .query_all_balances(incentives_addr.clone())
-            .unwrap()
-    );
-
-    let funding: Vec<Funding> = app
-        .wrap()
-        .query_wasm_smart(
-            incentives_addr.as_str(),
-            &QueryMsg::ProgramFunding { program_id: 1 },
-        )
-        .unwrap();
-    println!("{:?}", funding);
-
-    app.update_block(|block| {
-        block.height = block.height + 6;
-    });
-
-    app.execute_contract(
-        owner.clone(),
-        incentives_addr.clone(),
-        &crate::msgs::ExecuteMsg::ProcessEpoch { id: 1 },
-        &[],
-    )
-    .unwrap();
-
-    let epoch_info: EpochInfo = app
-        .wrap()
-        .query_wasm_smart(
-            incentives_addr.as_str(),
-            &QueryMsg::EpochInfo {
-                program_id: 1,
-                epoch_number: 1,
+    fn create_program(
+        app: &mut App,
+        denom: String,
+        epochs: u64,
+        epoch_block_duration: u64,
+        min_lockup_blocks: u64,
+    ) {
+        app.execute_contract(
+            Addr::unchecked(ROOT),
+            Addr::unchecked(INCENTIVES),
+            &ExecuteMsg::CreateProgram {
+                denom,
+                epochs,
+                epoch_block_duration,
+                min_lockup_blocks,
             },
+            &[],
         )
         .unwrap();
-    println!("{:?}", epoch_info);
+    }
 
-    // withdraw rewards for alice at epoch 1
-    app.execute_contract(
-        alice.clone(),
-        incentives_addr.clone(),
-        &crate::msgs::ExecuteMsg::WithdrawRewards { id: 1 },
-        &[],
-    )
-    .unwrap();
+    fn fund_program(app: &mut App, program_id: u64, coins: &[Coin]) -> Vec<Coin> {
+        app.execute_contract(
+            Addr::unchecked(ROOT),
+            Addr::unchecked(INCENTIVES),
+            &ExecuteMsg::FundProgram { id: 1 },
+            coins,
+        )
+        .unwrap();
 
-    // expected: 200ATOM coins
-    assert_eq!(
-        Coin::new(200, "ATOM"),
-        app.wrap()
-            .query_balance(alice.to_string(), "ATOM".to_string())
+        app.wrap().query_all_balances(ROOT).unwrap()
+    }
+
+    fn mint(app: &mut App, to: &Addr, coins: &[Coin]) {
+        app.sudo(
+            BankSudo::Mint {
+                to_address: to.to_string(),
+                amount: coins.to_vec(),
+            }
+            .into(),
+        )
+        .unwrap();
+    }
+
+    fn mint_and_lock(app: &mut App, user: &Addr, coins: &[Coin], blocks: u64) {
+        mint(app, user, coins);
+        // we make alice lock some atoms
+        app.execute_contract(
+            user.clone(),
+            Addr::unchecked(LOCKUP),
+            &lockup::msgs::ExecuteMsg::Lock { blocks },
+            coins,
+        )
+        .unwrap();
+    }
+
+    fn withdraw_rewards(app: &mut App, user: &Addr, program_id: u64) -> Vec<Coin> {
+        app.execute_contract(
+            user.clone(),
+            Addr::unchecked(INCENTIVES),
+            &crate::msgs::ExecuteMsg::WithdrawRewards { id: 1 },
+            &[],
+        )
+        .unwrap();
+
+        app.wrap().query_all_balances(user).unwrap()
+    }
+
+    fn process_epoch(app: &mut App, program_id: u64) -> EpochInfo {
+        from_binary::<EpochInfo>(
+            &app.execute_contract(
+                Addr::unchecked(ROOT),
+                Addr::unchecked(INCENTIVES),
+                &ExecuteMsg::ProcessEpoch { id: 1 },
+                &[],
+            )
             .unwrap()
-    );
+            .data
+            .unwrap(),
+        )
+        .unwrap()
+    }
 
-    // add bob lock
-    app.execute_contract(
-        bob.clone(),
-        lockup_addr.clone(),
-        &lockup::msgs::ExecuteMsg::Lock { blocks: 300 },
-        &[Coin::new(200, "NIBI_LP")],
-    )
-    .unwrap();
+    fn app() -> App {
+        let mut app = App::default();
+        // note don't break the order otherwise contracts will have different addresses
+        // which renders the const in the module useless TODO: maybe do better.
 
-    // bob qualifies for next epoch
-    app.update_block(|block| {
-        block.height = block.height + 6;
-    });
+        let lockup_contract = Box::new(ContractWrapper::new(
+            lockup::contract::execute,
+            lockup::contract::instantiate,
+            lockup::contract::query,
+        ));
+        let code = app.store_code(lockup_contract);
+        app.instantiate_contract(
+            code,
+            Addr::unchecked(ROOT),
+            &lockup::msgs::InstantiateMsg {},
+            &[],
+            "lockup",
+            None,
+        )
+        .unwrap();
 
-    // process epoch
-    app.execute_contract(
-        owner.clone(),
-        incentives_addr.clone(),
-        &crate::msgs::ExecuteMsg::ProcessEpoch { id: 1 },
-        &[],
-    )
-    .unwrap();
-
-    let epoch_info: EpochInfo = app
-        .wrap()
-        .query_wasm_smart(
-            incentives_addr.as_str(),
-            &QueryMsg::EpochInfo {
-                program_id: 1,
-                epoch_number: 2,
+        let incentives_contract = Box::new(ContractWrapper::new(execute, instantiate, query));
+        let code = app.store_code(incentives_contract);
+        app.instantiate_contract(
+            code,
+            Addr::unchecked(ROOT),
+            &InstantiateMsg {
+                lockup_contract_address: Addr::unchecked(LOCKUP),
             },
+            &[],
+            "incentives",
+            None,
         )
         .unwrap();
-    println!("{:?}", epoch_info);
 
-    // withdraw rewards for alice at epoch 2
-    app.execute_contract(
-        alice.clone(),
-        incentives_addr.clone(),
-        &crate::msgs::ExecuteMsg::WithdrawRewards { id: 1 },
-        &[],
-    )
-    .unwrap();
+        app
+    }
 
-    // expected: 200 + 0.33*200 ATOM coins
-    assert_eq!(
-        Coin::new(200 + 66, "ATOM"),
-        app.wrap()
-            .query_balance(alice.to_string(), "ATOM".to_string())
-            .unwrap()
-    );
+    #[test]
+    fn flow() {
+        let mut app = app();
+        let lockup_addr = Addr::unchecked(LOCKUP);
+        let incentives_addr = Addr::unchecked(INCENTIVES);
 
-    // withdraw rewards for bob at epoch 2
-    app.execute_contract(
-        bob.clone(),
-        incentives_addr.clone(),
-        &crate::msgs::ExecuteMsg::WithdrawRewards { id: 1 },
-        &[],
-    )
-    .unwrap();
+        let alice = Addr::unchecked("alice");
+        let bob = Addr::unchecked("bob");
 
-    // expected: 200 * 0.66666666 ATOM
-    assert_eq!(
-        Coin::new(133, "ATOM"),
-        app.wrap()
-            .query_balance(bob.to_string(), "ATOM".to_string())
-            .unwrap()
-    );
+        // mint coins
+        mint(
+            &mut app,
+            &Addr::unchecked(ROOT),
+            &[
+                Coin::new(1_000_000, "ATOM"),
+                Coin::new(1_000_000, "OSMO"),
+                Coin::new(1_000_000, "LUNA"),
+            ],
+        );
 
-    app.update_block(|block| block.height += 1);
+        // we make alice lock some lp coins
+        mint_and_lock(&mut app, &alice, &[Coin::new(100, "NIBI_LP")], 100);
 
-    // add more funding
-    app.execute_contract(
-        owner.clone(),
-        incentives_addr.clone(),
-        &crate::msgs::ExecuteMsg::FundProgram { id: 1 },
-        &[Coin::new(1000, "OSMO")],
-    )
-    .unwrap();
+        // now we create a new incentives program
+        create_program(&mut app, "NIBI_LP".to_string(), 5, 5, 50);
 
-    // go to epoch 3 block and process it
-    app.update_block(|block| block.height += 5);
-    app.execute_contract(
-        owner.clone(),
-        incentives_addr.clone(),
-        &crate::msgs::ExecuteMsg::ProcessEpoch { id: 1 },
-        &[],
-    )
-    .unwrap();
+        // now we fund the incentives program
+        let balance = fund_program(&mut app, 1, &[Coin::new(1_000, "ATOM")]);
 
-    let epoch_info: EpochInfo = app
-        .wrap()
-        .query_wasm_smart(
-            incentives_addr.as_str(),
-            &QueryMsg::EpochInfo {
-                program_id: 1,
-                epoch_number: 3,
-            },
-        )
-        .unwrap();
-    println!("{:?}", epoch_info);
+        println!("{:?}", balance,);
+
+        let funding: Vec<Funding> = app
+            .wrap()
+            .query_wasm_smart(INCENTIVES, &QueryMsg::ProgramFunding { program_id: 1 })
+            .unwrap();
+        println!("{:?}", funding);
+
+        app.update_block(|block| {
+            block.height += 6 // shift +1 because epoch can be processed after the epoch block
+        });
+
+        let epoch_info = process_epoch(&mut app, 1);
+
+        println!("{:?}", epoch_info);
+
+        // withdraw rewards for alice at epoch 1
+        let alice_rewards = withdraw_rewards(&mut app, &alice, 1);
+
+        // expected: 200ATOM coins
+        assert_eq!(vec![Coin::new(200, "ATOM")], alice_rewards,);
+
+        // add bob lock
+        mint_and_lock(&mut app, &bob, &[Coin::new(200, "NIBI_LP")], 300);
+
+        // bob qualifies for next epoch
+        app.update_block(|block| {
+            block.height += 5;
+        });
+
+        // process epoch
+        let epoch_info = process_epoch(&mut app, 1);
+        println!("{:?}", epoch_info);
+
+        // withdraw rewards for alice at epoch 2
+        let alice_balance = withdraw_rewards(&mut app, &alice, 1);
+
+        // expected: 200 + 0.33*200 ATOM coins
+        assert_eq!(vec![Coin::new(200 + 66, "ATOM")], alice_balance,);
+
+        // withdraw rewards for bob at epoch 2
+        let bob_balance = withdraw_rewards(&mut app, &bob, 1);
+
+        // expected: 200 * 0.66666666 ATOM
+        assert_eq!(vec![Coin::new(133, "ATOM")], bob_balance,);
+
+        app.update_block(|block| block.height += 1);
+
+        // add more funding
+        fund_program(&mut app, 1, &[Coin::new(1000, "OSMO")]);
+
+        // go to epoch 3 block and process it
+        app.update_block(|block| block.height += 4);
+        let epoch_info = process_epoch(&mut app, 1);
+        println!("{:?}", epoch_info);
+
+        // go to epoch 4 block and process it
+        app.update_block(|block| block.height += 5);
+        let epoch_info = process_epoch(&mut app, 1);
+        println!("{:?}", epoch_info);
+
+        // withdraw rewards for alice at epoch 3-4
+        let alice_balance = withdraw_rewards(&mut app, &alice, 1);
+
+        // withdraw rewards for bob at epoch 3-4
+        let bob_balance = withdraw_rewards(&mut app, &bob, 1);
+
+        assert_eq!(
+            vec![Coin::new(399, "ATOM"), Coin::new(442, "OSMO")],
+            bob_balance,
+        );
+
+        assert_eq!(
+            vec![Coin::new(398, "ATOM"), Coin::new(220, "OSMO")],
+            alice_balance,
+        );
+
+        // create a new funding for last epoch
+        fund_program(&mut app, 1, &[Coin::new(1000, "OSMO")]);
+        // fast forward to epoch 5
+        app.update_block(|block| block.height += 5);
+
+        // process epoch 5
+        app.update_block(|block| block.height += 5);
+        let epoch_info = process_epoch(&mut app, 1);
+        println!("{:?}", epoch_info);
+        // finalize distribution
+        let alice_balance = withdraw_rewards(&mut app, &alice, 1);
+
+        assert_eq!(
+            vec![Coin::new(398, "ATOM"), Coin::new(220, "OSMO")],
+            alice_balance,
+        );
+
+        let bob_balance = withdraw_rewards(&mut app, &bob, 1);
+        assert_eq!(
+            vec![Coin::new(398, "ATOM"), Coin::new(220, "OSMO")],
+            app.wrap().query_all_balances(bob.to_string()).unwrap()
+        );
+    }
 }

@@ -21,7 +21,6 @@ pub enum ExecuteMsg {
         epochs: u64,
         epoch_block_duration: u64,
         min_lockup_blocks: u64,
-        start_block: u64,
     },
 
     FundProgram {

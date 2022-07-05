@@ -62,7 +62,6 @@ pub fn execute(
             epochs,
             epoch_block_duration,
             min_lockup_blocks,
-            start_block,
         } => execute_create_program(
             deps,
             env,
@@ -71,7 +70,6 @@ pub fn execute(
             epochs,
             epoch_block_duration,
             min_lockup_blocks,
-            start_block,
         ),
 
         ExecuteMsg::FundProgram { id } => execute_fund_program(deps, env, info, id),
@@ -98,7 +96,11 @@ fn execute_fund_program(
     let program = PROGRAMS.load(deps.storage, program_id)?;
     // equality because epoch processing can be triggered before funding
     if program.end_block <= env.block.height {
-        return Err(ContractError::ProgramFinished(program_id));
+        return Err(ContractError::ProgramFinished(
+            program_id,
+            program.end_block,
+            env.block.height,
+        ));
     }
 
     // prepare response event before
@@ -143,7 +145,6 @@ fn execute_create_program(
     epochs: u64,
     epoch_duration_blocks: u64,
     min_lockup_blocks: u64,
-    start_block: u64,
 ) -> Result<Response, ContractError> {
     let id = PROGRAMS_ID
         .update(deps.storage, |id| -> StdResult<u64> { return Ok(id + 1) })
@@ -155,7 +156,7 @@ fn execute_create_program(
         epoch_duration: epoch_duration_blocks,
         min_lockup_duration_blocks: min_lockup_blocks,
         lockup_denom: denom,
-        start_block,
+        start_block: env.block.height,
         end_block: env.block.height + (epochs * epoch_duration_blocks),
     };
     PROGRAMS.save(deps.storage, id, &program)?;
@@ -336,19 +337,17 @@ fn execute_process_epoch(
         add_coins(&mut to_distribute, funds)
     }
 
-    EPOCH_INFO.save(
-        deps.storage,
-        (program_id, epoch_to_process),
-        &EpochInfo {
-            epoch_identifier: epoch_to_process,
-            for_coins_locked_before: epoch_process_block,
-            for_coins_unlocking_after: lockup_qualification_block,
-            to_distribute,
-            total_locked,
-        },
-    )?;
+    let epoch_info = EpochInfo {
+        epoch_identifier: epoch_to_process,
+        for_coins_locked_before: epoch_process_block,
+        for_coins_unlocking_after: lockup_qualification_block,
+        to_distribute,
+        total_locked,
+    };
 
-    Ok(Response::new())
+    EPOCH_INFO.save(deps.storage, (program_id, epoch_to_process), &epoch_info)?;
+
+    Ok(Response::new().set_data(to_binary(&epoch_info)?)) // TODO: don't like
 }
 
 // todo: this is extremely inefficient and could be solved by simple
