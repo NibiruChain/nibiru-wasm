@@ -247,17 +247,18 @@ mod integration_test {
         app.update_block(|block| block.height += 5);
         let epoch_info = process_epoch(&mut app, 1);
         println!("{:?}", epoch_info);
+
         // finalize distribution
         let alice_balance = withdraw_rewards(&mut app, &alice, 1);
 
         assert_eq!(
-            vec![Coin::new(398, "ATOM"), Coin::new(220, "OSMO")],
+            vec![Coin::new(464, "ATOM"), Coin::new(664, "OSMO")],
             alice_balance,
         );
 
         let bob_balance = withdraw_rewards(&mut app, &bob, 1);
         assert_eq!(
-            vec![Coin::new(398, "ATOM"), Coin::new(220, "OSMO")],
+            vec![Coin::new(532, "ATOM"), Coin::new(1330, "OSMO")],
             bob_balance,
         );
     }
