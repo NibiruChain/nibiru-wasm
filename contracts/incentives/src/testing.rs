@@ -258,7 +258,7 @@ mod integration_test {
         let bob_balance = withdraw_rewards(&mut app, &bob, 1);
         assert_eq!(
             vec![Coin::new(398, "ATOM"), Coin::new(220, "OSMO")],
-            app.wrap().query_all_balances(bob.to_string()).unwrap()
+            bob_balance,
         );
     }
 }
