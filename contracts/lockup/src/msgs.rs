@@ -35,5 +35,5 @@ pub enum QueryMsg {
         address: Addr,
         locked_before: u64,
         unlocking_after: u64,
-    }
+    },
 }

@@ -24,12 +24,17 @@ pub struct LockIndexes<'a> {
     pub denom_end: MultiIndex<'a, (String, u64), Lock, u64>,
     pub addr_denom_end: MultiIndex<'a, (Addr, String, u64), Lock, u64>,
     pub denom_start: MultiIndex<'a, (String, u64), Lock, u64>,
-    pub addr_denom_start: MultiIndex<'a, (Addr, String, u64), Lock, u64>
+    pub addr_denom_start: MultiIndex<'a, (Addr, String, u64), Lock, u64>,
 }
 
 impl<'a> IndexList<Lock> for LockIndexes<'a> {
     fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<Lock>> + '_> {
-        let v: Vec<&dyn Index<Lock>> = vec![&self.addr_denom_end, &self.denom_end, &self.denom_start, &self.addr_denom_start];
+        let v: Vec<&dyn Index<Lock>> = vec![
+            &self.addr_denom_end,
+            &self.denom_end,
+            &self.denom_start,
+            &self.addr_denom_start,
+        ];
         Box::new(v.into_iter())
     }
 }
@@ -41,19 +46,28 @@ pub fn locks<'a>() -> IndexedMap<'a, u64, Lock, LockIndexes<'a>> {
             "locks",
             "addr_denom_end",
         ),
-        denom_start: MultiIndex::new(|lock| -> (_, _) { (lock.coin.denom.clone(), lock.start_block)},
-        "locks",
-        "denom_start"),
+        denom_start: MultiIndex::new(
+            |lock| -> (_, _) { (lock.coin.denom.clone(), lock.start_block) },
+            "locks",
+            "denom_start",
+        ),
 
         denom_end: MultiIndex::new(
             |lock| -> (_, _) { (lock.coin.denom.clone(), lock.end_block) },
             "locks",
             "denom_end",
         ),
-        addr_denom_start: MultiIndex::new(|lock: &Lock| -> (_, _, _) {
-            (lock.owner.clone(), lock.coin.denom.clone(), lock.start_block)
-        }, "locks",
-        "addr_denom_start")
+        addr_denom_start: MultiIndex::new(
+            |lock: &Lock| -> (_, _, _) {
+                (
+                    lock.owner.clone(),
+                    lock.coin.denom.clone(),
+                    lock.start_block,
+                )
+            },
+            "locks",
+            "addr_denom_start",
+        ),
     };
 
     return IndexedMap::new("locks", indexes);
