@@ -199,7 +199,7 @@ pub fn execute(
         ExecuteMsg::PostPrice {
             token0,
             token1,
-            price,
+            mut price,
             expiry,
         } => {
             let mut asset_pair = AssetPair::new(token0, token1);
@@ -214,7 +214,7 @@ pub fn execute(
             }
 
             if inverse_whitelist {
-                let price = Decimal::one() / price;
+                price = Decimal::one() / price;
             }
 
             // we entered keeper.PostRawPrice
