@@ -1,9 +1,10 @@
 use crate::error::ContractError;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint64, Uint128, Decimal};
+use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint64, Uint128, Decimal, to_binary};
 use crate::msgs::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::binding_msgs::{NibiruMsg};
+use crate::bindings::{NibiruMsg, NibiruQuery, PositionResponse, PositionsResponse};
+use crate::querier::{NibiruQuerier};
 
-/// Handling contract instantiation
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     _deps: DepsMut,
     _env: Env,
@@ -13,7 +14,7 @@ pub fn instantiate(
     Ok(Response::new())
 }
 
-/// Handling contract execution
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     _deps: DepsMut,
     _env: Env,
@@ -74,8 +75,25 @@ pub fn execute_close_position(pair: String) -> Result<Response<NibiruMsg>, Contr
 }
 
 
-/// Handling contract query
-pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(deps: Deps<NibiruQuery>, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
+        QueryMsg::GetPosition { 
+            trader_address, 
+            pair 
+        } => to_binary(&get_position(deps, trader_address, pair)),
+        QueryMsg::GetPositions { 
+            trader_address, 
+        } => to_binary(&get_positions(deps, trader_address)),
     }
+}
+
+fn get_position(deps: Deps<NibiruQuery>, trader_addr: String, pair: String) -> PositionResponse {
+    let querier = NibiruQuerier::new(&deps.querier);
+    querier.position(trader_addr, pair).unwrap()
+}
+
+fn get_positions(deps: Deps<NibiruQuery>, trader_addr: String) -> PositionsResponse {
+    let querier = NibiruQuerier::new(&deps.querier);
+    querier.positions(trader_addr).unwrap()
 }

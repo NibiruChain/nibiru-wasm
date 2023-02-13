@@ -20,4 +20,12 @@ pub enum ExecuteMsg {
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub enum QueryMsg {
+    GetPosition {
+        trader_address: String,
+        pair: String,
+    },
+
+    GetPositions {
+        trader_address: String,
+    }
 }
