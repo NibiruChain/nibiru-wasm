@@ -1,4 +1,4 @@
-use cosmwasm_std::{Uint128, Uint64, Decimal};
+use cosmwasm_std::{Uint128, Decimal};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -6,10 +6,11 @@ use serde::{Deserialize, Serialize};
 pub struct InstantiateMsg {}
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     OpenPosition { 
         pair: String, 
-        side: Uint64,
+        side: u8,
         quote_asset_amount: Uint128,
         leverage: Decimal,
         base_asset_amount_limit: Uint128,
@@ -19,13 +20,14 @@ pub enum ExecuteMsg {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    GetPosition {
-        trader_address: String,
+    Position {
+        trader: String,
         pair: String,
     },
 
-    GetPositions {
-        trader_address: String,
+    Positions {
+        trader: String,
     }
 }

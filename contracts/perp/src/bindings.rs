@@ -1,14 +1,15 @@
-use cosmwasm_std::{Uint64, Decimal, Uint128, CosmosMsg, CustomMsg, CustomQuery};
+use cosmwasm_std::{Decimal, Uint128, CosmosMsg, CustomMsg, CustomQuery};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use cosmwasm_schema::{QueryResponses};
 
 /// A number of Custom messages that can call into the Nibiru bindings
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum NibiruMsg {
     OpenPosition { 
         pair: String, 
-        side: Uint64,
+        side: u8,
         quote_asset_amount: Uint128,
         leverage: Decimal,
         base_asset_amount_limit: Uint128,
@@ -29,6 +30,7 @@ impl CustomMsg for NibiruMsg {}
 /// A number of Custom queries that can call into the Nibiru bindings
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
 #[derive(QueryResponses)]
+#[serde(rename_all = "snake_case")]
 pub enum NibiruQuery {
     #[returns(PositionResponse)]
     Position { 
@@ -55,7 +57,7 @@ pub struct Position {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct PositionResponse {
-    // pub position: Position,
+    pub position: Position,
     pub position_notinoal: String,
     pub unrealized_pnl: String,
     pub margin_ratio_mark: String,
