@@ -46,23 +46,23 @@ impl CustomQuery for NibiruQuery {}
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct Position {
-    pub trader: String,
+    pub trader_address: String,
     pub pair: String,
-    pub size: String,
-    pub margin: String,
-    pub open_notional: String,
-    pub latest_cumulative_premium_fraction: String,
-    pub block_number: Uint128,
+    pub size: Decimal,
+    pub margin: Decimal,
+    pub open_notional: Decimal,
+    pub latest_cumulative_premium_fraction: Decimal,
+    pub block_number: u8,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct PositionResponse {
     pub position: Position,
-    pub position_notinoal: String,
-    pub unrealized_pnl: String,
-    pub margin_ratio_mark: String,
-    pub margin_ratio_index: String,
-    pub block_number: Uint128,
+    pub position_notional: Decimal,
+    pub unrealized_pnl: Decimal,
+    pub margin_ratio_mark: Decimal,
+    pub margin_ratio_index: Decimal,
+    pub block_number: u8,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
