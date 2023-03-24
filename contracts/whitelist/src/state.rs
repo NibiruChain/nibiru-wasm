@@ -6,8 +6,8 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Default)]
 pub struct Whitelist {
-    members: HashSet<String>,
-    admins: HashSet<String>,
+    pub members: HashSet<String>,
+    pub admins: HashSet<String>,
 }
 
 impl Whitelist {
@@ -25,14 +25,14 @@ impl Whitelist {
 pub const WHITELIST: Item<Whitelist> = Item::new("whitelist");
 
 
-mod tests {
+pub mod tests {
     use cosmwasm_std::testing::MockStorage;
 
     use crate::contract::init;
 
     use super::*;
 
-    fn init_mock_whitelist() -> Whitelist {
+    pub fn init_mock_whitelist() -> Whitelist {
 
         let members: HashSet<String> = HashSet::from_iter(vec![
             "brock".to_string(), 
