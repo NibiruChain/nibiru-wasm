@@ -110,39 +110,106 @@ pub fn query(
     }
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
-#[test]
-fn test_init() {
-    let mut deps = testing::mock_dependencies();
-    let msg = InitMsg {
-        admin: "admin".to_string(),
-    };
-    let info: MessageInfo = testing::mock_info(
-        "addr0000", &coins(2, "token"));
+mod tests {
+    use super::*;
+    use cosmwasm_std::testing;
+    use cosmwasm_std::coins;
 
-    let result = init(
-        deps.as_mut(), testing::mock_env(), info, msg).unwrap();
-    assert_eq!(result.messages.len(), 0);
+    // ---------------------------------------------------------------------------
+    // Tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn test_init() {
+        let mut deps = testing::mock_dependencies();
+        let msg = InitMsg {
+            admin: "admin".to_string(),
+        };
+        let info: MessageInfo = testing::mock_info(
+            "addr0000", &coins(2, "token"));
+
+        let result = init(
+            deps.as_mut(), testing::mock_env(), info, msg).unwrap();
+        assert_eq!(result.messages.len(), 0);
+    }
+
+    #[test]
+    fn test_handle_unauthorized() {
+        let mut deps = testing::mock_dependencies();
+        let admin = Addr::unchecked("admin");
+
+        let init_msg = InitMsg {
+            admin: admin.as_str().to_string(),
+        };
+        let init_info = testing::mock_info("addr0000", &coins(2, "token"));
+        init(deps.as_mut(), testing::mock_env(), init_info, init_msg).unwrap();
+
+        let handle_msg = HandleMsg::Add {
+            address: "addr0001".to_string(),
+        };
+        let unauthorized_info = testing::mock_info("unauthorized", &[]);
+        let result = handle(deps.as_mut(), testing::mock_env(), unauthorized_info, handle_msg);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_add() {
+        let mut deps = testing::mock_dependencies();
+        let admin = Addr::unchecked("admin");
+
+        let init_msg = InitMsg {
+            admin: admin.as_str().to_string(),
+        };
+        let init_info = testing::mock_info("addr0000", &coins(2, "token"));
+        init(deps.as_mut(), testing::mock_env(), init_info, init_msg).unwrap();
+
+        let handle_msg = HandleMsg::Add {
+            address: "addr0001".to_string(),
+        };
+        let handle_info = testing::mock_info(admin.as_str(), &[]);
+        let result = handle(deps.as_mut(), testing::mock_env(), handle_info, handle_msg).unwrap();
+        assert_eq!(result.messages.len(), 0);
+        assert_eq!(result.attributes.len(), 2);
+
+        let query_msg = QueryMsg::IsWhitelisted {
+            address: "addr0001".to_string(),
+        };
+        let binary = query(deps.as_ref(), testing::mock_env(), query_msg).unwrap();
+        let response: IsWhitelistedResponse = cosmwasm_std::from_binary(&binary).unwrap();
+        assert_eq!(response.is_whitelisted, true);
+    }
+
+    #[test]
+    fn test_handle_remove() {
+        let mut deps = testing::mock_dependencies();
+        let admin = Addr::unchecked("admin");
+
+        let init_msg = InitMsg {
+            admin: admin.as_str().to_string(),
+        };
+        let init_info = testing::mock_info("addr0000", &coins(2, "token"));
+        init(deps.as_mut(), testing::mock_env(), init_info, init_msg).unwrap();
+
+        let handle_msg = HandleMsg::Add {
+            address: "addr0001".to_string(),
+        };
+        let handle_info = testing::mock_info(admin.as_str(), &[]);
+        handle(deps.as_mut(), testing::mock_env(), handle_info.clone(), handle_msg).unwrap();
+
+        let handle_msg = HandleMsg::Remove {
+            address: "addr0001".to_string(),
+        };
+        let result = handle(deps.as_mut(), testing::mock_env(), handle_info, handle_msg).unwrap();
+        assert_eq!(result.messages.len(), 0);
+        assert_eq!(result.attributes.len(), 2);
+
+        let query_msg = QueryMsg::IsWhitelisted {
+            address: "addr0001".to_string(),
+        };
+        let binary = query(deps.as_ref(), testing::mock_env(), query_msg).unwrap();
+        let response: IsWhitelistedResponse = cosmwasm_std::from_binary(&binary).unwrap();
+        assert_eq!(response.is_whitelisted, false);
+    }
 }
 
-#[test]
-fn test_handle_unauthorized() {
-    let mut deps = testing::mock_dependencies();
-    let admin = Addr::unchecked("admin");
-
-    let init_msg = InitMsg {
-        admin: admin.as_str().to_string(),
-    };
-    let init_info = testing::mock_info("addr0000", &coins(2, "token"));
-    init(deps.as_mut(), testing::mock_env(), init_info, init_msg).unwrap();
-
-    let handle_msg = HandleMsg::Add {
-        address: "addr0001".to_string(),
-    };
-    let unauthorized_info = testing::mock_info("unauthorized", &[]);
-    let result = handle(deps.as_mut(), testing::mock_env(), unauthorized_info, handle_msg);
-    assert!(result.is_err());
-}
