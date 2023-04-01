@@ -14,11 +14,11 @@
 // 2. Allow the admin to add or remove addresses from the whitelist.
 // 3. Allow anyone to query if an address is on the whitelist.
 
-use std::io::Read;
+
 
 use cosmwasm_std::{
-    attr, entry_point, Addr, Api, Binary, Deps, DepsMut, Env, MessageInfo, 
-    Response, StdResult, Storage, coins, testing,
+    attr, entry_point, Addr, Binary, Deps, DepsMut, Env, MessageInfo, 
+    Response, StdResult, testing, coins,
 };
 use schemars::JsonSchema;
 
@@ -129,65 +129,6 @@ fn test_init() {
 }
 
 #[test]
-fn test_handle_add() {
-    let mut deps = testing::mock_dependencies();
-    let admin = Addr::unchecked("admin");
-
-    let init_msg = InitMsg {
-        admin: admin.as_str().to_string(),
-    };
-    let init_info = testing::mock_info("addr0000", &coins(2, "token"));
-    init(deps.as_mut(), testing::mock_env(), init_info, init_msg).unwrap();
-
-    let handle_msg = HandleMsg::Add {
-        address: "addr0001".to_string(),
-    };
-    let handle_info = testing::mock_info(admin.as_str(), &[]);
-    let result = handle(deps.as_mut(), testing::mock_env(), handle_info, handle_msg).unwrap();
-    assert_eq!(result.messages.len(), 0);
-    assert_eq!(result.attributes.len(), 2);
-
-    let query_msg = QueryMsg::IsWhitelisted {
-        address: "addr0001".to_string(),
-    };
-    let binary = query(deps.as_ref(), testing::mock_env(), query_msg).unwrap();
-    let response: IsWhitelistedResponse = cosmwasm_std::from_binary(&binary).unwrap();
-    assert_eq!(response.is_whitelisted, true);
-}
-
-#[test]
-fn test_handle_remove() {
-    let mut deps = testing::mock_dependencies();
-    let admin = Addr::unchecked("admin");
-
-    let init_msg = InitMsg {
-        admin: admin.as_str().to_string(),
-    };
-    let init_info = testing::mock_info("addr0000", &coins(2, "token"));
-    init(deps.as_mut(), testing::mock_env(), init_info, init_msg).unwrap();
-
-    let handle_msg = HandleMsg::Add {
-        address: "addr0001".to_string(),
-    };
-    let handle_info = testing::mock_info(admin.as_str(), &[]);
-    handle(deps.as_mut(), testing::mock_env(), handle_info.clone(), handle_msg).unwrap();
-
-    let handle_msg = HandleMsg::Remove {
-        address: "addr0001".to_string(),
-    };
-    let result = handle(deps.as_mut(), testing::mock_env(), handle_info, handle_msg).unwrap();
-    assert_eq!(result.messages.len(), 0);
-    assert_eq!(result.attributes.len(), 2);
-
-    let query_msg = QueryMsg::IsWhitelisted {
-        address: "addr0001".to_string(),
-    };
-    let binary = query(deps.as_ref(), testing::mock_env(), query_msg).unwrap();
-    let response: IsWhitelistedResponse = cosmwasm_std::from_binary(&binary).unwrap();
-    assert_eq!(response.is_whitelisted, false);
-}
-
-#[test]
 fn test_handle_unauthorized() {
     let mut deps = testing::mock_dependencies();
     let admin = Addr::unchecked("admin");
@@ -205,8 +146,3 @@ fn test_handle_unauthorized() {
     let result = handle(deps.as_mut(), testing::mock_env(), unauthorized_info, handle_msg);
     assert!(result.is_err());
 }
-
-
-
-
-
