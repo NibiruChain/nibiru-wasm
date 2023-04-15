@@ -14,15 +14,12 @@ pub enum NibiruQuery {
     // -----------------------------------------------------------------
     // From x/perp/amm
     // -----------------------------------------------------------------
-    // TODO implement query handler
     #[returns(AllMarketsResponse)]
     AllMarkets {},
 
-    // TODO implement query handler
     #[returns(ReservesResponse)]
     Reserves { pair: String },
 
-    // TODO implement query handler
     #[returns(BasePriceResponse)]
     BasePrice {
         pair: String,
@@ -33,27 +30,21 @@ pub enum NibiruQuery {
     // -----------------------------------------------------------------
     // From x/perp
     // -----------------------------------------------------------------
-    // TODO implement query handler
     #[returns(PositionResponse)]
     Position { trader: String, pair: String },
 
-    // TODO implement query handler
     #[returns(PositionsResponse)]
     Positions { trader: String },
 
-    // TODO implement query handler
     #[returns(ModuleParamsResponse)]
     ModuleParams {},
 
-    // TODO implement query handler
     #[returns(PremiumFractionResponse)]
     PremiumFraction { pair: String },
 
-    // TODO implement query handler
     #[returns(MetricsResponse)]
     Metrics { pair: String },
 
-    // TODO implement query handler
     #[returns(ModuleAccountsResponse)]
     ModuleAccounts {},
 }
@@ -62,9 +53,6 @@ pub enum NibiruQuery {
 pub struct AllMarketsResponse {
     pub market_map: HashMap<String, Market>
 }
-
-// fn query_all_markets(deps: Deps<BindingQuerier>)
-
 
 #[cw_serde]
 pub struct ReservesResponse {
