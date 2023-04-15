@@ -42,23 +42,23 @@ impl<'a> IndexList<Lock> for LockIndexes<'a> {
 pub fn locks<'a>() -> IndexedMap<'a, u64, Lock, LockIndexes<'a>> {
     let indexes = LockIndexes {
         addr_denom_end: MultiIndex::new(
-            |lock| -> (_, _, _) { (lock.owner.clone(), lock.coin.denom.clone(), lock.end_block) },
+            |_bz, lock: &Lock| -> (_, _, _) { (lock.owner.clone(), lock.coin.denom.clone(), lock.end_block) },
             "locks",
             "addr_denom_end",
         ),
         denom_start: MultiIndex::new(
-            |lock| -> (_, _) { (lock.coin.denom.clone(), lock.start_block) },
+            |_bz, lock: &Lock| -> (_, _) { (lock.coin.denom.clone(), lock.start_block) },
             "locks",
             "denom_start",
         ),
 
         denom_end: MultiIndex::new(
-            |lock| -> (_, _) { (lock.coin.denom.clone(), lock.end_block) },
+            |_bz, lock: &Lock| -> (_, _) { (lock.coin.denom.clone(), lock.end_block) },
             "locks",
             "denom_end",
         ),
         addr_denom_start: MultiIndex::new(
-            |lock: &Lock| -> (_, _, _) {
+            |_bz, lock: &Lock| -> (_, _, _) {
                 (
                     lock.owner.clone(),
                     lock.coin.denom.clone(),

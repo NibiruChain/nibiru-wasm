@@ -62,7 +62,7 @@ impl<'a> IndexList<Funding> for FundingIndexes<'a> {
 pub fn funding<'a>() -> IndexedMap<'a, u64, Funding, FundingIndexes<'a>> {
     let indexes = FundingIndexes {
         pay_from_epoch: MultiIndex::new(
-            |funding| -> (_, _) { (funding.program_id, funding.pay_from_epoch) },
+            |_bz, funding: &Funding| -> (_, _) { (funding.program_id, funding.pay_from_epoch) },
             "funding",
             "pay_from_epoch",
         ),
