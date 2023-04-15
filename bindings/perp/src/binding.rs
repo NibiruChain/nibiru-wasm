@@ -1,21 +1,35 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, CustomMsg, Deps, DepsMut, Env, StdResult,
+    entry_point, to_binary, Binary, CustomMsg, Deps, DepsMut, Env, MessageInfo,
+    Response, StdResult,
 };
+use cw2::set_contract_version;
 
-use crate::{querier::NibiruQuerier, query::NibiruQuery};
+use crate::{msg::InstantiateMsg, querier::NibiruQuerier, query::NibiruQuery};
 
 /// These need not be the same. QueryMsg specifies a contract and module-specific
 /// type for a query message, whereas NibiruQuery is an enum type for any of the
 /// binding queries supported in NibiruChain/x/wasm/binding
 ///
-/// In our case, there's only one module right now, so these are equivalent.
+/// In our case, there's only one module right now, so NibiruQuery and QueryMsg
+/// are equivalent.
 type QueryMsg = NibiruQuery;
 
 impl CustomMsg for QueryMsg {}
 
+const CONTRACT_NAME: &str = "cw-nibiru-bindings-perp";
+const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[entry_point]
-pub fn inst(deps: DepsMut<NibiruQuery>, _env: Env, msg: QueryMsg) {
-    // TODO
+pub fn inst(
+    deps: DepsMut<NibiruQuery>,
+    _env: Env,
+    info: MessageInfo,
+    _msg: InstantiateMsg,
+) -> StdResult<Response> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    return Ok(Response::new()
+        .add_attribute("action", "instantiate")
+        .add_attribute("owner", info.sender));
 }
 
 #[entry_point]

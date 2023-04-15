@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Decimal, Uint128};
+use cosmwasm_std::{Decimal, Uint128, Coin};
 
 #[cw_serde]
 pub struct InstantiateMsg {}
@@ -15,28 +15,41 @@ pub enum ExecuteMsg {
         base_asset_amount_limit: Uint128,
     },
 
-    // TODO implement
+    // TODO handler
     ClosePosition {
+        sender: String,
         pair: String,
     },
 
-    // TODO implement
+    // TODO handler
     AddMargin {
+        sender: String,
         pair: String,
+        margin: Coin,
     },
 
-    // TODO implement
+    // TODO handler
     RemoveMargin {
+        sender: String,
         pair: String,
+        margin: Coin,
     },
 
     // TODO implement
     MultiLiquidate {
         pair: String,
+        liquidations: Vec<LiquidationArgs>
     },
 
     // TODO implement
-    DonateToEcosystemFund {
-        pair: String,
+    DonateToInsuranceFund {
+        sender: String,
+        donation: Coin,
     },
+}
+
+#[cw_serde]
+pub struct LiquidationArgs {
+    pub pair: String,
+    pub trader: String,
 }
