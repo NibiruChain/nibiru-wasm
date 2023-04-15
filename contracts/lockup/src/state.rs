@@ -1,10 +1,10 @@
-use cosmwasm_std::{Addr, Coin, Uint128};
+use cosmwasm_std::{Addr, Coin};
 use cw_storage_plus::{
-    Index, IndexList, IndexedMap, Item, Map, MultiIndex, SnapshotItem, SnapshotMap,
+    Index, IndexList, IndexedMap, Item, MultiIndex,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::ops::Mul;
+
 
 pub const NOT_UNLOCKING_BLOCK_IDENTIFIER: u64 = u64::MAX;
 pub const LOCKS_ID: Item<u64> = Item::new("locks_id");

@@ -1,10 +1,10 @@
-use cosmwasm_std::{Addr, Coin, Decimal, Empty, Timestamp, Uint128};
+use cosmwasm_std::{Addr, Decimal, Empty, Timestamp};
 use cw_storage_plus::{
-    Index, IndexList, IndexedMap, Item, Map, MultiIndex, SnapshotItem, SnapshotMap,
+    Map,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::ops::Mul;
+
 
 pub const ORACLE_PAIR_WHITELIST: Map<(String, &Addr), Empty> = Map::new("oracle_pair_whitelist");
 pub const ACTIVE_PAIRS: Map<String, Empty> = Map::new("active_pairs");

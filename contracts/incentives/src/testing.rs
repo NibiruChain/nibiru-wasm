@@ -3,9 +3,9 @@ mod integration_test {
     use crate::contract::{execute, instantiate, query};
     use crate::msgs::{ExecuteMsg, InstantiateMsg, QueryMsg};
     use crate::state::{EpochInfo, Funding};
-    use cosmwasm_std::testing::{mock_env, MockApi};
-    use cosmwasm_std::{coin, from_binary, Addr, Coin, Empty};
-    use cw_multi_test::{App, BankKeeper, BankSudo, Contract, ContractWrapper, Executor};
+    
+    use cosmwasm_std::{from_binary, Addr, Coin};
+    use cw_multi_test::{App, BankSudo, Contract, ContractWrapper, Executor};
 
     const ROOT: &str = "root";
     const INCENTIVES: &str = "contract1";
@@ -32,7 +32,7 @@ mod integration_test {
         .unwrap();
     }
 
-    fn fund_program(app: &mut App, program_id: u64, coins: &[Coin]) -> Vec<Coin> {
+    fn fund_program(app: &mut App, _program_id: u64, coins: &[Coin]) -> Vec<Coin> {
         app.execute_contract(
             Addr::unchecked(ROOT),
             Addr::unchecked(INCENTIVES),
@@ -67,7 +67,7 @@ mod integration_test {
         .unwrap();
     }
 
-    fn withdraw_rewards(app: &mut App, user: &Addr, program_id: u64) -> Vec<Coin> {
+    fn withdraw_rewards(app: &mut App, user: &Addr, _program_id: u64) -> Vec<Coin> {
         app.execute_contract(
             user.clone(),
             Addr::unchecked(INCENTIVES),
@@ -79,7 +79,7 @@ mod integration_test {
         app.wrap().query_all_balances(user).unwrap()
     }
 
-    fn process_epoch(app: &mut App, program_id: u64) -> EpochInfo {
+    fn process_epoch(app: &mut App, _program_id: u64) -> EpochInfo {
         from_binary::<EpochInfo>(
             &app.execute_contract(
                 Addr::unchecked(ROOT),
@@ -135,8 +135,8 @@ mod integration_test {
     #[test]
     fn flow() {
         let mut app = app();
-        let lockup_addr = Addr::unchecked(LOCKUP);
-        let incentives_addr = Addr::unchecked(INCENTIVES);
+        let _lockup_addr = Addr::unchecked(LOCKUP);
+        let _incentives_addr = Addr::unchecked(INCENTIVES);
 
         let alice = Addr::unchecked("alice");
         let bob = Addr::unchecked("bob");

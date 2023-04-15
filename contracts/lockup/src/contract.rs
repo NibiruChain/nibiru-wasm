@@ -12,9 +12,9 @@ use cw_storage_plus::Bound;
 
 pub fn instantiate(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     _: MessageInfo,
-    msg: InstantiateMsg,
+    _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     LOCKS_ID.save(deps.storage, &0).unwrap();
 
@@ -45,7 +45,7 @@ pub fn execute(
 pub(crate) fn execute_withdraw_funds(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     id: u64,
 ) -> Result<Response, ContractError> {
     let locks = locks();
@@ -78,7 +78,7 @@ pub(crate) fn execute_withdraw_funds(
 pub(crate) fn execute_initiate_unlock(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     id: u64,
 ) -> Result<Response, ContractError> {
     let locks = locks();
@@ -249,12 +249,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 #[cfg(test)]
 mod tests {
-    use crate::contract::{execute_initiate_unlock, execute_lock, instantiate, query};
-    use crate::msgs::{ExecuteMsg, InstantiateMsg, QueryMsg};
-    use crate::state::{Lock, LOCKS_ID};
+    use crate::contract::{execute_lock, instantiate, query};
+    use crate::msgs::{InstantiateMsg, QueryMsg};
+    use crate::state::{Lock};
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::OverflowOperation::Add;
-    use cosmwasm_std::{from_binary, Addr, Coin, DepsMut, Env, Uint128};
+    
+    use cosmwasm_std::{from_binary, Addr, Coin, DepsMut, Env};
 
     struct TestLock {
         owner: Addr,

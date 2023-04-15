@@ -1,7 +1,7 @@
-use cosmwasm_std::{Addr, Timestamp};
+use cosmwasm_std::{Addr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
+
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct InstantiateMsg {
