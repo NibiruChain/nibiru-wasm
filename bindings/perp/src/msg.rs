@@ -1,47 +1,68 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Decimal, Uint128, Coin};
+use cosmwasm_std::{Coin, CosmosMsg, Decimal, Uint128};
 
 #[cw_serde]
 pub struct InstantiateMsg {}
 
 #[cw_serde]
+/// NibiruExecuteMsgWrapper is an override of CosmosMsg::Custom. Using this msg
+/// wrapper for the ExecuteMsg handlers show that their return values are valid
+/// instances of CosmosMsg::Custom in a type-safe manner. It also shows how
+/// CosmosMsg::Custom can be extended in the contract.
+/// ExecuteMsg can be extended in the contract.
+pub struct NibiruExecuteMsgWrapper {
+    pub route: NibiruRoute,
+    pub msg: ExecuteMsg,
+}
+
+/// "From" is the workforce function for returning messages as fields of the 
+/// CosmosMsg enum type more easily.
+impl From<NibiruExecuteMsgWrapper> for CosmosMsg<NibiruExecuteMsgWrapper> {
+    fn from(original: NibiruExecuteMsgWrapper) -> Self {
+        CosmosMsg::Custom(original)
+    }
+}
+
+#[cw_serde]
+/// Routes here refer to groups of modules on Nibiru. The idea here is to add
+/// information on which module or group of modules a particular execute message  
+/// belongs to.
+pub enum NibiruRoute {
+    Perp,
+}
+
+#[cw_serde]
 pub enum ExecuteMsg {
-    // TODO implement
     OpenPosition {
         pair: String,
-        side: u8,
-        quote_asset_amount: Uint128,
+        is_long: bool,
+        quote_amount: Uint128,
         leverage: Decimal,
-        base_asset_amount_limit: Uint128,
+        base_amount_limit: Uint128,
     },
 
-    // TODO handler
     ClosePosition {
         sender: String,
         pair: String,
     },
 
-    // TODO handler
     AddMargin {
         sender: String,
         pair: String,
         margin: Coin,
     },
 
-    // TODO handler
     RemoveMargin {
         sender: String,
         pair: String,
         margin: Coin,
     },
 
-    // TODO implement
     MultiLiquidate {
         pair: String,
-        liquidations: Vec<LiquidationArgs>
+        liquidations: Vec<LiquidationArgs>,
     },
 
-    // TODO implement
     DonateToInsuranceFund {
         sender: String,
         donation: Coin,
@@ -52,4 +73,89 @@ pub enum ExecuteMsg {
 pub struct LiquidationArgs {
     pub pair: String,
     pub trader: String,
+}
+
+pub fn msg_open_position(
+    pair: String,
+    is_long: bool,
+    quote_amount: Uint128,
+    leverage: Decimal,
+    base_amount_limit: Uint128,
+) -> CosmosMsg<NibiruExecuteMsgWrapper> {
+    NibiruExecuteMsgWrapper {
+        route: NibiruRoute::Perp,
+        msg: ExecuteMsg::OpenPosition {
+            pair,
+            is_long,
+            quote_amount,
+            leverage,
+            base_amount_limit,
+        },
+    }
+    .into()
+}
+
+pub fn msg_close_position(
+    sender: String,
+    pair: String,
+) -> CosmosMsg<NibiruExecuteMsgWrapper> {
+    NibiruExecuteMsgWrapper {
+        route: NibiruRoute::Perp,
+        msg: ExecuteMsg::ClosePosition { sender, pair },
+    }
+    .into()
+}
+
+pub fn msg_add_margin(
+    sender: String,
+    pair: String,
+    margin: Coin,
+) -> CosmosMsg<NibiruExecuteMsgWrapper> {
+    NibiruExecuteMsgWrapper {
+        route: NibiruRoute::Perp,
+        msg: ExecuteMsg::AddMargin {
+            sender,
+            pair,
+            margin,
+        },
+    }
+    .into()
+}
+
+pub fn msg_remove_margin(
+    sender: String,
+    pair: String,
+    margin: Coin,
+) -> CosmosMsg<NibiruExecuteMsgWrapper> {
+    NibiruExecuteMsgWrapper {
+        route: NibiruRoute::Perp,
+        msg: ExecuteMsg::RemoveMargin {
+            sender,
+            pair,
+            margin,
+        },
+    }
+    .into()
+}
+
+pub fn msg_multi_liquidate(
+    pair: String,
+    liquidations: Vec<LiquidationArgs>,
+) -> CosmosMsg<NibiruExecuteMsgWrapper> {
+    NibiruExecuteMsgWrapper {
+        route: NibiruRoute::Perp,
+        msg: ExecuteMsg::MultiLiquidate { pair, liquidations },
+    }
+    .into()
+}
+
+pub fn msg_donate_to_insurance_fund(
+    sender: String,
+    donation: Coin,
+) -> CosmosMsg<NibiruExecuteMsgWrapper> {
+    NibiruExecuteMsgWrapper {
+        route: NibiruRoute::Perp,
+        msg: ExecuteMsg::DonateToInsuranceFund { sender, donation },
+    }
+    .into()
 }
