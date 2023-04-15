@@ -1,6 +1,8 @@
-use cosmwasm_std::{entry_point, to_binary, Binary, CustomMsg, Deps, DepsMut, Env, StdResult};
+use cosmwasm_std::{
+    entry_point, to_binary, Binary, CustomMsg, Deps, DepsMut, Env, StdResult,
+};
 
-use crate::query::{NibiruQuery};
+use crate::{querier::NibiruQuerier, query::NibiruQuery};
 
 /// These need not be the same. QueryMsg specifies a contract and module-specific
 /// type for a query message, whereas NibiruQuery is an enum type for any of the
@@ -17,45 +19,37 @@ pub fn inst(deps: DepsMut<NibiruQuery>, _env: Env, msg: QueryMsg) {
 }
 
 #[entry_point]
-pub fn query(_deps: Deps<NibiruQuery>, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(
+    deps: Deps<NibiruQuery>,
+    _env: Env,
+    msg: QueryMsg,
+) -> StdResult<Binary> {
+    let querier = NibiruQuerier::new(&deps.querier);
     match msg {
-        QueryMsg::AllMarkets {} => to_binary(&NibiruQuery::AllMarkets {}),
+        QueryMsg::AllMarkets {} => to_binary(&querier.all_markets().unwrap()),
         QueryMsg::BasePrice {
             pair,
             is_long,
             base_amount,
-        } => to_binary(&NibiruQuery::BasePrice {
-            pair,
-            is_long,
-            base_amount,
-        }),
+        } => to_binary(&querier.base_price(pair, is_long, base_amount).unwrap()),
         QueryMsg::Position { trader, pair } => {
-            let cw_req = NibiruQuery::Position { trader, pair };
-            return to_binary(&cw_req);
+            to_binary(&querier.position(trader, pair).unwrap())
         }
         QueryMsg::Positions { trader } => {
-            let cw_req = NibiruQuery::Positions { trader };
-            return to_binary(&cw_req);
+            to_binary(&querier.positions(trader).unwrap())
         }
-        QueryMsg::Metrics { pair } => {
-            let cw_req = NibiruQuery::Metrics { pair };
-            return to_binary(&cw_req);
-        }
+        QueryMsg::Metrics { pair } => to_binary(&querier.metrics(pair).unwrap()),
         QueryMsg::ModuleAccounts {} => {
-            let cw_req = NibiruQuery::ModuleAccounts {};
-            return to_binary(&cw_req);
+            to_binary(&querier.module_accounts().unwrap())
         }
         QueryMsg::ModuleParams {} => {
-            let cw_req = NibiruQuery::ModuleParams {};
-            return to_binary(&cw_req);
+            to_binary(&querier.module_params().unwrap())
         }
         QueryMsg::PremiumFraction { pair } => {
-            let cw_req = NibiruQuery::PremiumFraction { pair };
-            return to_binary(&cw_req);
+            to_binary(&querier.premium_fraction(pair).unwrap())
         }
         QueryMsg::Reserves { pair } => {
-            let cw_req = NibiruQuery::Reserves { pair };
-            return to_binary(&cw_req);
+            to_binary(&querier.reserves(pair).unwrap())
         }
     }
 }
