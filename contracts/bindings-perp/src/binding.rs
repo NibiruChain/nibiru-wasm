@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     entry_point, to_binary, Binary, CosmosMsg, CustomMsg, Deps, DepsMut, Env,
-    MessageInfo, Response, StdResult,
+    MessageInfo, Response, StdResult
 };
 use cw2::set_contract_version;
 
@@ -18,7 +18,7 @@ const CONTRACT_NAME: &str = "cw-nibiru-bindings-perp";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[entry_point]
-pub fn inst(
+pub fn instantiate(
     deps: DepsMut<NibiruQuery>,
     _env: Env,
     info: MessageInfo,
