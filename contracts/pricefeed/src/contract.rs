@@ -9,23 +9,23 @@ use crate::state::{
 };
 use crate::AssetPair;
 use cosmwasm_std::{
-    to_binary, Addr, BankMsg, Binary, Decimal, Deps, DepsMut, Empty, Env, Event, MessageInfo,
+    to_binary, Addr, Binary, Decimal, Deps, DepsMut, Empty, Env, Event, MessageInfo,
     Order, Response, StdResult, Storage, Uint128,
 };
-use cw_storage_plus::Bound;
-use schemars::_serde_json::to_string;
+
+
 use std::collections::HashSet;
 
 pub fn instantiate(
-    deps: DepsMut,
-    env: Env,
+    _deps: DepsMut,
+    _env: Env,
     _: MessageInfo,
-    msg: InstantiateMsg,
+    _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     Ok(Response::new())
 }
 
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Price { pair_id } => to_binary(&QueryPriceResponse {
             current_price: CurrentPrice {
@@ -99,7 +99,7 @@ pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractE
                 .collect::<Vec<AssetPair>>()
             {
                 // get raw prices
-                let mut raw_prices: Vec<Decimal> = RAW_PRICES
+                let raw_prices: Vec<Decimal> = RAW_PRICES
                     .prefix(asset_pair.to_string())
                     .range(deps.storage, None, None, Order::Ascending)
                     .map(|o| -> PostedPrice { o.unwrap().1 })

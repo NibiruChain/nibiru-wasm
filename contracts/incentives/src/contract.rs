@@ -7,17 +7,17 @@ use crate::state::{
     LOCKUP_ADDR, PROGRAMS, PROGRAMS_ID, WITHDRAWALS,
 };
 use cosmwasm_std::{
-    to_binary, Addr, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Order,
-    Response, StdResult, Timestamp, Uint128, Uint64,
+    to_binary, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Order,
+    Response, StdResult, Uint128,
 };
 use cw_storage_plus::Bound;
 use lockup::msgs::QueryMsg as LockupQueryMsg;
-use lockup::state::{Lock, NOT_UNLOCKING_BLOCK_IDENTIFIER};
-use std::cmp::{max, min};
-use std::collections::HashMap;
-use std::time::Duration;
+use lockup::state::{Lock};
 
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+
+
+
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::ProgramFunding { program_id: id } => to_binary(
             &funding()
@@ -37,8 +37,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 pub fn instantiate(
     deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
+    _env: Env,
+    _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     PROGRAMS_ID.save(deps.storage, &0).unwrap();
@@ -109,7 +109,7 @@ fn execute_fund_program(
     let response = Response::new().add_event(new_program_funding(program_id, &info.funds));
 
     // update funding associated with the program id for this block
-    let mut pay_from_epoch = calc_epoch_to_pay_from(env.block.height, &program);
+    let pay_from_epoch = calc_epoch_to_pay_from(env.block.height, &program);
     println!("pays from epoch {}", pay_from_epoch);
 
     for coin in info.funds {
@@ -140,7 +140,7 @@ fn execute_fund_program(
 fn execute_create_program(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     denom: String,
     epochs: u64,
     epoch_duration_blocks: u64,
@@ -258,7 +258,7 @@ fn execute_withdraw_rewards(
 fn execute_process_epoch(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     program_id: u64,
 ) -> Result<Response, ContractError> {
     let program = PROGRAMS.load(deps.storage, program_id)?;
