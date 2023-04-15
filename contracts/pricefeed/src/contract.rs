@@ -73,7 +73,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 .collect();
 
             for pair in pairs {
-                let mut market = Market {
+                let market = Market {
                     pair_id: pair.clone(),
                     oracles: ORACLE_PAIR_WHITELIST
                         .prefix(pair.clone())
