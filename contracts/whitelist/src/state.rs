@@ -20,15 +20,21 @@ impl Whitelist {
         let addr = addr.as_ref();
         return self.admins.contains(addr);
     }
+
+    pub fn is_member(&self, addr: impl AsRef<str>) -> bool {
+        let addr = addr.as_ref();
+        return self.members.contains(addr);
+    }
 }
 
 pub const WHITELIST: Item<Whitelist> = Item::new("whitelist");
 
 
+#[cfg(test)]
 pub mod tests {
     use cosmwasm_std::testing::MockStorage;
 
-    use crate::contract::init;
+    
 
     use super::*;
 
@@ -52,6 +58,15 @@ pub mod tests {
         assert!(whitelist.is_admin("cait"));
         assert!(!whitelist.is_admin("david"));
         assert!(!whitelist.is_admin("brock"));
+    }
+
+    #[test]
+    fn whitelist_is_member() {
+        let whitelist  = init_mock_whitelist();
+        assert!(!whitelist.is_member("alice"));
+        assert!(!whitelist.is_member("cait"));
+        assert!(whitelist.is_member("david"));
+        assert!(whitelist.is_member("brock"));
     }
 
     #[test]
@@ -79,7 +94,6 @@ pub mod tests {
         let res = WHITELIST.save(&mut store, &whitelist);
         assert!(res.is_ok());
         
-
         // load from store
         assert_eq!(whitelist, WHITELIST.load(&store).unwrap());
     }
