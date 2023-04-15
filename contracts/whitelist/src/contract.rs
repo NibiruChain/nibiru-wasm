@@ -1,49 +1,47 @@
 // A simple contract that maintains a whitelist of addresses.
 // Takes inspiration from cw-plus/contracts/cw1-whitelist
-// 
-// This example demonstrates a simple CosmWasm smart contract that manages a 
-// whitelist of addresses. The contract initializes with an admin address and 
-// allows the admin to add or remove addresses from the whitelist. Users can 
+//
+// This example demonstrates a simple CosmWasm smart contract that manages a
+// whitelist of addresses. The contract initializes with an admin address and
+// allows the admin to add or remove addresses from the whitelist. Users can
 // query whether an address is whitelisted or not.
 //
 // - InitMsg: Initializes the contract with the admin address.
-// - HandleMsg: Enum representing the actions that can
-// 
+// - ExecuteMsg: Enum representing the actions that can
+//
 // ### Contained Functionality
 // 1. Initialize the contract with an admin address.
 // 2. Allow the admin to add or remove addresses from the whitelist.
 // 3. Allow anyone to query if an address is on the whitelist.
 
-
-
 use std::collections::HashSet;
 
 use cosmwasm_std::{
-    attr, entry_point, Addr, Binary, Deps, DepsMut, Env, MessageInfo, 
-    Response, StdResult, testing, coins, from_slice,
+    attr, entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response,
+    StdResult,
 };
-use schemars::JsonSchema;
-
-use serde::{Deserialize, Serialize};
 
 use crate::{
-    msg,
-    state::{WHITELIST, Whitelist}, 
-    msg::{InitMsg, QueryMsg, AdminsResponse, IsWhitelistedResponse, HandleMsg},
+    msgs::{AdminsResponse, ExecuteMsg, InitMsg, IsMemberResponse, QueryMsg},
+    // msg,
+    state::{Whitelist, WHITELIST},
 };
 
-
-pub const ADMIN_KEY: &[u8] = b"admin";
-pub const WHITELIST_KEY: &[u8] = b"whitelist";
-
-fn has_admin_power(deps: Deps, sender: &str) -> StdResult<bool> {
-    let whitelist = WHITELIST.load(deps.storage)?;
-    return Ok(whitelist.is_admin(sender));
+struct CanExecute {
+    can: bool,
+    whitelist: Whitelist,
 }
 
+fn can_execute(deps: Deps, sender: &str) -> StdResult<CanExecute> {
+    let whitelist = WHITELIST.load(deps.storage).unwrap();
+    return Ok(CanExecute {
+        can: whitelist.is_admin(sender),
+        whitelist,
+    });
+}
 
 #[entry_point]
-pub fn init(
+pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
@@ -58,42 +56,36 @@ pub fn init(
 }
 
 #[entry_point]
-pub fn handle(
+pub fn execute(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    msg: HandleMsg,
+    msg: ExecuteMsg,
 ) -> StdResult<Response> {
-    let admin: Addr = Addr::unchecked(
-        String::from_utf8(deps.storage.get(ADMIN_KEY).unwrap_or_default()).unwrap(),
-    );
+    let deps_for_check = &deps;
+    let admin_check: CanExecute =
+        can_execute(deps_for_check.as_ref(), &info.sender.to_string())?;
+    let ok = admin_check.can;
+    let mut whitelist = admin_check.whitelist;
 
-    if info.sender != admin {
+    if !ok {
         return Err(cosmwasm_std::StdError::generic_err("unauthorized"));
     }
 
     match msg {
-        HandleMsg::Add { address } => {
-            //  TODO
-            // let key: &[u8] = WHITELIST_KEY;
-            // let old_whitelist  = match deps.storage.get(key) {
-            //     Some(list_bz) => {
-            //         let whitelist: Vec<String> = from_slice(&list_bz)?;
-            //         Ok(Some(whitelist))
-            //     },
-            //     None => Ok(None),
-            // };
-
-            // old_whitelist.push(address);
-            // deps.storage.set(format!("{}{}", String::from_utf8_lossy(WHITELIST_KEY), address).as_bytes(), &[]);
+        ExecuteMsg::Add { address } => {
+            let api = deps.api;
+            let addr = api.addr_validate(address.as_str()).unwrap();
+            whitelist.admins.insert(addr.into_string());
+            WHITELIST.save(deps.storage, &whitelist)?;
             Ok(Response::new().add_attributes(vec![
                 attr("action", "add"),
                 attr("address", address),
             ]))
         }
-        HandleMsg::Remove { address } => {
-            // TODO use cw-storage-plus.
-            // deps.storage.remove(format!("{}{}", String::from_utf8_lossy(WHITELIST_KEY), address).as_bytes());
+        ExecuteMsg::Remove { address } => {
+            whitelist.admins.remove(address.as_str());
+            WHITELIST.save(deps.storage, &whitelist)?;
             Ok(Response::new().add_attributes(vec![
                 attr("action", "remove"),
                 attr("address", address),
@@ -103,20 +95,16 @@ pub fn handle(
 }
 
 #[entry_point]
-pub fn query(
-    deps: Deps,
-    _env: Env,
-    msg: QueryMsg,
-) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::IsWhitelisted { address } => {
-            let is_whitelisted = deps.storage.get(
-                format!("{}{}", String::from_utf8_lossy(WHITELIST_KEY), address).as_bytes()).is_some();
-            let res = IsWhitelistedResponse { is_whitelisted };
+        QueryMsg::IsMember { address } => {
+            let whitelist = WHITELIST.load(deps.storage)?;
+            let is_member: bool = whitelist.is_member(&address);
+            let res = IsMemberResponse { is_member };
             cosmwasm_std::to_binary(&res)
         }
         QueryMsg::Admins {} => {
-            let whitelist = WHITELIST.load(deps.storage)?; 
+            let whitelist = WHITELIST.load(deps.storage)?;
             let admins: Vec<String> = whitelist.admins.into_iter().collect();
             let res = AdminsResponse { admins };
             cosmwasm_std::to_binary(&res)
@@ -124,57 +112,85 @@ pub fn query(
     }
 }
 
-
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
-        state::{WHITELIST, Whitelist}, 
-        msg::{InitMsg, QueryMsg, AdminsResponse, IsWhitelistedResponse, HandleMsg},
+        msgs::{ExecuteMsg, InitMsg},
+        state::WHITELIST,
     };
-    use crate::state::tests::init_mock_whitelist;
 
-    use cosmwasm_std::testing;
     use cosmwasm_std::coins;
+    use cosmwasm_std::{testing, Addr};
 
     // ---------------------------------------------------------------------------
     // Tests
     // ---------------------------------------------------------------------------
 
     #[test]
-    fn test_init() {
+    fn test_instantiate() {
         let mut deps = testing::mock_dependencies();
         let msg = InitMsg {
             admin: "admin".to_string(),
         };
-        let info: MessageInfo = testing::mock_info(
-            "addr0000", &coins(2, "token"));
+        let info: MessageInfo =
+            testing::mock_info("addr0000", &coins(2, "token"));
 
-        let result = init(
-            deps.as_mut(), testing::mock_env(), info, msg).unwrap();
-       assert_eq!(result.messages.len(), 0);
+        let result =
+            instantiate(deps.as_mut(), testing::mock_env(), info, msg).unwrap();
+        assert_eq!(result.messages.len(), 0);
     }
 
     #[test]
-    fn test_handle_unauthorized() {
+    fn test_has_admin_power() {
+        let admin = Addr::unchecked("admin");
+        let msg = &InitMsg {
+            admin: admin.to_string(),
+        };
+
+        let sender = "not-admin";
+        let mut deps = testing::mock_dependencies();
+        let msg_info = testing::mock_info(sender, &coins(2, "token"));
+        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg.clone()).unwrap();
+        let whitelist = WHITELIST.load(&deps.storage).unwrap();
+        let has: bool = whitelist.is_admin(sender);
+        assert!(!has);
+
+        let sender = "admin";
+        let mut deps = testing::mock_dependencies();
+        let msg_info = testing::mock_info(sender, &coins(2, "token"));
+        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg.clone()).unwrap();
+        let whitelist = WHITELIST.load(&deps.storage).unwrap();
+        let has: bool = whitelist.is_admin(sender);
+        assert!(has);
+    }
+
+    #[test]
+    fn test_execute_unauthorized() {
         let mut deps = testing::mock_dependencies();
         let admin = Addr::unchecked("admin");
 
-        let init_msg = InitMsg {
+        let msg = InitMsg {
             admin: admin.as_str().to_string(),
         };
-        let init_info = testing::mock_info("addr0000", &coins(2, "token"));
-        init(deps.as_mut(), testing::mock_env(), init_info, init_msg).unwrap();
+        let msg_info = testing::mock_info("addr0000", &coins(2, "token"));
+        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg).unwrap();
 
-        let handle_msg = msg::HandleMsg::Add {
+        let execute_msg = ExecuteMsg::Add {
             address: "addr0001".to_string(),
         };
         let unauthorized_info = testing::mock_info("unauthorized", &[]);
-        let result = handle(deps.as_mut(), testing::mock_env(), unauthorized_info, handle_msg);
+        let result = execute(
+            deps.as_mut(),
+            testing::mock_env(),
+            unauthorized_info,
+            execute_msg,
+        );
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_handle_add() {
+    fn test_execute_add() {
         // let mut deps = testing::mock_dependencies();
         // let admin = Addr::unchecked("admin");
 
@@ -184,25 +200,25 @@ mod tests {
         // let init_info = testing::mock_info("addr0000", &coins(2, "token"));
         // init(deps.as_mut(), testing::mock_env(), init_info, init_msg).unwrap();
 
-        // let handle_msg = HandleMsg::Add {
+        // let execute_msg = ExecuteMsg::Add {
         //     address: "addr0001".to_string(),
         // };
-        // let handle_info = testing::mock_info(admin.as_str(), &[]);
-        // let result = handle(deps.as_mut(), testing::mock_env(), handle_info, handle_msg).unwrap();
+        // let execute_info = testing::mock_info(admin.as_str(), &[]);
+        // let result = execute(deps.as_mut(), testing::mock_env(), execute_info, execute_msg).unwrap();
         // assert_eq!(result.messages.len(), 0);
         // assert_eq!(result.attributes.len(), 2);
 
-        // let query_msg = QueryMsg::IsWhitelisted {
+        // let query_msg = QueryMsg::IsMember {
         //     address: "addr0001".to_string(),
         // };
         // let binary = query(deps.as_ref(), testing::mock_env(), query_msg).unwrap();
-        // let response: IsWhitelistedResponse = cosmwasm_std::from_binary(&binary).unwrap();
-        // assert_eq!(response.is_whitelisted, true);
+        // let response: IsMemberResponse = cosmwasm_std::from_binary(&binary).unwrap();
+        // assert_eq!(response.is_member, true);
     }
 
     #[test]
-    fn test_handle_remove() {
-        let mut deps = testing::mock_dependencies();
+    fn test_execute_remove() {
+        let _deps = testing::mock_dependencies();
         // TODO test using cw-storage-plus
         // let admin = Addr::unchecked("admin");
 
@@ -212,25 +228,24 @@ mod tests {
         // let init_info = testing::mock_info("addr0000", &coins(2, "token"));
         // init(deps.as_mut(), testing::mock_env(), init_info, init_msg).unwrap();
 
-        // let handle_msg = msg::HandleMsg::Add {
+        // let execute_msg = msg::ExecuteMsg::Add {
         //     address: "addr0001".to_string(),
         // };
-        // let handle_info = testing::mock_info(admin.as_str(), &[]);
-        // handle(deps.as_mut(), testing::mock_env(), handle_info.clone(), handle_msg).unwrap();
+        // let execute_info = testing::mock_info(admin.as_str(), &[]);
+        // execute(deps.as_mut(), testing::mock_env(), execute_info.clone(), execute_msg).unwrap();
 
-        // let handle_msg = HandleMsg::Remove {
+        // let execute_msg = ExecuteMsg::Remove {
         //     address: "addr0001".to_string(),
         // };
-        // let result = handle(deps.as_mut(), testing::mock_env(), handle_info, handle_msg).unwrap();
+        // let result = execute(deps.as_mut(), testing::mock_env(), execute_info, execute_msg).unwrap();
         // assert_eq!(result.messages.len(), 0);
         // assert_eq!(result.attributes.len(), 2);
 
-        // let query_msg = QueryMsg::IsWhitelisted {
+        // let query_msg = QueryMsg::IsMember {
         //     address: "addr0001".to_string(),
         // };
         // let binary = query(deps.as_ref(), testing::mock_env(), query_msg).unwrap();
-        // let response: IsWhitelistedResponse = cosmwasm_std::from_binary(&binary).unwrap();
-        // assert_eq!(response.is_whitelisted, false);
+        // let response: IsMemberResponse = cosmwasm_std::from_binary(&binary).unwrap();
+        // assert_eq!(response.is_member, false);
     }
 }
-

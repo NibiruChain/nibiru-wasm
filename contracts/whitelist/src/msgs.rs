@@ -9,7 +9,7 @@ pub struct InitMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum HandleMsg {
+pub enum ExecuteMsg {
     Add { address: String },
     Remove { address: String },
 }
@@ -17,13 +17,14 @@ pub enum HandleMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    IsWhitelisted { address: String },
+    IsMember { address: String },
     Admins {},
+    // Members {}, // TODO
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct IsWhitelistedResponse {
-    pub is_whitelisted: bool,
+pub struct IsMemberResponse {
+    pub is_member: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
