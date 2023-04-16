@@ -3,9 +3,6 @@ use cw_storage_plus::{Index, IndexList, IndexedMap, Item, Map, MultiIndex};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-
-
-
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 pub struct Funding {
     pub id: u64,
@@ -53,7 +50,9 @@ pub struct FundingIndexes<'a> {
 }
 
 impl<'a> IndexList<Funding> for FundingIndexes<'a> {
-    fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<Funding>> + '_> {
+    fn get_indexes(
+        &'_ self,
+    ) -> Box<dyn Iterator<Item = &'_ dyn Index<Funding>> + '_> {
         let v: Vec<&dyn Index<Funding>> = vec![&self.pay_from_epoch];
         Box::new(v.into_iter())
     }
@@ -62,7 +61,9 @@ impl<'a> IndexList<Funding> for FundingIndexes<'a> {
 pub fn funding<'a>() -> IndexedMap<'a, u64, Funding, FundingIndexes<'a>> {
     let indexes = FundingIndexes {
         pay_from_epoch: MultiIndex::new(
-            |_bz, funding: &Funding| -> (_, _) { (funding.program_id, funding.pay_from_epoch) },
+            |_bz, funding: &Funding| -> (_, _) {
+                (funding.program_id, funding.pay_from_epoch)
+            },
             "funding",
             "pay_from_epoch",
         ),
