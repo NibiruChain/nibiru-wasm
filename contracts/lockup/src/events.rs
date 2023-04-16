@@ -10,7 +10,11 @@ pub fn new_coins_locked_event(id: u64, coin: &Coin) -> Event {
         .add_attribute("coins", coin.to_string())
 }
 
-pub fn new_unlock_initiation_event(id: u64, coin: &Coin, unlock_block: u64) -> Event {
+pub fn new_unlock_initiation_event(
+    id: u64,
+    coin: &Coin,
+    unlock_block: u64,
+) -> Event {
     Event::new(UNLOCK_INITIATION_EVENT_NAME)
         .add_attribute("id", id.to_string())
         .add_attribute("coins", coin.to_string())
