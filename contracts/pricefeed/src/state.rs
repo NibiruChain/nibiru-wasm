@@ -1,12 +1,10 @@
 use cosmwasm_std::{Addr, Decimal, Empty, Timestamp};
-use cw_storage_plus::{
-    Map,
-};
+use cw_storage_plus::Map;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-
-pub const ORACLE_PAIR_WHITELIST: Map<(String, &Addr), Empty> = Map::new("oracle_pair_whitelist");
+pub const ORACLE_PAIR_WHITELIST: Map<(String, &Addr), Empty> =
+    Map::new("oracle_pair_whitelist");
 pub const ACTIVE_PAIRS: Map<String, Empty> = Map::new("active_pairs");
 pub const RAW_PRICES: Map<(String, &Addr), PostedPrice> = Map::new("raw_prices");
 pub const CURRENT_PRICES: Map<String, Decimal> = Map::new("current_prices");

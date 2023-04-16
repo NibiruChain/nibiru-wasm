@@ -3,19 +3,16 @@ use crate::error::ContractError;
 use crate::events::{new_incentives_program_event, new_program_funding};
 use crate::msgs::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{
-    funding, EpochInfo, Funding, Program, EPOCH_INFO, FUNDING_ID, LAST_EPOCH_PROCESSED,
-    LOCKUP_ADDR, PROGRAMS, PROGRAMS_ID, WITHDRAWALS,
+    funding, EpochInfo, Funding, Program, EPOCH_INFO, FUNDING_ID,
+    LAST_EPOCH_PROCESSED, LOCKUP_ADDR, PROGRAMS, PROGRAMS_ID, WITHDRAWALS,
 };
 use cosmwasm_std::{
-    to_binary, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Order,
-    Response, StdResult, Uint128,
+    to_binary, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env, MessageInfo,
+    Order, Response, StdResult, Uint128,
 };
 use cw_storage_plus::Bound;
 use lockup::msgs::QueryMsg as LockupQueryMsg;
-use lockup::state::{Lock};
-
-
-
+use lockup::state::Lock;
 
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
@@ -31,7 +28,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::EpochInfo {
             program_id,
             epoch_number,
-        } => to_binary(&EPOCH_INFO.load(deps.storage, (program_id, epoch_number))?),
+        } => to_binary(
+            &EPOCH_INFO.load(deps.storage, (program_id, epoch_number))?,
+        ),
     }
 }
 
@@ -56,7 +55,7 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    return match msg {
+    match msg {
         ExecuteMsg::CreateProgram {
             denom,
             epochs,
@@ -72,14 +71,20 @@ pub fn execute(
             min_lockup_blocks,
         ),
 
-        ExecuteMsg::FundProgram { id } => execute_fund_program(deps, env, info, id),
+        ExecuteMsg::FundProgram { id } => {
+            execute_fund_program(deps, env, info, id)
+        }
 
-        ExecuteMsg::ProcessEpoch { id } => execute_process_epoch(deps, env, info, id),
+        ExecuteMsg::ProcessEpoch { id } => {
+            execute_process_epoch(deps, env, info, id)
+        }
 
-        ExecuteMsg::WithdrawRewards { id } => execute_withdraw_rewards(deps, env, info, id),
+        ExecuteMsg::WithdrawRewards { id } => {
+            execute_withdraw_rewards(deps, env, info, id)
+        }
 
         _ => Err(ContractError::NotImplemented),
-    };
+    }
 }
 
 fn execute_fund_program(
@@ -88,7 +93,7 @@ fn execute_fund_program(
     info: MessageInfo,
     program_id: u64,
 ) -> Result<Response, ContractError> {
-    if info.funds.len() == 0 {
+    if info.funds.is_empty() {
         return Err(ContractError::FundsRequired);
     }
 
@@ -106,7 +111,8 @@ fn execute_fund_program(
     // prepare response event before
     // so we can avoid to copy funds
     // due to funds being moved
-    let response = Response::new().add_event(new_program_funding(program_id, &info.funds));
+    let response =
+        Response::new().add_event(new_program_funding(program_id, &info.funds));
 
     // update funding associated with the program id for this block
     let pay_from_epoch = calc_epoch_to_pay_from(env.block.height, &program);
@@ -147,7 +153,7 @@ fn execute_create_program(
     min_lockup_blocks: u64,
 ) -> Result<Response, ContractError> {
     let id = PROGRAMS_ID
-        .update(deps.storage, |id| -> StdResult<u64> { return Ok(id + 1) })
+        .update(deps.storage, |id| -> StdResult<u64> { Ok(id + 1) })
         .unwrap();
 
     let program = Program {
@@ -182,8 +188,10 @@ fn execute_withdraw_rewards(
                 WITHDRAWALS
                     .load(deps.storage, (program_id, info.sender.clone()))
                     .map_or_else(
-                        |_| -> Bound<'_, _> { Bound::inclusive(0 as u64) },
-                        |last_withdrawal| -> Bound<'_, _> { Bound::exclusive(last_withdrawal) },
+                        |_| -> Bound<'_, _> { Bound::inclusive(0_u64) },
+                        |last_withdrawal| -> Bound<'_, _> {
+                            Bound::exclusive(last_withdrawal)
+                        },
                     ),
             ),
             None,
@@ -221,7 +229,8 @@ fn execute_withdraw_rewards(
             "qualified locked amount: {:?}, {:?}",
             qualified_locked_amount, env.block.height
         );
-        let user_ownership_ratio = Decimal::from_ratio(qualified_locked_amount, epoch.total_locked);
+        let user_ownership_ratio =
+            Decimal::from_ratio(qualified_locked_amount, epoch.total_locked);
         println!("ownership ratio: {:?}", user_ownership_ratio.to_string());
         for coin in epoch.to_distribute {
             add_coins(
@@ -262,13 +271,16 @@ fn execute_process_epoch(
     program_id: u64,
 ) -> Result<Response, ContractError> {
     let program = PROGRAMS.load(deps.storage, program_id)?;
-    let epoch_to_process =
-        LAST_EPOCH_PROCESSED.update(deps.storage, program_id, |epoch| -> StdResult<u64> {
+    let epoch_to_process = LAST_EPOCH_PROCESSED.update(
+        deps.storage,
+        program_id,
+        |epoch| -> StdResult<u64> {
             // if this is the first time processing the epoch
             // then the identifier is 1. Then we increase each time
             // by 1 sequentially.
             Ok(epoch.unwrap_or_default() + 1)
-        })?;
+        },
+    )?;
 
     if epoch_to_process > program.epochs {
         return Err(ContractError::EpochOutOfBounds(
@@ -278,7 +290,8 @@ fn execute_process_epoch(
     }
 
     // we get at which block the epoch should be processed
-    let epoch_process_block = program.start_block + (epoch_to_process * program.epoch_duration);
+    let epoch_process_block =
+        program.start_block + (epoch_to_process * program.epoch_duration);
     // epochs can be processed after the end of the epoch process block
     if env.block.height <= epoch_process_block {
         return Err(ContractError::EpochProcessBlock(
@@ -288,7 +301,8 @@ fn execute_process_epoch(
         ));
     }
 
-    let lockup_qualification_block = epoch_process_block + program.min_lockup_duration_blocks;
+    let lockup_qualification_block =
+        epoch_process_block + program.min_lockup_duration_blocks;
 
     // the concept of epoch processing is quite straight forward
     // we just need to know which addresses hadn't withdrawn
@@ -345,7 +359,11 @@ fn execute_process_epoch(
         total_locked,
     };
 
-    EPOCH_INFO.save(deps.storage, (program_id, epoch_to_process), &epoch_info)?;
+    EPOCH_INFO.save(
+        deps.storage,
+        (program_id, epoch_to_process),
+        &epoch_info,
+    )?;
 
     Ok(Response::new().set_data(to_binary(&epoch_info)?)) // TODO: don't like
 }
