@@ -1,4 +1,4 @@
-use cosmwasm_std::{StdError};
+use cosmwasm_std::StdError;
 #[cfg(feature = "backtraces")]
 use std::backtrace::Backtrace;
 
@@ -27,6 +27,8 @@ pub enum ContractError {
     #[error("epoch {0} for program {1} can be processed after block {2}")]
     EpochProcessBlock(u64, u64, u64),
 
-    #[error("incentives program has finished at block {1} (current block: {2}): {0}")]
+    #[error(
+        "incentives program has finished at block {1} (current block: {2}): {0}"
+    )]
     ProgramFinished(u64, u64, u64),
 }

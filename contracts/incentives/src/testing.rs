@@ -3,7 +3,7 @@ mod integration_test {
     use crate::contract::{execute, instantiate, query};
     use crate::msgs::{ExecuteMsg, InstantiateMsg, QueryMsg};
     use crate::state::{EpochInfo, Funding};
-    
+
     use cosmwasm_std::{from_binary, Addr, Coin};
     use cw_multi_test::{App, BankSudo, Contract, ContractWrapper, Executor};
 
@@ -32,7 +32,11 @@ mod integration_test {
         .unwrap();
     }
 
-    fn fund_program(app: &mut App, _program_id: u64, coins: &[Coin]) -> Vec<Coin> {
+    fn fund_program(
+        app: &mut App,
+        _program_id: u64,
+        coins: &[Coin],
+    ) -> Vec<Coin> {
         app.execute_contract(
             Addr::unchecked(ROOT),
             Addr::unchecked(INCENTIVES),
@@ -67,7 +71,11 @@ mod integration_test {
         .unwrap();
     }
 
-    fn withdraw_rewards(app: &mut App, user: &Addr, _program_id: u64) -> Vec<Coin> {
+    fn withdraw_rewards(
+        app: &mut App,
+        user: &Addr,
+        _program_id: u64,
+    ) -> Vec<Coin> {
         app.execute_contract(
             user.clone(),
             Addr::unchecked(INCENTIVES),
@@ -115,7 +123,8 @@ mod integration_test {
         )
         .unwrap();
 
-        let incentives_contract = Box::new(ContractWrapper::new(execute, instantiate, query));
+        let incentives_contract =
+            Box::new(ContractWrapper::new(execute, instantiate, query));
         let code = app.store_code(incentives_contract);
         app.instantiate_contract(
             code,
@@ -165,7 +174,10 @@ mod integration_test {
 
         let funding: Vec<Funding> = app
             .wrap()
-            .query_wasm_smart(INCENTIVES, &QueryMsg::ProgramFunding { program_id: 1 })
+            .query_wasm_smart(
+                INCENTIVES,
+                &QueryMsg::ProgramFunding { program_id: 1 },
+            )
             .unwrap();
         println!("{:?}", funding);
 

@@ -1,0 +1,25 @@
+{
+  "name": "cw-nibiru",
+  "description": "package.json to use as a makefile",
+  "scripts": {
+    "fmt": "cargo fmt --all", 
+    "fmt:check": "cargo fmt --all -- --check ", 
+    "build": "cargo build", 
+    "clean": "cargo clean", 
+    "clippy": "cargo clippy --fix --allow-dirty", 
+    "clippy:check": "cargo clippy",
+    "tidy": "yarn build && yarn fmt && yarn clippy",
+    "wasm": "sh wasm-out.sh",
+    "wasm:single": "sh wasm-out.sh --single"
+  },
+  "scriptsComments": {
+    "fmt": "runs rustfmt on all Rust code and fixes it", 
+    "fmt:check": "runs rustfmt without updating", 
+    "build": "compiles Rust", 
+    "clean": "cleans the dependencies", 
+    "clippy": "TODO", 
+    "clippy:check": "TODO",
+    "wasm": "Compiles all CW contracts to wasm bytecode",
+    "wasm:single": "Compiles a single CW contract to wasm bytecode"
+  }
+}

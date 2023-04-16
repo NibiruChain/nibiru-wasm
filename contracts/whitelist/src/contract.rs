@@ -34,10 +34,10 @@ struct CanExecute {
 
 fn can_execute(deps: Deps, sender: &str) -> StdResult<CanExecute> {
     let whitelist = WHITELIST.load(deps.storage).unwrap();
-    return Ok(CanExecute {
+    Ok(CanExecute {
         can: whitelist.is_admin(sender),
         whitelist,
-    });
+    })
 }
 
 #[entry_point]
@@ -49,7 +49,7 @@ pub fn instantiate(
 ) -> StdResult<Response> {
     let whitelist = Whitelist {
         members: HashSet::new(),
-        admins: HashSet::from_iter(vec![msg.admin.to_string()]),
+        admins: HashSet::from_iter(vec![msg.admin]),
     };
     WHITELIST.save(deps.storage, &whitelist)?;
     Ok(Response::default())
@@ -64,7 +64,7 @@ pub fn execute(
 ) -> StdResult<Response> {
     let deps_for_check = &deps;
     let admin_check: CanExecute =
-        can_execute(deps_for_check.as_ref(), &info.sender.to_string())?;
+        can_execute(deps_for_check.as_ref(), info.sender.as_ref())?;
     let ok = admin_check.can;
     let mut whitelist = admin_check.whitelist;
 
@@ -99,7 +99,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::IsMember { address } => {
             let whitelist = WHITELIST.load(deps.storage)?;
-            let is_member: bool = whitelist.is_member(&address);
+            let is_member: bool = whitelist.is_member(address);
             let res = IsMemberResponse { is_member };
             cosmwasm_std::to_binary(&res)
         }
@@ -151,7 +151,8 @@ mod tests {
         let sender = "not-admin";
         let mut deps = testing::mock_dependencies();
         let msg_info = testing::mock_info(sender, &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg.clone()).unwrap();
+        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg.clone())
+            .unwrap();
         let whitelist = WHITELIST.load(&deps.storage).unwrap();
         let has: bool = whitelist.is_admin(sender);
         assert!(!has);
@@ -159,7 +160,8 @@ mod tests {
         let sender = "admin";
         let mut deps = testing::mock_dependencies();
         let msg_info = testing::mock_info(sender, &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg.clone()).unwrap();
+        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg.clone())
+            .unwrap();
         let whitelist = WHITELIST.load(&deps.storage).unwrap();
         let has: bool = whitelist.is_admin(sender);
         assert!(has);
