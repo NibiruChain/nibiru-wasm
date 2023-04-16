@@ -34,7 +34,7 @@ impl TryFrom<String> for AssetPair {
 
 impl AssetPair {
     pub fn new(token0: String, token1: String) -> Self {
-        return Self { token0, token1 };
+        Self { token0, token1 }
     }
     pub fn inverse(&self) -> Self {
         Self {
