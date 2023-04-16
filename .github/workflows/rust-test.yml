@@ -27,4 +27,26 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
       - name: Run tests
-        run: cargo test --package whitelist --verbose
+        # Test all packages
+        run: cargo test --all --verbose 
+        # Test single package (e.g. contracts/whitelist)
+        # run: cargo test --package whitelist --verbose 
+
+  rust-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v2
+      - name: Set up Rust caches
+        uses: actions/cache@v2
+        id: rust-cache
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+      - name: Compile all Rust code in workspace
+        run: cargo build
