@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Coin, CosmosMsg, Decimal, Uint128, CustomMsg};
+use cosmwasm_std::{Coin, CosmosMsg, CustomMsg, Decimal, Uint128};
 
 #[cw_serde]
 pub struct InstantiateMsg {}
@@ -17,7 +17,7 @@ pub struct NibiruExecuteMsgWrapper {
 
 impl CustomMsg for NibiruExecuteMsgWrapper {}
 
-/// "From" is the workforce function for returning messages as fields of the 
+/// "From" is the workforce function for returning messages as fields of the
 /// CosmosMsg enum type more easily.
 impl From<NibiruExecuteMsgWrapper> for CosmosMsg<NibiruExecuteMsgWrapper> {
     fn from(original: NibiruExecuteMsgWrapper) -> Self {

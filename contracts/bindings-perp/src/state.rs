@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Uint64, Decimal, Uint256, Coin};
+use cosmwasm_std::{Addr, Coin, Decimal, Uint256, Uint64};
 use cw_utils::Duration;
 
 #[cw_serde]
@@ -14,7 +14,6 @@ pub struct Position {
     latest_cpf: Decimal,
     block_number: Uint64,
 }
-
 
 #[cw_serde]
 pub struct Market {

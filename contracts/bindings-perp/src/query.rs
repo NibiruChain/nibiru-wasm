@@ -1,12 +1,14 @@
-use std::collections::{HashMap};
+use std::collections::HashMap;
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal, Uint256, Uint64, CustomQuery};
+use cosmwasm_std::{CustomQuery, Decimal, Uint256, Uint64};
 
-use crate::state::{Market, Position, ModuleParams, Metrics, ModuleAccountWithBalance};
+use crate::state::{
+    Market, Metrics, ModuleAccountWithBalance, ModuleParams, Position,
+};
 
 // Implement cosmwasm_std::CustomQuery interface
-impl CustomQuery for NibiruQuery {} 
+impl CustomQuery for NibiruQuery {}
 
 #[cw_serde]
 #[derive(QueryResponses)]
@@ -51,7 +53,7 @@ pub enum NibiruQuery {
 
 #[cw_serde]
 pub struct AllMarketsResponse {
-    pub market_map: HashMap<String, Market>
+    pub market_map: HashMap<String, Market>,
 }
 
 #[cw_serde]
@@ -103,5 +105,5 @@ pub struct MetricsResponse {
 
 #[cw_serde]
 pub struct ModuleAccountsResponse {
-    pub module_accounts: HashMap<String, ModuleAccountWithBalance>
+    pub module_accounts: HashMap<String, ModuleAccountWithBalance>,
 }

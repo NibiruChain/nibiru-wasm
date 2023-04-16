@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     entry_point, to_binary, Binary, CosmosMsg, CustomMsg, Deps, DepsMut, Env,
-    MessageInfo, Response, StdResult
+    MessageInfo, Response, StdResult,
 };
 use cw2::set_contract_version;
 
@@ -25,9 +25,9 @@ pub fn instantiate(
     _msg: InstantiateMsg,
 ) -> StdResult<Response> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    return Ok(Response::new()
+    Ok(Response::new()
         .add_attribute("action", "instantiate")
-        .add_attribute("owner", info.sender));
+        .add_attribute("owner", info.sender))
 }
 
 /// These need not be the same. QueryMsg specifies a contract and module-specific
