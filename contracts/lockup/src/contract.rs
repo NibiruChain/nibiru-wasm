@@ -1,12 +1,13 @@
 use crate::error::ContractError;
 use crate::events::{
-    new_coins_locked_event, new_funds_withdrawn_event, new_unlock_initiation_event,
+    new_coins_locked_event, new_funds_withdrawn_event,
+    new_unlock_initiation_event,
 };
 use crate::msgs::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{locks, Lock, LOCKS_ID, NOT_UNLOCKING_BLOCK_IDENTIFIER};
 use cosmwasm_std::{
-    to_binary, BankMsg, Binary, Deps, DepsMut, Env, Event, MessageInfo, Order, Response, StdResult,
-    Storage,
+    to_binary, BankMsg, Binary, Deps, DepsMut, Env, Event, MessageInfo, Order,
+    Response, StdResult, Storage,
 };
 use cw_storage_plus::Bound;
 
@@ -28,16 +29,14 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Lock { blocks } => {
-            return execute_lock(deps, env, info, blocks);
-        }
+        ExecuteMsg::Lock { blocks } => execute_lock(deps, env, info, blocks),
 
         ExecuteMsg::InitiateUnlock { id } => {
-            return execute_initiate_unlock(deps, env, info, id);
+            execute_initiate_unlock(deps, env, info, id)
         }
 
         ExecuteMsg::WithdrawFunds { id } => {
-            return execute_withdraw_funds(deps, env, info, id);
+            execute_withdraw_funds(deps, env, info, id)
         }
     }
 }
@@ -51,21 +50,22 @@ pub(crate) fn execute_withdraw_funds(
     let locks = locks();
 
     // we update the lock to mark funds have been withdrawn
-    let lock = locks.update(deps.storage, id, |lock| -> Result<_, ContractError> {
-        let mut lock = lock.ok_or(ContractError::NotFound(id))?;
+    let lock =
+        locks.update(deps.storage, id, |lock| -> Result<_, ContractError> {
+            let mut lock = lock.ok_or(ContractError::NotFound(id))?;
 
-        if lock.funds_withdrawn {
-            return Err(ContractError::FundsAlreadyWithdrawn(id));
-        }
+            if lock.funds_withdrawn {
+                return Err(ContractError::FundsAlreadyWithdrawn(id));
+            }
 
-        if lock.end_block < env.block.height {
-            return Err(ContractError::NotMatured(id));
-        }
+            if lock.end_block < env.block.height {
+                return Err(ContractError::NotMatured(id));
+            }
 
-        lock.funds_withdrawn = true;
+            lock.funds_withdrawn = true;
 
-        Ok(lock)
-    })?;
+            Ok(lock)
+        })?;
 
     Ok(Response::new()
         .add_event(new_funds_withdrawn_event(id, &lock.coin))
@@ -84,17 +84,22 @@ pub(crate) fn execute_initiate_unlock(
     let locks = locks();
 
     // initiate unlock
-    let lock = locks.update(deps.storage, id, |lock| -> Result<_, ContractError> {
-        let mut lock = lock.ok_or(ContractError::NotFound(id))?;
-        if lock.end_block != NOT_UNLOCKING_BLOCK_IDENTIFIER {
-            return Err(ContractError::AlreadyUnlocking(id));
-        }
-        lock.end_block = env.block.height + lock.duration_blocks;
-        Ok(lock)
-    })?;
+    let lock =
+        locks.update(deps.storage, id, |lock| -> Result<_, ContractError> {
+            let mut lock = lock.ok_or(ContractError::NotFound(id))?;
+            if lock.end_block != NOT_UNLOCKING_BLOCK_IDENTIFIER {
+                return Err(ContractError::AlreadyUnlocking(id));
+            }
+            lock.end_block = env.block.height + lock.duration_blocks;
+            Ok(lock)
+        })?;
 
     // emit unlock initiation event
-    Ok(Response::new().add_event(new_unlock_initiation_event(id, &lock.coin, lock.end_block)))
+    Ok(Response::new().add_event(new_unlock_initiation_event(
+        id,
+        &lock.coin,
+        lock.end_block,
+    )))
 }
 
 pub(crate) fn execute_lock(
@@ -123,7 +128,7 @@ pub(crate) fn execute_lock(
         }
 
         let id = LOCKS_ID
-            .update(deps.storage, |id| -> StdResult<_> { return Ok(id + 1) })
+            .update(deps.storage, |id| -> StdResult<_> { Ok(id + 1) })
             .expect("must never fail");
 
         locks
@@ -131,7 +136,7 @@ pub(crate) fn execute_lock(
                 deps.storage,
                 id,
                 &Lock {
-                    id: id,
+                    id,
                     coin: coin.clone(),
                     owner: info.sender.clone(),
                     duration_blocks: blocks,
@@ -167,7 +172,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 )
                 .map(|lock| -> Lock { lock.unwrap().1 })
                 .filter(|lock| -> bool {
-                    if env.block.height + lock.duration_blocks <= unlocking_after {
+                    if env.block.height + lock.duration_blocks <= unlocking_after
+                    {
                         return false;
                     }
                     true
@@ -192,7 +198,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 .map(|lock| -> Lock { lock.unwrap().1 })
                 .filter(|lock| -> bool {
                     // TODO: make this more efficient by indexing this in state
-                    if env.block.height + lock.duration_blocks <= unlocking_after {
+                    if env.block.height + lock.duration_blocks <= unlocking_after
+                    {
                         return false;
                     }
                     true
@@ -217,7 +224,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 )
                 .map(|lock| -> Lock { lock.unwrap().1 })
                 .filter(|lock| -> bool {
-                    return env.block.height + lock.duration_blocks > unlocking_after;
+                    env.block.height + lock.duration_blocks > unlocking_after
                 })
                 .collect::<Vec<Lock>>(),
         )?),
@@ -249,13 +256,16 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 #[cfg(test)]
 mod tests {
+
     use crate::contract::{execute_lock, instantiate, query};
     use crate::msgs::{InstantiateMsg, QueryMsg};
-    use crate::state::{Lock};
+    use crate::state::Lock;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    
+
     use cosmwasm_std::{from_binary, Addr, Coin, DepsMut, Env};
 
+    /// A 'TestLock' is struct representating an "owner" locking "coins" for
+    /// some "duration".
     struct TestLock {
         owner: Addr,
         duration: u64,
@@ -263,9 +273,11 @@ mod tests {
     }
 
     fn init(deps: DepsMut) {
-        instantiate(deps, mock_env(), mock_info("none", &[]), InstantiateMsg {}).unwrap();
+        instantiate(deps, mock_env(), mock_info("none", &[]), InstantiateMsg {})
+            .unwrap();
     }
 
+    /// Calls execute_lock on the given test lock.
     fn create_lock(deps: DepsMut, env: &Env, lock: &TestLock) {
         execute_lock(
             deps,
@@ -274,6 +286,27 @@ mod tests {
             lock.duration,
         )
         .unwrap();
+    }
+
+    /// msg: The query message, which is assumped to return a "Vec<Lock>" after
+    ///     unwrapping the binary into a concrete type.
+    /// coins (Vec<Coin>): the expected coins on the lock returned by the query.
+    fn test_query_locks_for_coins(
+        msg: &QueryMsg,
+        coins: &Vec<Coin>,
+        deps: DepsMut,
+        env: Env,
+    ) {
+        assert_eq!(
+            coins.clone(),
+            from_binary::<Vec<Lock>>(
+                &query(deps.as_ref(), env, msg.clone()).unwrap()
+            )
+            .unwrap()
+            .iter()
+            .map(|lock| -> Coin { lock.coin.clone() })
+            .collect::<Vec<Coin>>()
+        );
     }
 
     #[test]
@@ -292,55 +325,87 @@ mod tests {
         let lock_2 = TestLock {
             owner: Addr::unchecked("bob"),
             duration: 50,
-            coins: vec![Coin::new(200, "ATOM"), Coin::new(700, "OSMO")],
+            coins: vec![Coin::new(200, "ATOM"), Coin::new(700, "NIBI")],
         };
-
         create_lock(deps.as_mut(), &env, &lock_1);
         create_lock(deps.as_mut(), &env, &lock_2);
 
-        assert_eq!(
-            vec![Coin::new(100, "ATOM"), Coin::new(200, "ATOM")],
-            from_binary::<Vec<Lock>>(
-                &query(
-                    deps.as_ref(),
-                    env.clone(),
-                    QueryMsg::LocksByDenomUnlockingAfter {
-                        denom: "ATOM".to_string(),
-                        unlocking_after: 1_000_000
-                    }
-                )
-                .unwrap()
-            )
-            .unwrap()
-            .iter()
-            .map(|lock| -> Coin { lock.coin.clone() })
-            .collect::<Vec<Coin>>()
-        );
+        // QueryMsg::LocksByDenomUnlockingAfter should should the full lock.coin
+        // amounts if unlocking_after is zero.
+        // let unlocking_after = 0;
+        struct CaseLocksByDenomUnlockingAfter {
+            msg: QueryMsg,
+            coins: Vec<Coin>,
+        }
+        let mut cases: Vec<CaseLocksByDenomUnlockingAfter> = Vec::new();
+        let unlocking_after = 0;
+        let denom = "ATOM";
+        cases.push(CaseLocksByDenomUnlockingAfter {
+            msg: QueryMsg::LocksByDenomUnlockingAfter {
+                denom: denom.to_string(),
+                unlocking_after,
+            },
+            coins: vec![Coin::new(100, denom), Coin::new(200, denom)],
+        });
+        cases.push(CaseLocksByDenomUnlockingAfter {
+            msg: QueryMsg::LocksByDenomAndAddressUnlockingAfter {
+                denom: denom.to_string(),
+                unlocking_after: 0,
+                address: lock_1.owner.clone(),
+            },
+            coins: vec![Coin::new(100, denom)],
+        });
+        cases.push(CaseLocksByDenomUnlockingAfter {
+            msg: QueryMsg::LocksByDenomAndAddressUnlockingAfter {
+                denom: denom.to_string(),
+                unlocking_after: 0,
+                address: lock_2.owner.clone(),
+            },
+            coins: vec![Coin::new(200, denom)],
+        });
 
-        assert_eq!(
-            vec![Coin::new(100, "ATOM")],
-            from_binary::<Vec<Lock>>(
-                &query(
-                    deps.as_ref(),
-                    env.clone(),
-                    QueryMsg::LocksByDenomAndAddressUnlockingAfter {
-                        denom: "ATOM".to_string(),
-                        unlocking_after: 1_000_000,
-                        address: lock_1.owner,
-                    }
-                )
-                .unwrap()
-            )
-            .unwrap()
-            .iter()
-            .map(|lock| -> Coin { lock.coin.clone() })
-            .collect::<Vec<Coin>>()
-        )
-    }
+        let denom = "LUNA";
+        cases.push(CaseLocksByDenomUnlockingAfter {
+            msg: QueryMsg::LocksByDenomUnlockingAfter {
+                denom: denom.to_string(),
+                unlocking_after,
+            },
+            coins: vec![Coin::new(300, denom)],
+        });
 
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
+        let denom = "NIBI";
+        cases.push(CaseLocksByDenomUnlockingAfter {
+            msg: QueryMsg::LocksByDenomUnlockingAfter {
+                denom: denom.to_string(),
+                unlocking_after,
+            },
+            coins: vec![Coin::new(700, denom)],
+        });
+
+        cases.push(CaseLocksByDenomUnlockingAfter {
+            msg: QueryMsg::LocksByDenomAndAddressUnlockingAfter {
+                denom: denom.to_string(),
+                unlocking_after,
+                address: lock_1.owner,
+            },
+            coins: vec![],
+        });
+        cases.push(CaseLocksByDenomUnlockingAfter {
+            msg: QueryMsg::LocksByDenomAndAddressUnlockingAfter {
+                denom: denom.to_string(),
+                unlocking_after,
+                address: lock_2.owner,
+            },
+            coins: vec![Coin::new(700, denom)],
+        });
+
+        for case in &cases {
+            test_query_locks_for_coins(
+                &case.msg,
+                &case.coins,
+                deps.as_mut(),
+                env.clone(),
+            )
+        }
     }
 }
