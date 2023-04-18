@@ -107,3 +107,54 @@ pub struct MetricsResponse {
 pub struct ModuleAccountsResponse {
     pub module_accounts: HashMap<String, ModuleAccountWithBalance>,
 }
+
+#[cfg(test)]
+pub mod dummy {
+    use std::{
+        collections::{HashMap, HashSet},
+        str::FromStr,
+    };
+
+    use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
+    use cw_utils::Duration;
+
+    use crate::{
+        query::{
+            AllMarketsResponse, BasePriceResponse, MetricsResponse,
+            ModuleAccountsResponse, ModuleParamsResponse, PositionResponse,
+            PositionsResponse, PremiumFractionResponse, ReservesResponse,
+        },
+        state::{Metrics, ModuleAccountWithBalance, ModuleParams, Position},
+    };
+
+    pub fn dec_420() -> Decimal {
+        Decimal::from_str("420").unwrap()
+    }
+    pub fn dec_69() -> Decimal {
+        Decimal::from_str("69").unwrap()
+    }
+
+    pub fn all_markets_response() -> AllMarketsResponse {
+        AllMarketsResponse {
+            market_map: HashMap::new(),
+        }
+    }
+
+    pub fn reserves_response() -> ReservesResponse {
+        ReservesResponse {
+            pair: "ETH:USD".to_string(),
+            base_reserve: dec_420(),
+            quote_reserve: dec_69(),
+        }
+    }
+
+    pub fn base_price_response() -> BasePriceResponse {
+        BasePriceResponse {
+            pair: "ETH:USD".to_string(),
+            base_amount: Decimal::one(),
+            quote_amount: dec_420(),
+            is_long: false,
+        }
+    }
+
+}
