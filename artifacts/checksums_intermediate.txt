@@ -1,0 +1,5 @@
+4cb228cff24b35c57c4f8ffa1de994d2fbe1330781253b10769c6834a32495d2  target/wasm32-unknown-unknown/release/bindings_perp.wasm
+c45d9a9efb916f1ec979fcd26570837d6dcf22e37a705dd6a0bd88d112cf70ac  target/wasm32-unknown-unknown/release/incentives.wasm
+55ac157ee21c7505d60905064913d78673634bb45ef31b18d5d22e92495a77bd  target/wasm32-unknown-unknown/release/lockup.wasm
+55ac157ee21c7505d60905064913d78673634bb45ef31b18d5d22e92495a77bd  target/wasm32-unknown-unknown/release/pricefeed.wasm
+c62acf2579f8331a2224f2fc134398404bfa59bd24a84d783ed8ded2de7b2b19  target/wasm32-unknown-unknown/release/whitelist.wasm
