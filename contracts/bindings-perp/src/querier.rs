@@ -122,4 +122,40 @@ mod tests {
         }
     }
 
+    pub fn mock_query_execute(
+        query_msg: &NibiruQuery,
+    ) -> ContractResult<Binary> {
+        match query_msg {
+            NibiruQuery::AllMarkets {} => {
+                to_binary(&dummy::all_markets_response()).into()
+            }
+            NibiruQuery::BasePrice {
+                pair: _,
+                is_long: _,
+                base_amount: _,
+            } => to_binary(&dummy::base_price_response()).into(),
+            NibiruQuery::Position { trader: _, pair: _ } => {
+                to_binary(&dummy::position_response()).into()
+            }
+            NibiruQuery::Positions { trader: _ } => {
+                to_binary(&dummy::positions_response()).into()
+            }
+            NibiruQuery::Metrics { pair: _ } => {
+                to_binary(&dummy::metrics_response()).into()
+            }
+            NibiruQuery::ModuleAccounts {} => {
+                to_binary(&dummy::module_accounts_response()).into()
+            }
+            NibiruQuery::ModuleParams {} => {
+                to_binary(&dummy::module_params_response()).into()
+            }
+            NibiruQuery::PremiumFraction { pair: _ } => {
+                to_binary(&dummy::premium_fraction_response()).into()
+            }
+            NibiruQuery::Reserves { pair: _ } => {
+                to_binary(&dummy::reserves_response()).into()
+            }
+        }
+    }
+
 }
