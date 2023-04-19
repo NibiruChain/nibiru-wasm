@@ -158,4 +158,22 @@ mod tests {
         }
     }
 
+    #[test]
+    fn reserves_query() {
+        let deps = mock_dependencies_with_custom_querier(&[]);
+
+        // Call the query
+        let req: QueryRequest<NibiruQuery> = NibiruQuery::Reserves {
+            pair: String::from("ETH:USD"),
+        }
+        .into();
+        let querier_wrapper = QuerierWrapper::new(&deps.querier);
+        let resp: ReservesResponse = querier_wrapper.query(&req).unwrap();
+
+        // Check the result
+        assert_eq!(resp.pair, "ETH:USD");
+        assert_eq!(resp.base_reserve, dec_420());
+        assert_eq!(resp.quote_reserve, dec_69());
+    }
+
 }
