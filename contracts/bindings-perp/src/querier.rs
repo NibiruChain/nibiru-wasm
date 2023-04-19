@@ -87,3 +87,39 @@ impl<'a> NibiruQuerier<'a> {
         self.querier.query(&request)
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use std::{marker::PhantomData, collections::HashSet, str::FromStr};
+
+    use cosmwasm_std::{
+        testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
+        to_binary, Binary, Coin, ContractResult, Decimal, OwnedDeps,
+        QuerierWrapper, QueryRequest, SystemResult, Addr, Uint64, Uint256,
+    };
+    use cw_utils::Duration;
+
+    use crate::query::{
+        dummy::{self, dec_420, dec_69},
+        NibiruQuery, PremiumFractionResponse, ReservesResponse, ModuleParamsResponse, ModuleAccountsResponse, MetricsResponse, BasePriceResponse,
+    };
+
+    pub fn mock_dependencies_with_custom_querier(
+        contract_balance: &[Coin],
+    ) -> OwnedDeps<MockStorage, MockApi, MockQuerier<NibiruQuery>, NibiruQuery>
+    {
+        let mock_querier: MockQuerier<NibiruQuery> =
+            MockQuerier::new(&[(MOCK_CONTRACT_ADDR, contract_balance)])
+                .with_custom_handler(|query| {
+                    SystemResult::Ok(mock_query_execute(query))
+                });
+        OwnedDeps {
+            storage: MockStorage::default(),
+            api: MockApi::default(),
+            querier: mock_querier,
+            custom_query_type: PhantomData,
+        }
+    }
+
+}
