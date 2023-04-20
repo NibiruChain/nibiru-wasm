@@ -221,4 +221,26 @@ mod tests {
         );
     }
 
+    #[test]
+    fn module_accounts_query() {
+        let deps = mock_dependencies_with_custom_querier(&[]);
+
+        // Call the query
+        let req: QueryRequest<NibiruQuery> =
+            NibiruQuery::ModuleAccounts {}.into();
+        let querier_wrapper = QuerierWrapper::new(&deps.querier);
+        let resp: ModuleAccountsResponse = querier_wrapper.query(&req).unwrap();
+
+        // Check the result
+        assert_eq!(resp.module_accounts.len(), 1);
+        assert_eq!(
+            resp.module_accounts.get("acc1").unwrap().name,
+            "acc1"
+        );
+        assert_eq!(
+            resp.module_accounts.get("acc1").unwrap().addr,
+            Addr::unchecked(String::from("nibiacc1"))
+        );
+    }
+
 }
