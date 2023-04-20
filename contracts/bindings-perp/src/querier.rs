@@ -193,4 +193,32 @@ mod tests {
         assert_eq!(resp.cpf, Decimal::zero());
         assert_eq!(resp.estimated_next_cpf, dec_69());
     }
+
+    #[test]
+    fn module_params_query() {
+        let deps = mock_dependencies_with_custom_querier(&[]);
+
+        // Call the query
+        let req: QueryRequest<NibiruQuery> = NibiruQuery::ModuleParams {}.into();
+        let querier_wrapper = QuerierWrapper::new(&deps.querier);
+        let resp: ModuleParamsResponse = querier_wrapper.query(&req).unwrap();
+
+        // Check the result
+        assert_eq!(resp.module_params.stopped, false);
+        assert_eq!(resp.module_params.fee_pool_fee_ratio, dec_420());
+        assert_eq!(resp.module_params.ecosystem_fund_fee_ratio, dec_69());
+        assert_eq!(resp.module_params.liquidation_fee_ratio, dec_69());
+        assert_eq!(resp.module_params.partial_liquidation_ratio, Decimal::zero());
+        assert_eq!(resp.module_params.funding_rate_interval, "1h".to_string());
+        assert_eq!(
+            resp.module_params.twap_lookback_window,
+            Duration::Time(60 * 60)
+        );
+        assert_eq!(
+            resp.module_params.whitelisted_liquidators,
+            HashSet::from_iter(
+                vec!["nibi123", "nibiabc"].iter().map(|s_ptr| s_ptr.to_string())),
+        );
+    }
+
 }
