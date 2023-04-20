@@ -176,4 +176,21 @@ mod tests {
         assert_eq!(resp.quote_reserve, dec_69());
     }
 
+    #[test]
+    fn premium_fraction_query() {
+        let deps = mock_dependencies_with_custom_querier(&[]);
+
+        // Call the query
+        let req: QueryRequest<NibiruQuery> = NibiruQuery::PremiumFraction {
+            pair: String::from("ETH:USD"),
+        }
+        .into();
+        let querier_wrapper = QuerierWrapper::new(&deps.querier);
+        let resp: PremiumFractionResponse = querier_wrapper.query(&req).unwrap();
+
+        // Check the result
+        assert_eq!(resp.pair, "ETH:USD");
+        assert_eq!(resp.cpf, Decimal::zero());
+        assert_eq!(resp.estimated_next_cpf, dec_69());
+    }
 }
