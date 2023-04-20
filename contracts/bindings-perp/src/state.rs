@@ -6,65 +6,65 @@ use cw_utils::Duration;
 
 #[cw_serde]
 pub struct Position {
-    trader_addr: Addr,
-    pair: String,
-    size: Decimal,
-    margin: Decimal,
-    open_notional: Decimal,
-    latest_cpf: Decimal,
-    block_number: Uint64,
+    pub trader_addr: Addr,
+    pub pair: String,
+    pub size: Decimal,
+    pub margin: Decimal,
+    pub open_notional: Decimal,
+    pub latest_cpf: Decimal,
+    pub block_number: Uint64,
 }
 
 #[cw_serde]
 pub struct Market {
-    pair: String,
-    base_reserve: Decimal,
-    quote_reserve: Decimal,
-    sqrt_depth: Decimal,
-    depth: Uint256,
-    bias: Decimal,
-    peg_mult: Decimal,
-    config: MarketConfig,
-    mark_price: Decimal,
-    index_price: String,
-    twap_mark: String,
-    block_number: Uint64,
+    pub pair: String,
+    pub base_reserve: Decimal,
+    pub quote_reserve: Decimal,
+    pub sqrt_depth: Decimal,
+    pub depth: Uint256,
+    pub bias: Decimal,
+    pub peg_mult: Decimal,
+    pub config: MarketConfig,
+    pub mark_price: Decimal,
+    pub index_price: String,
+    pub twap_mark: String,
+    pub block_number: Uint64,
 }
 
 #[cw_serde]
 pub struct MarketConfig {
-    trade_limit_ratio: Decimal,
-    fluct_limit_ratio: Decimal,
-    max_oracle_spread_ratio: Decimal,
-    maintenance_margin_ratio: Decimal,
-    max_leverage: Decimal,
+    pub trade_limit_ratio: Decimal,
+    pub fluct_limit_ratio: Decimal,
+    pub max_oracle_spread_ratio: Decimal,
+    pub maintenance_margin_ratio: Decimal,
+    pub max_leverage: Decimal,
 }
 
 #[cw_serde]
 pub struct ModuleParams {
-    stopped: bool,
-    fee_pool_fee_ratio: Decimal,
-    ecosystem_fund_fee_ratio: Decimal,
-    liquidation_fee_ratio: Decimal,
-    partial_liquidation_ratio: Decimal,
-    funding_rate_interval: String,
-    twap_lookback_window: Duration,
-    whitelisted_liquidators: HashSet<String>,
+    pub stopped: bool,
+    pub fee_pool_fee_ratio: Decimal,
+    pub ecosystem_fund_fee_ratio: Decimal,
+    pub liquidation_fee_ratio: Decimal,
+    pub partial_liquidation_ratio: Decimal,
+    pub funding_rate_interval: String,
+    pub twap_lookback_window: Duration,
+    pub whitelisted_liquidators: HashSet<String>,
 }
 
 #[cw_serde]
 pub struct Metrics {
-    pair: String,
-    net_size: Decimal,
-    volume_quote: Decimal,
-    volume_base: Decimal,
-    block_number: Uint64,
+    pub pair: String,
+    pub net_size: Decimal,
+    pub volume_quote: Decimal,
+    pub volume_base: Decimal,
+    pub block_number: Uint64,
 }
 
 #[cw_serde]
 #[derive(Eq)]
 pub struct ModuleAccountWithBalance {
-    name: String,
-    addr: Addr,
-    balance: Vec<Coin>,
+    pub name: String,
+    pub addr: Addr,
+    pub balance: Vec<Coin>,
 }
