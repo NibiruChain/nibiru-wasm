@@ -263,4 +263,24 @@ mod tests {
         assert_eq!(resp.metrics.block_number, Uint64::new(42u64));
     }
 
+    #[test]
+    fn base_price_query() {
+        let deps = mock_dependencies_with_custom_querier(&[]);
+
+        // Call the query
+        let req: QueryRequest<NibiruQuery> = NibiruQuery::BasePrice {
+            pair: String::from("ETH:USD"),
+            is_long: true,
+            base_amount: Uint256::from_str("123").unwrap(),
+        }
+        .into();
+        let querier_wrapper = QuerierWrapper::new(&deps.querier);
+        let resp: BasePriceResponse = querier_wrapper.query(&req).unwrap();
+
+        // Check the result
+        assert_eq!(resp.pair, "ETH:USD");
+        assert_eq!(resp.base_amount, Decimal::one());
+        assert_eq!(resp.quote_amount, dec_420());
+        assert_eq!(resp.is_long, false);
+    }
 }
