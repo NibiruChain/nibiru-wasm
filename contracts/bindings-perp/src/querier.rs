@@ -243,4 +243,24 @@ mod tests {
         );
     }
 
+    #[test]
+    fn metrics_query() {
+        let deps = mock_dependencies_with_custom_querier(&[]);
+
+        // Call the query
+        let req: QueryRequest<NibiruQuery> = NibiruQuery::Metrics {
+            pair: "ETH:USD".to_string(),
+        }
+        .into();
+        let querier_wrapper = QuerierWrapper::new(&deps.querier);
+        let resp: MetricsResponse = querier_wrapper.query(&req).unwrap();
+
+        // Check the result
+        assert_eq!(resp.metrics.pair, "ETH:USD");
+        assert_eq!(resp.metrics.net_size, dec_420());
+        assert_eq!(resp.metrics.volume_quote, Decimal::one());
+        assert_eq!(resp.metrics.volume_base, dec_420());
+        assert_eq!(resp.metrics.block_number, Uint64::new(42u64));
+    }
+
 }
