@@ -278,4 +278,21 @@ pub mod dummy {
         module_accounts: ModuleAccountsResponse,
     }
 
+    #[test]
+    fn save_example_json() {
+        let example_queries = ExampleNibiruQueryResponseJson {
+            all_markets: all_markets_response(),
+            reserves: reserves_response(),
+            base_price: base_price_response(),
+            position: position_response(),
+            positions: positions_response(),
+            module_params: module_params_response(),
+            premium_fraction: premium_fraction_response(),
+            metrics: metrics_response(),
+            module_accounts: module_accounts_response(),
+        };
+        let json_str = serde_json::to_string_pretty(&example_queries).unwrap();
+        let mut file = File::create("./queries.json").unwrap();
+        assert!(file.write_all(json_str.as_bytes()).is_ok());
+    }
 }
