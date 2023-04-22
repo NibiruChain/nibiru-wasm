@@ -216,9 +216,9 @@ pub mod dummy {
                 liquidation_fee_ratio: dec_69(),
                 partial_liquidation_ratio: Decimal::zero(),
                 funding_rate_interval: "1h".to_string(),
-                twap_lookback_window: Duration::Time(60 * 60), // 1 hour
+                twap_lookback_window: Uint64::from(60u64 * 60u64), // 1 hour
                 whitelisted_liquidators: HashSet::from_iter(
-                    vec!["nibi123", "nibiabc"]
+                    vec!["nibi1ah8gqrtjllhc5ld4rxgl4uglvwl93ag0sh6e6v", "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl"]
                         .iter()
                         .map(|s_ptr| s_ptr.to_string()),
                 ),
@@ -253,7 +253,7 @@ pub mod dummy {
             name.to_string(),
             ModuleAccountWithBalance {
                 name: name.to_string(),
-                addr: Addr::unchecked(String::from("nibiacc1")),
+                addr: Addr::unchecked(String::from("nibi1x5zknk8va44th5vjpg0fagf0lxx0rvurpmp8gs")),
                 balance: vec![Coin {
                     denom: "foocoin".to_string(),
                     amount: Uint128::new(420),
@@ -264,4 +264,18 @@ pub mod dummy {
             module_accounts: accounts_map,
         }
     }
+
+    #[cw_serde]
+    pub struct ExampleNibiruQueryResponseJson {
+        all_markets: AllMarketsResponse,
+        reserves: ReservesResponse,
+        base_price: BasePriceResponse,
+        position: PositionResponse,
+        positions: PositionsResponse,
+        module_params: ModuleParamsResponse,
+        premium_fraction: PremiumFractionResponse,
+        metrics: MetricsResponse,
+        module_accounts: ModuleAccountsResponse,
+    }
+
 }
