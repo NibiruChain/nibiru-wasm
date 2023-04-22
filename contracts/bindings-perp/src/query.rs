@@ -112,11 +112,11 @@ pub struct ModuleAccountsResponse {
 pub mod dummy {
     use std::{
         collections::{HashMap, HashSet},
-        str::FromStr,
+        str::FromStr, fs::File, io::Write,
     };
 
+    use cosmwasm_schema::cw_serde;
     use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
-    use cw_utils::Duration;
 
     use crate::{
         query::{
@@ -124,8 +124,10 @@ pub mod dummy {
             ModuleAccountsResponse, ModuleParamsResponse, PositionResponse,
             PositionsResponse, PremiumFractionResponse, ReservesResponse,
         },
-        state::{Metrics, ModuleAccountWithBalance, ModuleParams, Position},
+        state::{Metrics, ModuleAccountWithBalance, ModuleParams, Position, MarketConfig}, binding::query,
     };
+
+    use super::*;
 
     pub fn dec_420() -> Decimal {
         Decimal::from_str("420").unwrap()
@@ -135,9 +137,31 @@ pub mod dummy {
     }
 
     pub fn all_markets_response() -> AllMarketsResponse {
-        AllMarketsResponse {
-            market_map: HashMap::new(),
-        }
+        let mut market_map = HashMap::new();
+        market_map.insert(
+            String::from("ETH:USD"),
+            Market {
+                pair: String::from("ETH:USD"),
+                base_reserve: dec_69(),
+                quote_reserve: dec_69(),
+                sqrt_depth: dec_69(),
+                depth: Uint256::from(69u64 * 69u64),
+                bias: dec_420(),
+                peg_mult: dec_420(),
+                config: MarketConfig {
+                    trade_limit_ratio: dec_420(),
+                    fluct_limit_ratio: dec_420(),
+                    max_oracle_spread_ratio: dec_420(),
+                    maintenance_margin_ratio: dec_420(),
+                    max_leverage: dec_420(),
+                },
+                mark_price: dec_420(),
+                index_price: String::from("123"),
+                twap_mark: String::from("456"),
+                block_number: Uint64::from(42u64),
+            },
+        );
+        AllMarketsResponse { market_map }
     }
 
     pub fn reserves_response() -> ReservesResponse {
