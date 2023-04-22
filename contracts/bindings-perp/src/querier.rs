@@ -91,18 +91,20 @@ impl<'a> NibiruQuerier<'a> {
 #[cfg(test)]
 mod tests {
 
-    use std::{marker::PhantomData, collections::HashSet, str::FromStr};
+    use std::{collections::HashSet, marker::PhantomData, str::FromStr};
 
     use cosmwasm_std::{
         testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
-        to_binary, Binary, Coin, ContractResult, Decimal, OwnedDeps,
-        QuerierWrapper, QueryRequest, SystemResult, Addr, Uint64, Uint256,
+        to_binary, Addr, Binary, Coin, ContractResult, Decimal, OwnedDeps,
+        QuerierWrapper, QueryRequest, SystemResult, Uint256, Uint64,
     };
     use cw_utils::Duration;
 
     use crate::query::{
         dummy::{self, dec_420, dec_69},
-        NibiruQuery, PremiumFractionResponse, ReservesResponse, ModuleParamsResponse, ModuleAccountsResponse, MetricsResponse, BasePriceResponse,
+        BasePriceResponse, MetricsResponse, ModuleAccountsResponse,
+        ModuleParamsResponse, NibiruQuery, PremiumFractionResponse,
+        ReservesResponse, AllMarketsResponse,
     };
 
     pub fn mock_dependencies_with_custom_querier(
@@ -159,6 +161,26 @@ mod tests {
     }
 
     #[test]
+    fn all_markets_query() {
+        let deps = mock_dependencies_with_custom_querier(&[]);
+
+        // Call the query
+        let req: QueryRequest<NibiruQuery> = NibiruQuery::AllMarkets {  } 
+        .into();
+        let querier_wrapper = QuerierWrapper::new(&deps.querier);
+        let resp: AllMarketsResponse = querier_wrapper.query(&req).unwrap();
+
+        // Check the result
+        let market = resp.market_map.get("ETH:USD").unwrap();
+        // assert_eq!(resp.pair, "ETH:USD");
+        assert_eq!(market.base_reserve, dec_69());
+        assert_eq!(market.quote_reserve, dec_69());
+        assert_eq!(market.sqrt_depth, dec_69());
+        assert_eq!(market.depth, Uint256::from(69u64 * 69u64));
+        assert_eq!(market.peg_mult, dec_420());
+    }
+
+    #[test]
     fn reserves_query() {
         let deps = mock_dependencies_with_custom_querier(&[]);
 
@@ -204,20 +226,26 @@ mod tests {
         let resp: ModuleParamsResponse = querier_wrapper.query(&req).unwrap();
 
         // Check the result
-        assert_eq!(resp.module_params.stopped, false);
+        assert!(!resp.module_params.stopped);
         assert_eq!(resp.module_params.fee_pool_fee_ratio, dec_420());
         assert_eq!(resp.module_params.ecosystem_fund_fee_ratio, dec_69());
         assert_eq!(resp.module_params.liquidation_fee_ratio, dec_69());
-        assert_eq!(resp.module_params.partial_liquidation_ratio, Decimal::zero());
+        assert_eq!(
+            resp.module_params.partial_liquidation_ratio,
+            Decimal::zero()
+        );
         assert_eq!(resp.module_params.funding_rate_interval, "1h".to_string());
         assert_eq!(
             resp.module_params.twap_lookback_window,
-            Duration::Time(60 * 60)
+            Uint64::from(60u64 * 60u64)
         );
         assert_eq!(
             resp.module_params.whitelisted_liquidators,
             HashSet::from_iter(
-                vec!["nibi123", "nibiabc"].iter().map(|s_ptr| s_ptr.to_string())),
+                vec!["nibi1ah8gqrtjllhc5ld4rxgl4uglvwl93ag0sh6e6v", "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl"]
+                    .iter()
+                    .map(|s_ptr| s_ptr.to_string())
+            ),
         );
     }
 
@@ -233,13 +261,10 @@ mod tests {
 
         // Check the result
         assert_eq!(resp.module_accounts.len(), 1);
-        assert_eq!(
-            resp.module_accounts.get("acc1").unwrap().name,
-            "acc1"
-        );
+        assert_eq!(resp.module_accounts.get("acc1").unwrap().name, "acc1");
         assert_eq!(
             resp.module_accounts.get("acc1").unwrap().addr,
-            Addr::unchecked(String::from("nibiacc1"))
+            Addr::unchecked(String::from("nibi1x5zknk8va44th5vjpg0fagf0lxx0rvurpmp8gs"))
         );
     }
 
@@ -281,6 +306,6 @@ mod tests {
         assert_eq!(resp.pair, "ETH:USD");
         assert_eq!(resp.base_amount, Decimal::one());
         assert_eq!(resp.quote_amount, dec_420());
-        assert_eq!(resp.is_long, false);
+        assert!(!resp.is_long);
     }
 }

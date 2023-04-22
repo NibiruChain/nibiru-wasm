@@ -61,18 +61,12 @@ pub fn query(
             to_binary(&querier.positions(trader).unwrap())
         }
         QueryMsg::Metrics { pair } => to_binary(&querier.metrics(pair).unwrap()),
-        QueryMsg::ModuleAccounts {} => {
-            to_binary(&querier.module_accounts().unwrap())
-        }
-        QueryMsg::ModuleParams {} => {
-            to_binary(&querier.module_params().unwrap())
-        }
+        QueryMsg::ModuleAccounts {} => to_binary(&querier.module_accounts()?),
+        QueryMsg::ModuleParams {} => to_binary(&querier.module_params()?),
         QueryMsg::PremiumFraction { pair } => {
-            to_binary(&querier.premium_fraction(pair).unwrap())
+            to_binary(&querier.premium_fraction(pair)?)
         }
-        QueryMsg::Reserves { pair } => {
-            to_binary(&querier.reserves(pair).unwrap())
-        }
+        QueryMsg::Reserves { pair } => to_binary(&querier.reserves(pair)?),
     }
 }
 
