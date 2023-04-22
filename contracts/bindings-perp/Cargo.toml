@@ -27,3 +27,5 @@ thiserror = { version = "1.0.23" }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.2.3" }
+cosmwasm-vm = "1.2.4"
+serde_json = "1.0.96"
