@@ -112,7 +112,9 @@ pub struct ModuleAccountsResponse {
 pub mod dummy {
     use std::{
         collections::{HashMap, HashSet},
-        str::FromStr, fs::File, io::Write,
+        fs::File,
+        io::Write,
+        str::FromStr,
     };
 
     use cosmwasm_schema::cw_serde;
@@ -124,7 +126,10 @@ pub mod dummy {
             ModuleAccountsResponse, ModuleParamsResponse, PositionResponse,
             PositionsResponse, PremiumFractionResponse, ReservesResponse,
         },
-        state::{Metrics, ModuleAccountWithBalance, ModuleParams, Position, MarketConfig}, binding::query,
+        state::{
+            MarketConfig, Metrics, ModuleAccountWithBalance, ModuleParams,
+            Position,
+        },
     };
 
     use super::*;
@@ -218,9 +223,12 @@ pub mod dummy {
                 funding_rate_interval: "1h".to_string(),
                 twap_lookback_window: Uint64::from(60u64 * 60u64), // 1 hour
                 whitelisted_liquidators: HashSet::from_iter(
-                    vec!["nibi1ah8gqrtjllhc5ld4rxgl4uglvwl93ag0sh6e6v", "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl"]
-                        .iter()
-                        .map(|s_ptr| s_ptr.to_string()),
+                    vec![
+                        "nibi1ah8gqrtjllhc5ld4rxgl4uglvwl93ag0sh6e6v",
+                        "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl",
+                    ]
+                    .iter()
+                    .map(|s_ptr| s_ptr.to_string()),
                 ),
             },
         }
@@ -253,7 +261,9 @@ pub mod dummy {
             name.to_string(),
             ModuleAccountWithBalance {
                 name: name.to_string(),
-                addr: Addr::unchecked(String::from("nibi1x5zknk8va44th5vjpg0fagf0lxx0rvurpmp8gs")),
+                addr: Addr::unchecked(String::from(
+                    "nibi1x5zknk8va44th5vjpg0fagf0lxx0rvurpmp8gs",
+                )),
                 balance: vec![Coin {
                     denom: "foocoin".to_string(),
                     amount: Uint128::new(420),

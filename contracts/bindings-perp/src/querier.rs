@@ -98,13 +98,13 @@ mod tests {
         to_binary, Addr, Binary, Coin, ContractResult, Decimal, OwnedDeps,
         QuerierWrapper, QueryRequest, SystemResult, Uint256, Uint64,
     };
-    use cw_utils::Duration;
+    
 
     use crate::query::{
         dummy::{self, dec_420, dec_69},
-        BasePriceResponse, MetricsResponse, ModuleAccountsResponse,
-        ModuleParamsResponse, NibiruQuery, PremiumFractionResponse,
-        ReservesResponse, AllMarketsResponse,
+        AllMarketsResponse, BasePriceResponse, MetricsResponse,
+        ModuleAccountsResponse, ModuleParamsResponse, NibiruQuery,
+        PremiumFractionResponse, ReservesResponse,
     };
 
     pub fn mock_dependencies_with_custom_querier(
@@ -165,8 +165,7 @@ mod tests {
         let deps = mock_dependencies_with_custom_querier(&[]);
 
         // Call the query
-        let req: QueryRequest<NibiruQuery> = NibiruQuery::AllMarkets {  } 
-        .into();
+        let req: QueryRequest<NibiruQuery> = NibiruQuery::AllMarkets {}.into();
         let querier_wrapper = QuerierWrapper::new(&deps.querier);
         let resp: AllMarketsResponse = querier_wrapper.query(&req).unwrap();
 
@@ -242,9 +241,12 @@ mod tests {
         assert_eq!(
             resp.module_params.whitelisted_liquidators,
             HashSet::from_iter(
-                vec!["nibi1ah8gqrtjllhc5ld4rxgl4uglvwl93ag0sh6e6v", "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl"]
-                    .iter()
-                    .map(|s_ptr| s_ptr.to_string())
+                vec![
+                    "nibi1ah8gqrtjllhc5ld4rxgl4uglvwl93ag0sh6e6v",
+                    "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl"
+                ]
+                .iter()
+                .map(|s_ptr| s_ptr.to_string())
             ),
         );
     }
@@ -264,7 +266,9 @@ mod tests {
         assert_eq!(resp.module_accounts.get("acc1").unwrap().name, "acc1");
         assert_eq!(
             resp.module_accounts.get("acc1").unwrap().addr,
-            Addr::unchecked(String::from("nibi1x5zknk8va44th5vjpg0fagf0lxx0rvurpmp8gs"))
+            Addr::unchecked(String::from(
+                "nibi1x5zknk8va44th5vjpg0fagf0lxx0rvurpmp8gs"
+            ))
         );
     }
 
