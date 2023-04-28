@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, CosmosMsg, CustomMsg, Deps, DepsMut, Env,
+    entry_point, to_binary, Binary, CosmosMsg, Deps, DepsMut, Env,
     MessageInfo, Response, StdResult,
 };
 use cw2::set_contract_version;
@@ -11,7 +11,7 @@ use crate::{
         InstantiateMsg, NibiruExecuteMsgWrapper,
     },
     querier::NibiruQuerier,
-    query::NibiruQuery,
+    query::QueryPerpMsg,
 };
 
 const CONTRACT_NAME: &str = "cw-nibiru-bindings-perp";
@@ -19,7 +19,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[entry_point]
 pub fn instantiate(
-    deps: DepsMut<NibiruQuery>,
+    deps: DepsMut<QueryPerpMsg>,
     _env: Env,
     info: MessageInfo,
     _msg: InstantiateMsg,
@@ -30,43 +30,33 @@ pub fn instantiate(
         .add_attribute("owner", info.sender))
 }
 
-/// These need not be the same. QueryMsg specifies a contract and module-specific
-/// type for a query message, whereas NibiruQuery is an enum type for any of the
-/// binding queries supported in NibiruChain/x/wasm/binding
-///
-/// In our case, there's only one module right now, so NibiruQuery and QueryMsg
-/// are equivalent.
-type QueryMsg = NibiruQuery;
-
-impl CustomMsg for QueryMsg {}
-
 #[entry_point]
 pub fn query(
-    deps: Deps<NibiruQuery>,
+    deps: Deps<QueryPerpMsg>,
     _env: Env,
-    msg: QueryMsg,
+    msg: QueryPerpMsg,
 ) -> StdResult<Binary> {
     let querier = NibiruQuerier::new(&deps.querier);
     match msg {
-        QueryMsg::AllMarkets {} => to_binary(&querier.all_markets().unwrap()),
-        QueryMsg::BasePrice {
+        QueryPerpMsg::AllMarkets {} => to_binary(&querier.all_markets().unwrap()),
+        QueryPerpMsg::BasePrice {
             pair,
             is_long,
             base_amount,
         } => to_binary(&querier.base_price(pair, is_long, base_amount).unwrap()),
-        QueryMsg::Position { trader, pair } => {
+        QueryPerpMsg::Position { trader, pair } => {
             to_binary(&querier.position(trader, pair).unwrap())
         }
-        QueryMsg::Positions { trader } => {
+        QueryPerpMsg::Positions { trader } => {
             to_binary(&querier.positions(trader).unwrap())
         }
-        QueryMsg::Metrics { pair } => to_binary(&querier.metrics(pair).unwrap()),
-        QueryMsg::ModuleAccounts {} => to_binary(&querier.module_accounts()?),
-        QueryMsg::ModuleParams {} => to_binary(&querier.module_params()?),
-        QueryMsg::PremiumFraction { pair } => {
+        QueryPerpMsg::Metrics { pair } => to_binary(&querier.metrics(pair).unwrap()),
+        QueryPerpMsg::ModuleAccounts {} => to_binary(&querier.module_accounts()?),
+        QueryPerpMsg::ModuleParams {} => to_binary(&querier.module_params()?),
+        QueryPerpMsg::PremiumFraction { pair } => {
             to_binary(&querier.premium_fraction(pair)?)
         }
-        QueryMsg::Reserves { pair } => to_binary(&querier.reserves(pair)?),
+        QueryPerpMsg::Reserves { pair } => to_binary(&querier.reserves(pair)?),
     }
 }
 
@@ -78,7 +68,7 @@ fn nibiru_msg_to_cw_response(
 
 #[entry_point]
 pub fn execute(
-    _deps: DepsMut<NibiruQuery>,
+    _deps: DepsMut<QueryPerpMsg>,
     _env: Env,
     _info: MessageInfo,
     msg: ExecuteMsg,
