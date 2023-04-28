@@ -29,13 +29,13 @@ impl<'a> NibiruQuerier<'a> {
         is_long: bool,
         base_amount: Uint256,
     ) -> StdResult<BasePriceResponse> {
-        let query_json = QueryPerpMsg::BasePrice {
+        let request = QueryPerpMsg::BasePrice {
             pair,
             is_long,
             base_amount,
         };
-        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
-        self.querier.query(&request)
+
+        self.querier.query(&request.into())
     }
 
     pub fn position(
@@ -43,48 +43,48 @@ impl<'a> NibiruQuerier<'a> {
         trader: String,
         pair: String,
     ) -> StdResult<PositionResponse> {
-        let query_json = QueryPerpMsg::Position { trader, pair };
-        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
-        self.querier.query(&request)
+        let request = QueryPerpMsg::Position { trader, pair };
+
+        self.querier.query(&request.into())
     }
 
     pub fn positions(&self, trader: String) -> StdResult<PositionsResponse> {
-        let query_json = QueryPerpMsg::Positions { trader };
-        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
-        self.querier.query(&request)
+        let request = QueryPerpMsg::Positions { trader };
+
+        self.querier.query(&request.into())
     }
 
     pub fn reserves(&self, pair: String) -> StdResult<ReservesResponse> {
-        let query_json = QueryPerpMsg::Reserves { pair };
-        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
-        self.querier.query(&request)
+        let request = QueryPerpMsg::Reserves { pair };
+
+        self.querier.query(&request.into())
     }
 
     pub fn premium_fraction(
         &self,
         pair: String,
     ) -> StdResult<PremiumFractionResponse> {
-        let query_json = QueryPerpMsg::PremiumFraction { pair };
-        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
-        self.querier.query(&request)
+        let request = QueryPerpMsg::PremiumFraction { pair };
+
+        self.querier.query(&request.into())
     }
 
     pub fn metrics(&self, pair: String) -> StdResult<MetricsResponse> {
-        let query_json = QueryPerpMsg::Metrics { pair };
-        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
-        self.querier.query(&request)
+        let request = QueryPerpMsg::Metrics { pair };
+
+        self.querier.query(&request.into())
     }
 
     pub fn module_params(&self) -> StdResult<ModuleParamsResponse> {
-        let query_json = QueryPerpMsg::ModuleParams {};
-        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
-        self.querier.query(&request)
+        let request = QueryPerpMsg::ModuleParams {};
+
+        self.querier.query(&request.into())
     }
 
     pub fn module_accounts(&self) -> StdResult<ModuleAccountsResponse> {
-        let query_json = QueryPerpMsg::ModuleAccounts {};
-        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
-        self.querier.query(&request)
+        let request = QueryPerpMsg::ModuleAccounts {};
+
+        self.querier.query(&request.into())
     }
 }
 
