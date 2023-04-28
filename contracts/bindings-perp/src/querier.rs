@@ -1,4 +1,4 @@
-use cosmwasm_std::{QuerierWrapper, QueryRequest, StdResult, Uint256};
+use cosmwasm_std::{QuerierWrapper, StdResult, Uint256};
 
 use crate::query::{
     AllMarketsResponse, BasePriceResponse, MetricsResponse,
@@ -18,9 +18,8 @@ impl<'a> NibiruQuerier<'a> {
     }
 
     pub fn all_markets(&self) -> StdResult<AllMarketsResponse> {
-        let query_json = QueryPerpMsg::AllMarkets {};
-        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
-        self.querier.query(&request)
+        let request = QueryPerpMsg::AllMarkets {};
+        self.querier.query(&request.into())
     }
 
     pub fn base_price(
