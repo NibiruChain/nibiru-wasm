@@ -2,7 +2,10 @@ use cosmwasm_std::{
     entry_point, to_binary, Binary, CosmosMsg, Deps, DepsMut, Env,
     MessageInfo, Response, StdResult,
 };
+
 use cw2::set_contract_version;
+use nibiru_bindings::query::QueryPerpMsg;
+use nibiru_bindings::querier::NibiruQuerier;
 
 use crate::{
     msg::{
@@ -10,8 +13,6 @@ use crate::{
         msg_multi_liquidate, msg_open_position, msg_remove_margin, ExecuteMsg,
         InstantiateMsg, NibiruExecuteMsgWrapper,
     },
-    querier::NibiruQuerier,
-    query::QueryPerpMsg,
 };
 
 const CONTRACT_NAME: &str = "cw-nibiru-bindings-perp";
