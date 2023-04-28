@@ -2,24 +2,24 @@ use cosmwasm_std::{QuerierWrapper, QueryRequest, StdResult, Uint256};
 
 use crate::query::{
     AllMarketsResponse, BasePriceResponse, MetricsResponse,
-    ModuleAccountsResponse, ModuleParamsResponse, NibiruQuery, PositionResponse,
+    ModuleAccountsResponse, ModuleParamsResponse, QueryPerpMsg, PositionResponse,
     PositionsResponse, PremiumFractionResponse, ReservesResponse,
 };
 
 /// NibiriQuerier makes it easy to export the functions that correspond to each
 /// request without needing to know as much about the underlying types.
 pub struct NibiruQuerier<'a> {
-    querier: &'a QuerierWrapper<'a, NibiruQuery>,
+    querier: &'a QuerierWrapper<'a, QueryPerpMsg>,
 }
 
 impl<'a> NibiruQuerier<'a> {
-    pub fn new(querier: &'a QuerierWrapper<NibiruQuery>) -> Self {
+    pub fn new(querier: &'a QuerierWrapper<QueryPerpMsg>) -> Self {
         NibiruQuerier { querier }
     }
 
     pub fn all_markets(&self) -> StdResult<AllMarketsResponse> {
-        let query_json = NibiruQuery::AllMarkets {};
-        let request: QueryRequest<NibiruQuery> = NibiruQuery::into(query_json);
+        let query_json = QueryPerpMsg::AllMarkets {};
+        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
         self.querier.query(&request)
     }
 
@@ -29,12 +29,12 @@ impl<'a> NibiruQuerier<'a> {
         is_long: bool,
         base_amount: Uint256,
     ) -> StdResult<BasePriceResponse> {
-        let query_json = NibiruQuery::BasePrice {
+        let query_json = QueryPerpMsg::BasePrice {
             pair,
             is_long,
             base_amount,
         };
-        let request: QueryRequest<NibiruQuery> = NibiruQuery::into(query_json);
+        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
         self.querier.query(&request)
     }
 
@@ -43,20 +43,20 @@ impl<'a> NibiruQuerier<'a> {
         trader: String,
         pair: String,
     ) -> StdResult<PositionResponse> {
-        let query_json = NibiruQuery::Position { trader, pair };
-        let request: QueryRequest<NibiruQuery> = NibiruQuery::into(query_json);
+        let query_json = QueryPerpMsg::Position { trader, pair };
+        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
         self.querier.query(&request)
     }
 
     pub fn positions(&self, trader: String) -> StdResult<PositionsResponse> {
-        let query_json = NibiruQuery::Positions { trader };
-        let request: QueryRequest<NibiruQuery> = NibiruQuery::into(query_json);
+        let query_json = QueryPerpMsg::Positions { trader };
+        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
         self.querier.query(&request)
     }
 
     pub fn reserves(&self, pair: String) -> StdResult<ReservesResponse> {
-        let query_json = NibiruQuery::Reserves { pair };
-        let request: QueryRequest<NibiruQuery> = NibiruQuery::into(query_json);
+        let query_json = QueryPerpMsg::Reserves { pair };
+        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
         self.querier.query(&request)
     }
 
@@ -64,26 +64,26 @@ impl<'a> NibiruQuerier<'a> {
         &self,
         pair: String,
     ) -> StdResult<PremiumFractionResponse> {
-        let query_json = NibiruQuery::PremiumFraction { pair };
-        let request: QueryRequest<NibiruQuery> = NibiruQuery::into(query_json);
+        let query_json = QueryPerpMsg::PremiumFraction { pair };
+        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
         self.querier.query(&request)
     }
 
     pub fn metrics(&self, pair: String) -> StdResult<MetricsResponse> {
-        let query_json = NibiruQuery::Metrics { pair };
-        let request: QueryRequest<NibiruQuery> = NibiruQuery::into(query_json);
+        let query_json = QueryPerpMsg::Metrics { pair };
+        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
         self.querier.query(&request)
     }
 
     pub fn module_params(&self) -> StdResult<ModuleParamsResponse> {
-        let query_json = NibiruQuery::ModuleParams {};
-        let request: QueryRequest<NibiruQuery> = NibiruQuery::into(query_json);
+        let query_json = QueryPerpMsg::ModuleParams {};
+        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
         self.querier.query(&request)
     }
 
     pub fn module_accounts(&self) -> StdResult<ModuleAccountsResponse> {
-        let query_json = NibiruQuery::ModuleAccounts {};
-        let request: QueryRequest<NibiruQuery> = NibiruQuery::into(query_json);
+        let query_json = QueryPerpMsg::ModuleAccounts {};
+        let request: QueryRequest<QueryPerpMsg> = QueryPerpMsg::into(query_json);
         self.querier.query(&request)
     }
 }
@@ -103,15 +103,15 @@ mod tests {
     use crate::query::{
         dummy::{self, dec_420, dec_69},
         AllMarketsResponse, BasePriceResponse, MetricsResponse,
-        ModuleAccountsResponse, ModuleParamsResponse, NibiruQuery,
+        ModuleAccountsResponse, ModuleParamsResponse, QueryPerpMsg,
         PremiumFractionResponse, ReservesResponse,
     };
 
     pub fn mock_dependencies_with_custom_querier(
         contract_balance: &[Coin],
-    ) -> OwnedDeps<MockStorage, MockApi, MockQuerier<NibiruQuery>, NibiruQuery>
+    ) -> OwnedDeps<MockStorage, MockApi, MockQuerier<QueryPerpMsg>, QueryPerpMsg>
     {
-        let mock_querier: MockQuerier<NibiruQuery> =
+        let mock_querier: MockQuerier<QueryPerpMsg> =
             MockQuerier::new(&[(MOCK_CONTRACT_ADDR, contract_balance)])
                 .with_custom_handler(|query| {
                     SystemResult::Ok(mock_query_execute(query))
@@ -125,36 +125,36 @@ mod tests {
     }
 
     pub fn mock_query_execute(
-        query_msg: &NibiruQuery,
+        query_msg: &QueryPerpMsg,
     ) -> ContractResult<Binary> {
         match query_msg {
-            NibiruQuery::AllMarkets {} => {
+            QueryPerpMsg::AllMarkets {} => {
                 to_binary(&dummy::all_markets_response()).into()
             }
-            NibiruQuery::BasePrice {
+            QueryPerpMsg::BasePrice {
                 pair: _,
                 is_long: _,
                 base_amount: _,
             } => to_binary(&dummy::base_price_response()).into(),
-            NibiruQuery::Position { trader: _, pair: _ } => {
+            QueryPerpMsg::Position { trader: _, pair: _ } => {
                 to_binary(&dummy::position_response()).into()
             }
-            NibiruQuery::Positions { trader: _ } => {
+            QueryPerpMsg::Positions { trader: _ } => {
                 to_binary(&dummy::positions_response()).into()
             }
-            NibiruQuery::Metrics { pair: _ } => {
+            QueryPerpMsg::Metrics { pair: _ } => {
                 to_binary(&dummy::metrics_response()).into()
             }
-            NibiruQuery::ModuleAccounts {} => {
+            QueryPerpMsg::ModuleAccounts {} => {
                 to_binary(&dummy::module_accounts_response()).into()
             }
-            NibiruQuery::ModuleParams {} => {
+            QueryPerpMsg::ModuleParams {} => {
                 to_binary(&dummy::module_params_response()).into()
             }
-            NibiruQuery::PremiumFraction { pair: _ } => {
+            QueryPerpMsg::PremiumFraction { pair: _ } => {
                 to_binary(&dummy::premium_fraction_response()).into()
             }
-            NibiruQuery::Reserves { pair: _ } => {
+            QueryPerpMsg::Reserves { pair: _ } => {
                 to_binary(&dummy::reserves_response()).into()
             }
         }
@@ -165,7 +165,7 @@ mod tests {
         let deps = mock_dependencies_with_custom_querier(&[]);
 
         // Call the query
-        let req: QueryRequest<NibiruQuery> = NibiruQuery::AllMarkets {}.into();
+        let req: QueryRequest<QueryPerpMsg> = QueryPerpMsg::AllMarkets {}.into();
         let querier_wrapper = QuerierWrapper::new(&deps.querier);
         let resp: AllMarketsResponse = querier_wrapper.query(&req).unwrap();
 
@@ -184,7 +184,7 @@ mod tests {
         let deps = mock_dependencies_with_custom_querier(&[]);
 
         // Call the query
-        let req: QueryRequest<NibiruQuery> = NibiruQuery::Reserves {
+        let req: QueryRequest<QueryPerpMsg> = QueryPerpMsg::Reserves {
             pair: String::from("ETH:USD"),
         }
         .into();
@@ -202,7 +202,7 @@ mod tests {
         let deps = mock_dependencies_with_custom_querier(&[]);
 
         // Call the query
-        let req: QueryRequest<NibiruQuery> = NibiruQuery::PremiumFraction {
+        let req: QueryRequest<QueryPerpMsg> = QueryPerpMsg::PremiumFraction {
             pair: String::from("ETH:USD"),
         }
         .into();
@@ -220,7 +220,7 @@ mod tests {
         let deps = mock_dependencies_with_custom_querier(&[]);
 
         // Call the query
-        let req: QueryRequest<NibiruQuery> = NibiruQuery::ModuleParams {}.into();
+        let req: QueryRequest<QueryPerpMsg> = QueryPerpMsg::ModuleParams {}.into();
         let querier_wrapper = QuerierWrapper::new(&deps.querier);
         let resp: ModuleParamsResponse = querier_wrapper.query(&req).unwrap();
 
@@ -256,8 +256,8 @@ mod tests {
         let deps = mock_dependencies_with_custom_querier(&[]);
 
         // Call the query
-        let req: QueryRequest<NibiruQuery> =
-            NibiruQuery::ModuleAccounts {}.into();
+        let req: QueryRequest<QueryPerpMsg> =
+            QueryPerpMsg::ModuleAccounts {}.into();
         let querier_wrapper = QuerierWrapper::new(&deps.querier);
         let resp: ModuleAccountsResponse = querier_wrapper.query(&req).unwrap();
 
@@ -277,7 +277,7 @@ mod tests {
         let deps = mock_dependencies_with_custom_querier(&[]);
 
         // Call the query
-        let req: QueryRequest<NibiruQuery> = NibiruQuery::Metrics {
+        let req: QueryRequest<QueryPerpMsg> = QueryPerpMsg::Metrics {
             pair: "ETH:USD".to_string(),
         }
         .into();
@@ -297,7 +297,7 @@ mod tests {
         let deps = mock_dependencies_with_custom_querier(&[]);
 
         // Call the query
-        let req: QueryRequest<NibiruQuery> = NibiruQuery::BasePrice {
+        let req: QueryRequest<QueryPerpMsg> = QueryPerpMsg::BasePrice {
             pair: String::from("ETH:USD"),
             is_long: true,
             base_amount: Uint256::from_str("123").unwrap(),
