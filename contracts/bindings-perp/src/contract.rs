@@ -4,6 +4,7 @@ use cosmwasm_std::{
 };
 
 use cw2::set_contract_version;
+
 use nibiru_bindings::query::QueryPerpMsg;
 use nibiru_bindings::querier::NibiruQuerier;
 
