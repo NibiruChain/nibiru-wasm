@@ -6,8 +6,8 @@ use crate::events::{
 use crate::msgs::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{locks, Lock, LOCKS_ID, NOT_UNLOCKING_BLOCK_IDENTIFIER};
 use cosmwasm_std::{
-    to_binary, BankMsg, Binary, Deps, DepsMut, Env, Event, MessageInfo, Order,
-    Response, StdResult, Storage,
+    entry_point, to_binary, BankMsg, Binary, Deps, DepsMut, Env, Event,
+    MessageInfo, Order, Response, StdResult,
 };
 use cw_storage_plus::Bound;
 
@@ -22,6 +22,7 @@ pub fn instantiate(
     Ok(Response::new())
 }
 
+#[entry_point]
 pub fn execute(
     deps: DepsMut,
     env: Env,
