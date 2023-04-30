@@ -98,7 +98,6 @@ mod tests {
         to_binary, Addr, Binary, Coin, ContractResult, Decimal, OwnedDeps,
         QuerierWrapper, QueryRequest, SystemResult, Uint256, Uint64,
     };
-    
 
     use crate::query::{
         dummy::{self, dec_420, dec_69},
