@@ -302,7 +302,7 @@ pub mod dummy {
             module_accounts: module_accounts_response(),
         };
         let json_str = serde_json::to_string_pretty(&example_queries).unwrap();
-        let mut file = File::create("./queries.json").unwrap();
+        let mut file = File::create("./query_resp.json").unwrap();
         assert!(file.write_all(json_str.as_bytes()).is_ok());
     }
 }
