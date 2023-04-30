@@ -7,7 +7,7 @@
     "fmt:check": "cargo fmt --all -- --check ", 
     "build": "cargo build", 
     "clean": "cargo clean", 
-    "clippy": "cargo clippy --fix --allow-dirty", 
+    "clippy": "cargo clippy --fix --allow-dirty --allow-staged", 
     "clippy:check": "cargo clippy",
     "tidy": "yarn build && yarn fmt && yarn clippy",
     "wasm": "sh scripts/wasm-out.sh",
