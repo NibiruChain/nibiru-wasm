@@ -1,44 +1,39 @@
-// A simple contract that maintains a whitelist of addresses.
-// Takes inspiration from cw-plus/contracts/cw1-whitelist
-//
-// This example demonstrates a simple CosmWasm smart contract that manages a
-// whitelist of addresses. The contract initializes with an admin address and
-// allows the admin to add or remove addresses from the whitelist. Users can
-// query whether an address is whitelisted or not.
-//
-// - InitMsg: Initializes the contract with the admin address.
-// - ExecuteMsg: Enum representing the actions that can
-//
-// ### Contained Functionality
-// 1. Initialize the contract with an admin address.
-// 2. Allow the admin to add or remove addresses from the whitelist.
-// 3. Allow anyone to query if an address is on the whitelist.
-
+/// A simple contract that maintains a whitelist of addresses.
+/// Takes inspiration from cw-plus/contracts/cw1-whitelist
+///
+/// This example demonstrates a simple CosmWasm smart contract that manages a
+/// whitelist of addresses. The contract initializes with an admin address and
+/// allows the admin to add or remove addresses from the whitelist. Users can
+/// query whether an address is whitelisted or not.
+/// 
+/// ### Entry Points
+///
+/// - InitMsg: Initializes the contract with the admin address.
+/// - ExecuteMsg: Enum for executing msgs
+///   - ExecuteMsg::AddMember adds an address to the whitelist
+///   - ExecuteMsg::RemoveMember removes and address from the whitelist.
+///   - ExecuteMsg::DepthShift 
+///   - ExecuteMsg::PegShift 
+///
+/// ### Contained Functionality
+///
+/// 1. Initialize the contract with an admin address.
+/// 2. Allow the admin to add or remove addresses from the whitelist.
+/// 3. Allow anyone to query if an address is on the whitelist.
+/// 4. Members of the whitelist set can execute permissioned calls on the Nibiru
+///    x/perp module for dynamic optimizations like peg shift and depth shift.
 use std::collections::HashSet;
 
 use cosmwasm_std::{
-    attr, entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult,
+    attr, entry_point, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
+    StdResult, WasmMsg,
 };
 
 use crate::{
-    msgs::{AdminsResponse, ExecuteMsg, InitMsg, IsMemberResponse, QueryMsg},
+    msgs::{ExecuteMsg, InitMsg, IsMemberResponse, MembersResponse, QueryMsg},
     // msg,
     state::{Whitelist, WHITELIST},
 };
-
-struct CanExecute {
-    can: bool,
-    whitelist: Whitelist,
-}
-
-fn can_execute(deps: Deps, sender: &str) -> StdResult<CanExecute> {
-    let whitelist = WHITELIST.load(deps.storage).unwrap();
-    Ok(CanExecute {
-        can: whitelist.is_admin(sender),
-        whitelist,
-    })
-}
 
 #[entry_point]
 pub fn instantiate(
@@ -49,8 +44,9 @@ pub fn instantiate(
 ) -> StdResult<Response> {
     let whitelist = Whitelist {
         members: HashSet::new(),
-        admins: HashSet::from_iter(vec![msg.admin]),
+        admin: msg.admin,
     };
+    // _env.contract.address.to_string()
     WHITELIST.save(deps.storage, &whitelist)?;
     Ok(Response::default())
 }
@@ -73,25 +69,49 @@ pub fn execute(
     }
 
     match msg {
-        ExecuteMsg::Add { address } => {
+        ExecuteMsg::AddMember { address } => {
             let api = deps.api;
             let addr = api.addr_validate(address.as_str()).unwrap();
-            whitelist.admins.insert(addr.into_string());
+            whitelist.members.insert(addr.into_string());
             WHITELIST.save(deps.storage, &whitelist)?;
             Ok(Response::new().add_attributes(vec![
-                attr("action", "add"),
+                attr("action", "add_member"),
                 attr("address", address),
             ]))
         }
-        ExecuteMsg::Remove { address } => {
-            whitelist.admins.remove(address.as_str());
+        ExecuteMsg::RemoveMember { address } => {
+            whitelist.members.remove(address.as_str());
             WHITELIST.save(deps.storage, &whitelist)?;
             Ok(Response::new().add_attributes(vec![
-                attr("action", "remove"),
+                attr("action", "remove_member"),
                 attr("address", address),
             ]))
         }
     }
+}
+
+struct CanExecute {
+    can: bool,
+    whitelist: Whitelist,
+}
+
+fn can_execute(deps: Deps, sender: &str) -> StdResult<CanExecute> {
+    let whitelist = WHITELIST.load(deps.storage).unwrap();
+    Ok(CanExecute {
+        can: whitelist.is_admin(sender),
+        whitelist,
+    })
+}
+
+pub fn invoke_self(env: Env, msg: Binary, funds: Vec<Coin>) -> Response {
+    let contract_addr = env.contract.address.into_string();
+    let execute_msg = WasmMsg::Execute {
+        contract_addr,
+        msg,
+        funds,
+    };
+
+    Response::new().add_message(execute_msg)
 }
 
 #[entry_point]
@@ -103,10 +123,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             let res = IsMemberResponse { is_member };
             cosmwasm_std::to_binary(&res)
         }
-        QueryMsg::Admins {} => {
+        QueryMsg::Members {} => {
             let whitelist = WHITELIST.load(deps.storage)?;
-            let admins: Vec<String> = whitelist.admins.into_iter().collect();
-            let res = AdminsResponse { admins };
+            let res = MembersResponse {
+                members: whitelist.members,
+                admin: whitelist.admin,
+            };
             cosmwasm_std::to_binary(&res)
         }
     }
