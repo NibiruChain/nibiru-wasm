@@ -200,7 +200,7 @@ mod tests {
         let msg_info = testing::mock_info("addr0000", &coins(2, "token"));
         instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg).unwrap();
 
-        let execute_msg = ExecuteMsg::Add {
+        let execute_msg = ExecuteMsg::AddMember {
             address: "addr0001".to_string(),
         };
         let unauthorized_info = testing::mock_info("unauthorized", &[]);
@@ -214,62 +214,129 @@ mod tests {
     }
 
     #[test]
-    fn test_execute_add() {
-        // let mut deps = testing::mock_dependencies();
-        // let admin = Addr::unchecked("admin");
+    fn test_execute_add_member() {
+        // Init contract
+        let mut deps = testing::mock_dependencies();
+        let admin = Addr::unchecked("admin");
 
-        // let init_msg = InitMsg {
-        //     admin: admin.as_str().to_string(),
-        // };
-        // let init_info = testing::mock_info("addr0000", &coins(2, "token"));
-        // init(deps.as_mut(), testing::mock_env(), init_info, init_msg).unwrap();
+        let init_msg = InitMsg {
+            admin: admin.as_str().to_string(),
+        };
+        let init_info = testing::mock_info("addr0000", &coins(2, "token"));
+        instantiate(deps.as_mut(), testing::mock_env(), init_info, init_msg)
+            .unwrap();
 
-        // let execute_msg = ExecuteMsg::Add {
-        //     address: "addr0001".to_string(),
-        // };
-        // let execute_info = testing::mock_info(admin.as_str(), &[]);
-        // let result = execute(deps.as_mut(), testing::mock_env(), execute_info, execute_msg).unwrap();
-        // assert_eq!(result.messages.len(), 0);
-        // assert_eq!(result.attributes.len(), 2);
+        let new_member = "new_member";
+        let whitelist = WHITELIST.load(&deps.storage).unwrap();
+        let has: bool = whitelist.is_admin(new_member);
+        assert!(!has);
 
-        // let query_msg = QueryMsg::IsMember {
-        //     address: "addr0001".to_string(),
-        // };
-        // let binary = query(deps.as_ref(), testing::mock_env(), query_msg).unwrap();
-        // let response: IsMemberResponse = cosmwasm_std::from_binary(&binary).unwrap();
-        // assert_eq!(response.is_member, true);
+        // Add a member to whitelist
+        let execute_msg = ExecuteMsg::AddMember {
+            address: new_member.to_string(),
+        };
+        let execute_info = testing::mock_info(admin.as_str(), &[]);
+        let result = execute(
+            deps.as_mut(),
+            testing::mock_env(),
+            execute_info,
+            execute_msg,
+        )
+        .unwrap();
+        assert_eq!(
+            result.messages.len(),
+            0,
+            "result.messages: {:?}",
+            result.messages
+        );
+        assert_eq!(
+            result.attributes.len(),
+            2,
+            "result.attributes: {:#?}",
+            result.attributes
+        );
+
+        // Check correctness of the result
+        let whitelist = WHITELIST.load(&deps.storage).unwrap();
+        let has: bool = whitelist.has(new_member);
+        assert!(has);
+
+        let query_req = QueryMsg::IsMember {
+            address: new_member.to_string(),
+        };
+        let binary =
+            query(deps.as_ref(), testing::mock_env(), query_req).unwrap();
+        let response: IsMemberResponse =
+            cosmwasm_std::from_binary(&binary).unwrap();
+        assert!(response.is_member);
     }
 
     #[test]
-    fn test_execute_remove() {
+    fn test_execute_remove_member() {
+        // Init contract
         let _deps = testing::mock_dependencies();
-        // TODO test using cw-storage-plus
-        // let admin = Addr::unchecked("admin");
+        let mut deps = testing::mock_dependencies();
+        let admin = Addr::unchecked("admin");
 
-        // let init_msg = InitMsg {
-        //     admin: admin.as_str().to_string(),
-        // };
-        // let init_info = testing::mock_info("addr0000", &coins(2, "token"));
-        // init(deps.as_mut(), testing::mock_env(), init_info, init_msg).unwrap();
+        let init_msg = InitMsg {
+            admin: admin.as_str().to_string(),
+        };
+        let init_info = testing::mock_info("addr0000", &coins(2, "token"));
+        instantiate(deps.as_mut(), testing::mock_env(), init_info, init_msg)
+            .unwrap();
 
-        // let execute_msg = msg::ExecuteMsg::Add {
-        //     address: "addr0001".to_string(),
-        // };
-        // let execute_info = testing::mock_info(admin.as_str(), &[]);
-        // execute(deps.as_mut(), testing::mock_env(), execute_info.clone(), execute_msg).unwrap();
+        // Set up initial whitelist
+        let members_start: Vec<String> = vec!["vitalik", "musk", "satoshi"]
+            .iter()
+            .map(|&s| s.to_string())
+            .collect();
+        let mut whitelist = WHITELIST.load(&deps.storage).unwrap();
+        assert_eq!(whitelist.members.len(), 0);
+        for member in members_start.iter() {
+            whitelist.members.insert(member.clone());
+        }
+        let res = WHITELIST.save(deps.as_mut().storage, &whitelist);
+        assert!(res.is_ok());
 
-        // let execute_msg = ExecuteMsg::Remove {
-        //     address: "addr0001".to_string(),
-        // };
-        // let result = execute(deps.as_mut(), testing::mock_env(), execute_info, execute_msg).unwrap();
-        // assert_eq!(result.messages.len(), 0);
-        // assert_eq!(result.attributes.len(), 2);
+        // Remove a member from the whitelist
+        let execute_msg = ExecuteMsg::RemoveMember {
+            address: "satoshi".to_string(),
+        };
+        let execute_info = testing::mock_info(admin.as_str(), &[]);
+        let result = execute(
+            deps.as_mut(),
+            testing::mock_env(),
+            execute_info,
+            execute_msg,
+        )
+        .unwrap();
+        assert_eq!(
+            result.messages.len(),
+            0,
+            "result.messages: {:?}",
+            result.messages
+        );
+        assert_eq!(
+            result.attributes.len(),
+            2,
+            "result.attributes: {:#?}",
+            result.attributes
+        );
 
-        // let query_msg = QueryMsg::IsMember {
-        //     address: "addr0001".to_string(),
-        // };
-        // let binary = query(deps.as_ref(), testing::mock_env(), query_msg).unwrap();
-        // let response: IsMemberResponse = cosmwasm_std::from_binary(&binary).unwrap();
-        // assert_eq!(response.is_member, false);
+        // Check correctness of the result
+        let query_req = QueryMsg::Members {};
+        let binary =
+            query(deps.as_ref(), testing::mock_env(), query_req).unwrap();
+        let response: MembersResponse =
+            cosmwasm_std::from_binary(&binary).unwrap();
+        let expected_members: HashSet<String> = vec!["vitalik", "musk"]
+            .iter()
+            .map(|&s| s.to_string())
+            .collect();
+        assert_eq!(
+            response.members, expected_members,
+            "got: {:#?}, wanted: {:#?}",
+            response.members, expected_members
+        );
     }
 }
