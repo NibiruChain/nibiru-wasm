@@ -30,11 +30,17 @@ wasm_all() {
 }
 
 
-# Check for the "--single" flag to run the appropriate function.
-if [ "$1" = "--single" ]; then
-  wasm_single
-else
-  wasm_all
-fi
+main() {
+  # Check for the "--single" flag to run the appropriate function.
+  if [ "$1" = "--single" ]; then
+    wasm_single
+  else
+    wasm_all
+  fi
+}
 
-echo "🔥 Compiled all smart contracts successfully. "
+if main; then 
+  echo "🔥 Compiled all smart contracts successfully. "
+else 
+  echo "❌ Compilation failed."
+fi
