@@ -2,4 +2,4 @@
 c302aac639e48bd2e5caec902014ef026e56d9af56f563870b5dcbc0338ebc05  target/wasm32-unknown-unknown/release/incentives.wasm
 22cd4c1d491d3b64509d060b5da7114f486ce6bb1e20754de6d24e5291b17172  target/wasm32-unknown-unknown/release/lockup.wasm
 19c7bbbd2ac96dfce93fcf7383ce7f095752e9a8aeef1b1e9b4b73035f282584  target/wasm32-unknown-unknown/release/pricefeed.wasm
-a91edb35b2b148d3d5d9637030185820f7f0d19bbfc55649df8c01ad119165dc  target/wasm32-unknown-unknown/release/whitelist.wasm
+c65dd8ba501207911ea5f37bb7354f120094c7c683caa7cc5529671cde1bc029  target/wasm32-unknown-unknown/release/whitelist.wasm
