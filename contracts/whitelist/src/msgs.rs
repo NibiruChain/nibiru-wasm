@@ -1,32 +1,31 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+use cosmwasm_schema::cw_serde;
+
+#[cw_serde]
 pub struct InitMsg {
     pub admin: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ExecuteMsg {
-    Add { address: String },
-    Remove { address: String },
+    AddMember { address: String },
+    RemoveMember { address: String },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum QueryMsg {
     IsMember { address: String },
-    Admins {},
-    // Members {}, // TODO
+    Members {},
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct IsMemberResponse {
     pub is_member: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct AdminsResponse {
-    pub admins: Vec<String>,
+#[cw_serde]
+pub struct MembersResponse {
+    pub admin: String,
+    pub members: HashSet<String>,
 }
