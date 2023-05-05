@@ -201,6 +201,8 @@ pub mod dummy {
         remove_margin: ExecuteMsg,
         multi_liquidate: ExecuteMsg,
         donate_to_insurance_fund: ExecuteMsg,
+        peg_shift: ExecuteMsg,
+        depth_shift: ExecuteMsg,
     }
 
     #[test]
@@ -212,15 +214,18 @@ pub mod dummy {
             remove_margin: execute_remove_margin(),
             multi_liquidate: execute_multi_liquidate(),
             donate_to_insurance_fund: execute_donate_to_insurance_fund(),
+            peg_shift: execute_peg_shift(),
+            depth_shift: execute_depth_shift(),
         };
         let json_str = serde_json::to_string_pretty(&example_msgs).unwrap();
         let mut file = File::create("./execute_msg.json").unwrap();
         assert!(file.write_all(json_str.as_bytes()).is_ok());
     }
 
-    static DUMMY_ADDR: &str = "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl";
-    static DUMMY_ADDR_2: &str = "nibi1ah8gqrtjllhc5ld4rxgl4uglvwl93ag0sh6e6v";
-    static DUMMY_PAIR: &str = "ETH:USD";
+    pub static DUMMY_ADDR: &str = "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl";
+    pub static DUMMY_ADDR_2: &str =
+        "nibi1ah8gqrtjllhc5ld4rxgl4uglvwl93ag0sh6e6v";
+    pub static DUMMY_PAIR: &str = "ETH:USD";
 
     pub fn execute_open_position() -> ExecuteMsg {
         ExecuteMsg::OpenPosition {
@@ -292,6 +297,13 @@ pub mod dummy {
         ExecuteMsg::PegShift {
             pair: DUMMY_PAIR.to_string(),
             peg_mult: dec_420(),
+        }
+    }
+
+    pub fn execute_depth_shift() -> ExecuteMsg {
+        ExecuteMsg::DepthShift {
+            pair: DUMMY_PAIR.to_string(),
+            depth_mult: dec_420(),
         }
     }
 
