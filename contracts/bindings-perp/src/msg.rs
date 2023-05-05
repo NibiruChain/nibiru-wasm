@@ -75,6 +75,11 @@ pub enum ExecuteMsg {
         pair: String,
         peg_mult: Decimal,
     },
+
+    DepthShift {
+        pair: String,
+        depth_mult: Decimal,
+    },
 }
 
 #[cw_serde]
@@ -177,6 +182,17 @@ pub fn msg_peg_shift(
     NibiruExecuteMsgWrapper {
         route: NibiruRoute::Perp,
         msg: ExecuteMsg::PegShift { pair, peg_mult },
+    }
+    .into()
+}
+
+pub fn msg_depth_shift(
+    pair: String,
+    depth_mult: Decimal,
+) -> CosmosMsg<NibiruExecuteMsgWrapper> {
+    NibiruExecuteMsgWrapper {
+        route: NibiruRoute::Perp,
+        msg: ExecuteMsg::DepthShift { pair, depth_mult },
     }
     .into()
 }
