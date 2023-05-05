@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use cosmwasm_schema::{cw_serde};
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{CustomQuery, Decimal, Uint256, Uint64};
 
 use crate::state::{
@@ -14,7 +14,9 @@ pub enum QueryPerpMsg {
     // -----------------------------------------------------------------
     AllMarkets {},
 
-    Reserves { pair: String },
+    Reserves {
+        pair: String,
+    },
 
     BasePrice {
         pair: String,
@@ -25,15 +27,24 @@ pub enum QueryPerpMsg {
     // -----------------------------------------------------------------
     // From x/perp
     // -----------------------------------------------------------------
-    Position { trader: String, pair: String },
+    Position {
+        trader: String,
+        pair: String,
+    },
 
-    Positions { trader: String },
+    Positions {
+        trader: String,
+    },
 
     ModuleParams {},
 
-    PremiumFraction { pair: String },
+    PremiumFraction {
+        pair: String,
+    },
 
-    Metrics { pair: String },
+    Metrics {
+        pair: String,
+    },
 
     ModuleAccounts {},
 }
@@ -63,8 +74,8 @@ pub struct BasePriceResponse {
 #[cw_serde]
 pub struct PositionResponse {
     pub position: Position,
-    pub notional: Decimal,
-    pub upnl: Decimal,
+    pub notional: String, // signed dec
+    pub upnl: String,     // signed dec
     pub margin_ratio_mark: Decimal,
     pub margin_ratio_index: Decimal,
     pub block_number: Uint64,
@@ -110,6 +121,7 @@ pub mod dummy {
     use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
 
     use crate::{
+        msg::dummy::DUMMY_ADDR,
         query::{
             AllMarketsResponse, BasePriceResponse, MetricsResponse,
             ModuleAccountsResponse, ModuleParamsResponse, PositionResponse,
@@ -175,20 +187,23 @@ pub mod dummy {
         }
     }
 
+    pub fn position(pair: String) -> Position {
+        Position {
+            trader_addr: Addr::unchecked(DUMMY_ADDR),
+            pair,
+            size: "420".into(),
+            margin: dec_420(),
+            open_notional: dec_420(),
+            latest_cpf: Decimal::zero(),
+            block_number: 1u64.into(),
+        }
+    }
+
     pub fn position_response() -> PositionResponse {
-        let addr_str: &str = "nibi1kqg3q3v8pjd3epktg9h0azwk56j5v5r5lu5eq2";
         PositionResponse {
-            position: Position {
-                trader_addr: Addr::unchecked(String::from(addr_str)),
-                pair: "ETH:USD".to_string(),
-                size: Decimal::zero(),
-                margin: Decimal::zero(),
-                open_notional: Decimal::zero(),
-                latest_cpf: Decimal::zero(),
-                block_number: 0u64.into(),
-            },
-            notional: Decimal::zero(),
-            upnl: Decimal::zero(),
+            position: position("ETH:USD".to_string()),
+            notional: "420".into(), // signed dec
+            upnl: "69".into(),      // signed dec
             margin_ratio_mark: Decimal::zero(),
             margin_ratio_index: Decimal::zero(),
             block_number: 0u64.into(),
@@ -196,8 +211,17 @@ pub mod dummy {
     }
 
     pub fn positions_response() -> PositionsResponse {
+        let mut positions_map: HashMap<String, Position> = HashMap::new();
+        let pairs: Vec<String> = vec!["ETH:USD", "BTC:USD"]
+            .iter()
+            .map(|&s| s.to_string())
+            .collect();
+        for pair in &pairs {
+            positions_map.insert(pair.clone(), position(pair.clone()));
+        }
+
         PositionsResponse {
-            positions: HashMap::new(),
+            positions: positions_map,
         }
     }
 

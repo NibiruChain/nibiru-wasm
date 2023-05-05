@@ -2,8 +2,8 @@ use cosmwasm_std::{QuerierWrapper, StdResult, Uint256};
 
 use crate::query::{
     AllMarketsResponse, BasePriceResponse, MetricsResponse,
-    ModuleAccountsResponse, ModuleParamsResponse, QueryPerpMsg, PositionResponse,
-    PositionsResponse, PremiumFractionResponse, ReservesResponse,
+    ModuleAccountsResponse, ModuleParamsResponse, PositionResponse,
+    PositionsResponse, PremiumFractionResponse, QueryPerpMsg, ReservesResponse,
 };
 
 /// NibiriQuerier makes it easy to export the functions that correspond to each
@@ -101,8 +101,8 @@ mod tests {
     use crate::query::{
         dummy::{self, dec_420, dec_69},
         AllMarketsResponse, BasePriceResponse, MetricsResponse,
-        ModuleAccountsResponse, ModuleParamsResponse, QueryPerpMsg,
-        PremiumFractionResponse, ReservesResponse,
+        ModuleAccountsResponse, ModuleParamsResponse, PremiumFractionResponse,
+        QueryPerpMsg, ReservesResponse,
     };
 
     pub fn mock_dependencies_with_custom_querier(
@@ -218,7 +218,8 @@ mod tests {
         let deps = mock_dependencies_with_custom_querier(&[]);
 
         // Call the query
-        let req: QueryRequest<QueryPerpMsg> = QueryPerpMsg::ModuleParams {}.into();
+        let req: QueryRequest<QueryPerpMsg> =
+            QueryPerpMsg::ModuleParams {}.into();
         let querier_wrapper = QuerierWrapper::new(&deps.querier);
         let resp: ModuleParamsResponse = querier_wrapper.query(&req).unwrap();
 
