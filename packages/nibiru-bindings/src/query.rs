@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use cosmwasm_schema::{cw_serde};
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{CustomQuery, Decimal, Uint256, Uint64};
 
 use crate::state::{
@@ -14,7 +14,9 @@ pub enum QueryPerpMsg {
     // -----------------------------------------------------------------
     AllMarkets {},
 
-    Reserves { pair: String },
+    Reserves {
+        pair: String,
+    },
 
     BasePrice {
         pair: String,
@@ -25,15 +27,24 @@ pub enum QueryPerpMsg {
     // -----------------------------------------------------------------
     // From x/perp
     // -----------------------------------------------------------------
-    Position { trader: String, pair: String },
+    Position {
+        trader: String,
+        pair: String,
+    },
 
-    Positions { trader: String },
+    Positions {
+        trader: String,
+    },
 
     ModuleParams {},
 
-    PremiumFraction { pair: String },
+    PremiumFraction {
+        pair: String,
+    },
 
-    Metrics { pair: String },
+    Metrics {
+        pair: String,
+    },
 
     ModuleAccounts {},
 }
@@ -63,8 +74,8 @@ pub struct BasePriceResponse {
 #[cw_serde]
 pub struct PositionResponse {
     pub position: Position,
-    pub notional: Decimal,
-    pub upnl: Decimal,
+    pub notional: String, // signed dec
+    pub upnl: String,     // signed dec
     pub margin_ratio_mark: Decimal,
     pub margin_ratio_index: Decimal,
     pub block_number: Uint64,
@@ -96,4 +107,3 @@ pub struct MetricsResponse {
 pub struct ModuleAccountsResponse {
     pub module_accounts: HashMap<String, ModuleAccountWithBalance>,
 }
-

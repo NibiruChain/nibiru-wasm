@@ -7,7 +7,7 @@ use cosmwasm_std::{Addr, Coin, Decimal, Uint256, Uint64};
 pub struct Position {
     pub trader_addr: Addr,
     pub pair: String,
-    pub size: Decimal,
+    pub size: String, // signed dec
     pub margin: Decimal,
     pub open_notional: Decimal,
     pub latest_cpf: Decimal,
