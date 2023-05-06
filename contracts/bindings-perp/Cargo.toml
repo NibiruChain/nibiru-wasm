@@ -15,16 +15,16 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cw-utils = { version = "1.0.1" }
+cosmwasm-schema = { version = "1.2.3" }
+cosmwasm-std = { version = "1.2.3" }
 cw2 = { version = "1.0.1" }
 cw20 = { version = "1.0.1" }
 cw-storage-plus = { version = "1.0.1" }
-cosmwasm-schema = { version = "1.2.3" }
-cosmwasm-std = { version = "1.2.3" }
+cw-utils = { version = "1.0.1" }
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.23" }
-nibiru-bindings = { version = "0.1.0", path = "../../packages/nibiru-bindings" }
+nibiru-bindings = { path = "../../packages/nibiru-bindings" }
 
 [dev-dependencies]
 cosmwasm-vm = "1.2.3"

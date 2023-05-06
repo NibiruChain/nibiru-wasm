@@ -1,19 +1,18 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, CosmosMsg, Deps, DepsMut, Env,
-    MessageInfo, Response, StdResult,
+    entry_point, to_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Response, StdResult,
 };
 
 use cw2::set_contract_version;
 
-use nibiru_bindings::query::QueryPerpMsg;
 use nibiru_bindings::querier::NibiruQuerier;
+use nibiru_bindings::query::QueryPerpMsg;
 
-use crate::{
-    msg::{
-        msg_add_margin, msg_close_position, msg_donate_to_insurance_fund,
-        msg_multi_liquidate, msg_open_position, msg_peg_shift,
-        msg_remove_margin, ExecuteMsg, InstantiateMsg, NibiruExecuteMsgWrapper,
-    },
+use crate::msg::{
+    msg_add_margin, msg_close_position, msg_depth_shift,
+    msg_donate_to_insurance_fund, msg_multi_liquidate, msg_open_position,
+    msg_peg_shift, msg_remove_margin, ExecuteMsg, InstantiateMsg,
+    NibiruExecuteMsgWrapper,
 };
 
 const CONTRACT_NAME: &str = "cw-nibiru-bindings-perp";
@@ -40,7 +39,9 @@ pub fn query(
 ) -> StdResult<Binary> {
     let querier = NibiruQuerier::new(&deps.querier);
     match msg {
-        QueryPerpMsg::AllMarkets {} => to_binary(&querier.all_markets().unwrap()),
+        QueryPerpMsg::AllMarkets {} => {
+            to_binary(&querier.all_markets().unwrap())
+        }
         QueryPerpMsg::BasePrice {
             pair,
             is_long,
@@ -52,8 +53,12 @@ pub fn query(
         QueryPerpMsg::Positions { trader } => {
             to_binary(&querier.positions(trader).unwrap())
         }
-        QueryPerpMsg::Metrics { pair } => to_binary(&querier.metrics(pair).unwrap()),
-        QueryPerpMsg::ModuleAccounts {} => to_binary(&querier.module_accounts()?),
+        QueryPerpMsg::Metrics { pair } => {
+            to_binary(&querier.metrics(pair).unwrap())
+        }
+        QueryPerpMsg::ModuleAccounts {} => {
+            to_binary(&querier.module_accounts()?)
+        }
         QueryPerpMsg::ModuleParams {} => to_binary(&querier.module_params()?),
         QueryPerpMsg::PremiumFraction { pair } => {
             to_binary(&querier.premium_fraction(pair)?)
@@ -121,16 +126,21 @@ pub fn execute(
         ExecuteMsg::PegShift { pair, peg_mult } => {
             nibiru_msg_to_cw_response(msg_peg_shift(pair, peg_mult))
         }
+
+        ExecuteMsg::DepthShift { pair, depth_mult } => {
+            nibiru_msg_to_cw_response(msg_depth_shift(pair, depth_mult))
+        }
     }
 }
 
 #[cfg(test)]
 pub mod integration_tests {
     use crate::msg::InstantiateMsg;
-    use cosmwasm_std::{coins, Response};
+    use cosmwasm_std::{coins, Decimal, Response};
     use cosmwasm_vm::testing::{
         instantiate, mock_env, mock_info, mock_instance,
     };
+    use std::str::FromStr;
 
     // TODO test that the file exists
     static WASM: &[u8] = include_bytes!("../../../artifacts/bindings_perp.wasm");
@@ -144,6 +154,12 @@ pub mod integration_tests {
         let result: Response =
             instantiate(&mut deps, mock_env(), info, inst_msg).unwrap();
         assert_eq!(result.messages.len(), 0);
+    }
+
+    #[test]
+    fn negative_decimal_not_possible() {
+        let neg = Decimal::from_str("-420");
+        assert!(neg.is_err())
     }
 
     // Example integration test for a custom query

@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashSet, marker::PhantomData, str::FromStr};
     use nibiru_bindings::query::{
-        QueryPerpMsg,AllMarketsResponse, BasePriceResponse, MetricsResponse,
-        ModuleAccountsResponse, ModuleParamsResponse,
-        PremiumFractionResponse, ReservesResponse,
+        AllMarketsResponse, BasePriceResponse, MetricsResponse,
+        ModuleAccountsResponse, ModuleParamsResponse, PremiumFractionResponse,
+        QueryPerpMsg, ReservesResponse,
     };
+    use std::{collections::HashSet, marker::PhantomData, str::FromStr};
 
     use cosmwasm_std::{
         testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
@@ -13,10 +13,7 @@ mod tests {
         QuerierWrapper, QueryRequest, SystemResult, Uint256, Uint64,
     };
 
-
-    use crate::query::{
-        dummy::{self, dec_420, dec_69},
-    };
+    use crate::query::dummy::{self, dec_420, dec_69};
 
     pub fn mock_dependencies_with_custom_querier(
         contract_balance: &[Coin],
@@ -98,7 +95,7 @@ mod tests {
         let req: QueryRequest<QueryPerpMsg> = QueryPerpMsg::Reserves {
             pair: String::from("ETH:USD"),
         }
-            .into();
+        .into();
         let querier_wrapper = QuerierWrapper::new(&deps.querier);
         let resp: ReservesResponse = querier_wrapper.query(&req).unwrap();
 
@@ -116,7 +113,7 @@ mod tests {
         let req: QueryRequest<QueryPerpMsg> = QueryPerpMsg::PremiumFraction {
             pair: String::from("ETH:USD"),
         }
-            .into();
+        .into();
         let querier_wrapper = QuerierWrapper::new(&deps.querier);
         let resp: PremiumFractionResponse = querier_wrapper.query(&req).unwrap();
 
@@ -131,7 +128,8 @@ mod tests {
         let deps = mock_dependencies_with_custom_querier(&[]);
 
         // Call the query
-        let req: QueryRequest<QueryPerpMsg> = QueryPerpMsg::ModuleParams {}.into();
+        let req: QueryRequest<QueryPerpMsg> =
+            QueryPerpMsg::ModuleParams {}.into();
         let querier_wrapper = QuerierWrapper::new(&deps.querier);
         let resp: ModuleParamsResponse = querier_wrapper.query(&req).unwrap();
 
@@ -156,8 +154,8 @@ mod tests {
                     "nibi1ah8gqrtjllhc5ld4rxgl4uglvwl93ag0sh6e6v",
                     "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl"
                 ]
-                    .iter()
-                    .map(|s_ptr| s_ptr.to_string())
+                .iter()
+                .map(|s_ptr| s_ptr.to_string())
             ),
         );
     }
@@ -191,7 +189,7 @@ mod tests {
         let req: QueryRequest<QueryPerpMsg> = QueryPerpMsg::Metrics {
             pair: "ETH:USD".to_string(),
         }
-            .into();
+        .into();
         let querier_wrapper = QuerierWrapper::new(&deps.querier);
         let resp: MetricsResponse = querier_wrapper.query(&req).unwrap();
 
@@ -213,7 +211,7 @@ mod tests {
             is_long: true,
             base_amount: Uint256::from_str("123").unwrap(),
         }
-            .into();
+        .into();
         let querier_wrapper = QuerierWrapper::new(&deps.querier);
         let resp: BasePriceResponse = querier_wrapper.query(&req).unwrap();
 
@@ -234,18 +232,20 @@ pub mod dummy {
         str::FromStr,
     };
 
-    use cosmwasm_std::Uint256;
     use cosmwasm_schema::cw_serde;
+    use cosmwasm_std::Uint256;
     use cosmwasm_std::{Addr, Coin, Decimal, Uint128, Uint64};
 
-    use nibiru_bindings::{
-        query::{
-            AllMarketsResponse, BasePriceResponse, MetricsResponse,
-            ModuleAccountsResponse, ModuleParamsResponse, PositionResponse,
-            PositionsResponse, PremiumFractionResponse, ReservesResponse,
-        },
+    use crate::msg::dummy::DUMMY_ADDR;
+    use nibiru_bindings::query::{
+        AllMarketsResponse, BasePriceResponse, MetricsResponse,
+        ModuleAccountsResponse, ModuleParamsResponse, PositionResponse,
+        PositionsResponse, PremiumFractionResponse, ReservesResponse,
     };
-    use nibiru_bindings::state::{Market, MarketConfig, Metrics, ModuleAccountWithBalance, ModuleParams, Position};
+    use nibiru_bindings::state::{
+        Market, MarketConfig, Metrics, ModuleAccountWithBalance, ModuleParams,
+        Position,
+    };
 
     pub fn dec_420() -> Decimal {
         Decimal::from_str("420").unwrap()
@@ -299,20 +299,23 @@ pub mod dummy {
         }
     }
 
+    pub fn position(pair: String) -> Position {
+        Position {
+            trader_addr: Addr::unchecked(DUMMY_ADDR),
+            pair,
+            size: "420".into(),
+            margin: dec_420(),
+            open_notional: dec_420(),
+            latest_cpf: Decimal::zero(),
+            block_number: 1u64.into(),
+        }
+    }
+
     pub fn position_response() -> PositionResponse {
-        let addr_str: &str = "nibi1kqg3q3v8pjd3epktg9h0azwk56j5v5r5lu5eq2";
         PositionResponse {
-            position: Position {
-                trader_addr: Addr::unchecked(String::from(addr_str)),
-                pair: "ETH:USD".to_string(),
-                size: Decimal::zero(),
-                margin: Decimal::zero(),
-                open_notional: Decimal::zero(),
-                latest_cpf: Decimal::zero(),
-                block_number: 0u64.into(),
-            },
-            notional: Decimal::zero(),
-            upnl: Decimal::zero(),
+            position: position("ETH:USD".to_string()),
+            notional: "420".into(), // signed dec
+            upnl: "69".into(),      // signed dec
             margin_ratio_mark: Decimal::zero(),
             margin_ratio_index: Decimal::zero(),
             block_number: 0u64.into(),
@@ -320,8 +323,17 @@ pub mod dummy {
     }
 
     pub fn positions_response() -> PositionsResponse {
+        let mut positions_map: HashMap<String, Position> = HashMap::new();
+        let pairs: Vec<String> = vec!["ETH:USD", "BTC:USD"]
+            .iter()
+            .map(|&s| s.to_string())
+            .collect();
+        for pair in &pairs {
+            positions_map.insert(pair.clone(), position(pair.clone()));
+        }
+
         PositionsResponse {
-            positions: HashMap::new(),
+            positions: positions_map,
         }
     }
 

@@ -1,3 +1,2 @@
 [workspace]
-members = ["packages/*"]
-exclude = ["contracts"]
+members = ["packages/*", "contracts/*"]
