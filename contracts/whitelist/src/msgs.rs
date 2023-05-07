@@ -1,4 +1,5 @@
 use cosmwasm_schema::cw_serde;
+use cosmwasm_std::Decimal;
 
 use crate::state::Whitelist;
 
@@ -13,7 +14,17 @@ pub struct InitMsg {
 pub enum ExecuteMsg {
     AddMember { address: String },
     RemoveMember { address: String },
+    DepthShift {
+        pair: String,
+        depth_mult: Decimal,
+    },
+    PegShift {
+        pair: String,
+        peg_mult: Decimal,
+    },
 }
+
+
 
 /// QueryMsg specifies the args for the query entry point of the contract.
 #[cw_serde]
