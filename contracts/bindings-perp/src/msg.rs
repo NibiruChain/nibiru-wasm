@@ -1,5 +1,7 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Coin, CosmosMsg, CustomMsg, Decimal, Uint128, Response, StdResult};
+use cosmwasm_std::{
+    Coin, CosmosMsg, CustomMsg, Decimal, Response, StdResult, Uint128,
+};
 
 #[cw_serde]
 pub struct InstantiateMsg {}
@@ -88,7 +90,7 @@ pub struct LiquidationArgs {
     pub trader: String,
 }
 
-/// nibiru_msg_to_cw_response: Converts a CosmosMsg to the response type 
+/// nibiru_msg_to_cw_response: Converts a CosmosMsg to the response type
 /// expected by the execute entry point of smart contract's .
 pub fn nibiru_msg_to_cw_response(
     cw_msg: CosmosMsg<NibiruExecuteMsg>,
