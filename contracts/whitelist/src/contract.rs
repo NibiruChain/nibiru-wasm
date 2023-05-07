@@ -27,8 +27,8 @@ use std::collections::HashSet;
 
 use bindings_perp::msg::NibiruExecuteMsg;
 use cosmwasm_std::{
-    attr, entry_point, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
-    Response, StdResult, Empty,
+    attr, entry_point, Binary, CosmosMsg, Deps, DepsMut, Empty, Env,
+    MessageInfo, Response, StdResult,
 };
 
 use crate::{
@@ -98,6 +98,27 @@ pub fn execute(
     let mut whitelist = check.whitelist.clone();
 
     match msg {
+        ExecuteMsg::DepthShift { pair, depth_mult } => {
+            check_member(check)?;
+            let cw_msg: CosmosMsg<NibiruExecuteMsg> =
+                NibiruExecuteMsg::depth_shift(pair, depth_mult);
+            // Ok(Response::new().add_message(cw_msg).add_attributes(vec![
+            let res = Response::new()
+                .add_message(cw_msg)
+                .add_attributes(vec![attr("action", "depth_shift")]);
+            Ok(ExecuteResponse::NibiruExecuteMsg(res))
+        }
+
+        ExecuteMsg::PegShift { pair, peg_mult } => {
+            check_member(check)?;
+            let cw_msg: CosmosMsg<NibiruExecuteMsg> =
+                NibiruExecuteMsg::peg_shift(pair, peg_mult);
+            let res = Response::new()
+                .add_message(cw_msg)
+                .add_attributes(vec![attr("action", "peg_shift")]);
+            Ok(ExecuteResponse::NibiruExecuteMsg(res))
+        }
+
         ExecuteMsg::AddMember { address } => {
             check_admin(check)?;
             let api = deps.api;
@@ -122,26 +143,19 @@ pub fn execute(
             Ok(ExecuteResponse::Empty(res))
         }
 
-        ExecuteMsg::DepthShift { pair, depth_mult } => {
-            check_member(check)?;
-            let cw_msg: CosmosMsg<NibiruExecuteMsg> =
-                NibiruExecuteMsg::depth_shift(pair, depth_mult).into();
-            // Ok(Response::new().add_message(cw_msg).add_attributes(vec![
-            let res = Response::new()
-                .add_message(cw_msg)
-                .add_attributes(vec![attr("action", "depth_shift")]);
-            Ok(ExecuteResponse::NibiruExecuteMsg(res))
+        ExecuteMsg::ChangeAdmin { address } => {
+            // TODO test
+            check_admin(check)?;
+            let api = deps.api;
+            let addr = api.addr_validate(address.as_str()).unwrap();
+            whitelist.admin = addr.into_string();
+            WHITELIST.save(deps.storage, &whitelist)?;
+            let res = Response::new().add_attributes(vec![
+                attr("action", "change_admin"),
+                attr("address", address),
+            ]);
+            Ok(ExecuteResponse::Empty(res))
         }
-
-        ExecuteMsg::PegShift { pair, peg_mult } => {
-            check_member(check)?;
-            let cw_msg: CosmosMsg<NibiruExecuteMsg> =
-                NibiruExecuteMsg::peg_shift(pair, peg_mult);
-            let res = Response::new()
-                .add_message(cw_msg)
-                .add_attributes(vec![attr("action", "peg_shift")]);
-            Ok(ExecuteResponse::NibiruExecuteMsg(res))
-        } // TODO Change admin
     }
 }
 

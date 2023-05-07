@@ -12,19 +12,12 @@ pub struct InitMsg {
 /// ExecuteMsg specifies the args for the execute entry point of the contract.
 #[cw_serde]
 pub enum ExecuteMsg {
+    DepthShift { pair: String, depth_mult: Decimal },
+    PegShift { pair: String, peg_mult: Decimal },
     AddMember { address: String },
     RemoveMember { address: String },
-    DepthShift {
-        pair: String,
-        depth_mult: Decimal,
-    },
-    PegShift {
-        pair: String,
-        peg_mult: Decimal,
-    },
+    ChangeAdmin { address: String },
 }
-
-
 
 /// QueryMsg specifies the args for the query entry point of the contract.
 #[cw_serde]
