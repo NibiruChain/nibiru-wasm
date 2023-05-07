@@ -27,12 +27,13 @@ impl From<NibiruExecuteMsg> for CosmosMsg<NibiruExecuteMsg> {
     }
 }
 
-#[cw_serde]
 /// Routes here refer to groups of modules on Nibiru. The idea here is to add
 /// information on which module or group of modules a particular execute message  
 /// belongs to.
+#[cw_serde]
 pub enum NibiruRoute {
     Perp,
+    NoOp,
 }
 
 #[cw_serde]
@@ -82,6 +83,8 @@ pub enum ExecuteMsg {
         pair: String,
         depth_mult: Decimal,
     },
+
+    NoOp {},
 }
 
 #[cw_serde]
@@ -204,6 +207,14 @@ impl NibiruExecuteMsg {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
             msg: ExecuteMsg::DepthShift { pair, depth_mult },
+        }
+        .into()
+    }
+
+    pub fn no_op() -> CosmosMsg<NibiruExecuteMsg> {
+        NibiruExecuteMsg {
+            route: NibiruRoute::NoOp,
+            msg: ExecuteMsg::NoOp {},
         }
         .into()
     }
