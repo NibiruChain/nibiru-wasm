@@ -130,6 +130,10 @@ pub fn execute(
                 pair, depth_mult,
             ))
         }
+
+        ExecuteMsg::NoOp {} => {
+            nibiru_msg_to_cw_response(NibiruExecuteMsg::no_op())
+        }
     }
 }
 
