@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
-    Response, StdResult,
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
+    StdResult,
 };
 
 use cw2::set_contract_version;
@@ -9,10 +9,7 @@ use nibiru_bindings::querier::NibiruQuerier;
 use nibiru_bindings::query::QueryPerpMsg;
 
 use crate::msg::{
-    msg_add_margin, msg_close_position, msg_depth_shift,
-    msg_donate_to_insurance_fund, msg_multi_liquidate, msg_open_position,
-    msg_peg_shift, msg_remove_margin, ExecuteMsg, InstantiateMsg,
-    NibiruExecuteMsgWrapper,
+    nibiru_msg_to_cw_response, ExecuteMsg, InstantiateMsg, NibiruExecuteMsg,
 };
 
 const CONTRACT_NAME: &str = "cw-nibiru-bindings-perp";
@@ -67,19 +64,13 @@ pub fn query(
     }
 }
 
-fn nibiru_msg_to_cw_response(
-    cw_msg: CosmosMsg<NibiruExecuteMsgWrapper>,
-) -> StdResult<Response<NibiruExecuteMsgWrapper>> {
-    Ok(Response::new().add_message(cw_msg))
-}
-
 #[entry_point]
 pub fn execute(
     _deps: DepsMut<QueryPerpMsg>,
     _env: Env,
     _info: MessageInfo,
     msg: ExecuteMsg,
-) -> StdResult<Response<NibiruExecuteMsgWrapper>> {
+) -> StdResult<Response<NibiruExecuteMsg>> {
     match msg {
         ExecuteMsg::OpenPosition {
             sender,
@@ -88,7 +79,7 @@ pub fn execute(
             quote_amount,
             leverage,
             base_amount_limit,
-        } => nibiru_msg_to_cw_response(msg_open_position(
+        } => nibiru_msg_to_cw_response(NibiruExecuteMsg::open_position(
             sender,
             pair,
             is_long,
@@ -97,38 +88,51 @@ pub fn execute(
             base_amount_limit,
         )),
 
-        ExecuteMsg::ClosePosition { sender, pair } => {
-            nibiru_msg_to_cw_response(msg_close_position(sender, pair))
-        }
+        ExecuteMsg::ClosePosition { sender, pair } => nibiru_msg_to_cw_response(
+            NibiruExecuteMsg::close_position(sender, pair),
+        ),
 
         ExecuteMsg::AddMargin {
             sender,
             pair,
             margin,
-        } => nibiru_msg_to_cw_response(msg_add_margin(sender, pair, margin)),
+        } => nibiru_msg_to_cw_response(NibiruExecuteMsg::add_margin(
+            sender, pair, margin,
+        )),
 
         ExecuteMsg::RemoveMargin {
             sender,
             pair,
             margin,
-        } => nibiru_msg_to_cw_response(msg_remove_margin(sender, pair, margin)),
+        } => nibiru_msg_to_cw_response(NibiruExecuteMsg::remove_margin(
+            sender, pair, margin,
+        )),
 
         ExecuteMsg::MultiLiquidate { pair, liquidations } => {
-            nibiru_msg_to_cw_response(msg_multi_liquidate(pair, liquidations))
-        }
-
-        ExecuteMsg::DonateToInsuranceFund { sender, donation } => {
-            nibiru_msg_to_cw_response(msg_donate_to_insurance_fund(
-                sender, donation,
+            nibiru_msg_to_cw_response(NibiruExecuteMsg::multi_liquidate(
+                pair,
+                liquidations,
             ))
         }
 
-        ExecuteMsg::PegShift { pair, peg_mult } => {
-            nibiru_msg_to_cw_response(msg_peg_shift(pair, peg_mult))
+        ExecuteMsg::DonateToInsuranceFund { sender, donation } => {
+            nibiru_msg_to_cw_response(
+                NibiruExecuteMsg::donate_to_insurance_fund(sender, donation),
+            )
         }
 
+        ExecuteMsg::PegShift { pair, peg_mult } => nibiru_msg_to_cw_response(
+            NibiruExecuteMsg::peg_shift(pair, peg_mult),
+        ),
+
         ExecuteMsg::DepthShift { pair, depth_mult } => {
-            nibiru_msg_to_cw_response(msg_depth_shift(pair, depth_mult))
+            nibiru_msg_to_cw_response(NibiruExecuteMsg::depth_shift(
+                pair, depth_mult,
+            ))
+        }
+
+        ExecuteMsg::NoOp {} => {
+            nibiru_msg_to_cw_response(NibiruExecuteMsg::no_op())
         }
     }
 }
