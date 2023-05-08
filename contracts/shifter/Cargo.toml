@@ -18,7 +18,8 @@ library = []
 cosmwasm-std = { version = "1.2.3" }
 cosmwasm-schema = { version = "1.2.3" }
 cw-storage-plus = { version = "1.0.1" }
-nibiru-bindings = { path = "../../packages/nibiru-bindings" }
+nibiru-bindings = { path = "../../packages/bindings" }
+nibiru-macro = { path = "../../packages/macro" }
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.23" }
