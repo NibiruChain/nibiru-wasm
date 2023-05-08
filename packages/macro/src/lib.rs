@@ -30,6 +30,8 @@ pub fn cw_custom(_attr: TokenStream, input: TokenStream) -> TokenStream {
 
         impl CustomMsg for #name {}
 
+        /// This implementation of the "From" trait converts instances of the #name
+        /// type into `CossmosMsg` objects.
         impl From<#name> for CosmosMsg<#name> {
             fn from(original: #name) -> Self {
                 CosmosMsg::Custom(original)

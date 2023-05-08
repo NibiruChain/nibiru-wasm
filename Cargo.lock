@@ -85,6 +85,7 @@ dependencies = [
  "cw2",
  "cw20",
  "nibiru-bindings",
+ "nibiru-macro",
  "schemars",
  "serde",
  "serde_json",

@@ -26,12 +26,13 @@
 ///    x/perp module for dynamic optimizations like peg shift and depth shift.
 use std::collections::HashSet;
 
-use nibiru_bindings::route::NibiruRoute;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     attr, entry_point, Binary, CosmosMsg, CustomMsg, Deps, DepsMut, Env,
     MessageInfo, Response, StdResult,
 };
+use nibiru_bindings::route::NibiruRoute;
+use nibiru_macro::cw_custom;
 
 use crate::{
     msgs::{ExecuteMsg, InitMsg, IsMemberResponse, QueryMsg, WhitelistResponse},
@@ -83,20 +84,11 @@ fn check_member(can: CanExecute) -> Result<(), cosmwasm_std::StdError> {
 /// entry points return different returning different response types for the
 /// same message type. Ref: https://book.cosmwasm.com/basics/entry-points.html
 #[cw_serde]
+#[cw_custom]
 pub struct ContractExecMsg {
     pub route: Option<NibiruRoute>,
     pub msg: Option<ExecuteMsg>,
 }
-
-/// "From" is the workforce function for returning messages as fields of the
-/// CosmosMsg enum type more easily.
-impl From<ContractExecMsg> for CosmosMsg<ContractExecMsg> {
-    fn from(original: ContractExecMsg) -> Self {
-        CosmosMsg::Custom(original)
-    }
-}
-
-impl CustomMsg for ContractExecMsg {}
 
 #[entry_point]
 pub fn execute(
