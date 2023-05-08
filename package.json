@@ -9,7 +9,8 @@
     "clean": "cargo clean", 
     "clippy": "cargo clippy --fix --allow-dirty --allow-staged", 
     "clippy:check": "cargo clippy",
-    "tidy": "yarn build && yarn fmt && yarn clippy",
+    "tidy": "yarn update:build && yarn fmt && yarn clippy",
+    "update:build": "cargo update && yarn build", 
     "wasm": "sh scripts/wasm-out.sh",
     "wasm:export": "sh scripts/wasm-export.sh",
     "wasm:single": "sh scripts/wasm-out.sh --single"
