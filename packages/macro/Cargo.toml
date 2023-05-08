@@ -1,0 +1,19 @@
+[package]
+name = "nibiru-macro"
+version = "0.1.0"
+edition = "2021"
+description = "Procedural macros for Nibiru CosmWasm smart contracts"
+
+# lib: See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+proc-macro = true
+
+[features]
+backtraces = ["cosmwasm-std/backtraces"]
+library = []
+
+[dependencies]
+cosmwasm-std = "1.2.3"
+cosmwasm-schema = "1.2.3"
+quote = "1.0.26"
+syn = "2.0.10"

@@ -3,37 +3,20 @@ use cosmwasm_std::{
     Coin, CosmosMsg, CustomMsg, Decimal, Response, StdResult, Uint128,
 };
 
+use nibiru_bindings::route::NibiruRoute;
+use nibiru_macro::cw_custom;
 #[cw_serde]
 pub struct InstantiateMsg {}
 
-#[cw_serde]
 /// NibiruExecuteMsg is an override of CosmosMsg::Custom. Using this msg
 /// wrapper for the ExecuteMsg handlers show that their return values are valid
 /// instances of CosmosMsg::Custom in a type-safe manner. It also shows how
-/// CosmosMsg::Custom can be extended in the contract.
 /// ExecuteMsg can be extended in the contract.
+#[cw_serde]
+#[cw_custom]
 pub struct NibiruExecuteMsg {
     pub route: NibiruRoute,
     pub msg: ExecuteMsg,
-}
-
-impl CustomMsg for NibiruExecuteMsg {}
-
-/// "From" is the workforce function for returning messages as fields of the
-/// CosmosMsg enum type more easily.
-impl From<NibiruExecuteMsg> for CosmosMsg<NibiruExecuteMsg> {
-    fn from(original: NibiruExecuteMsg) -> Self {
-        CosmosMsg::Custom(original)
-    }
-}
-
-/// Routes here refer to groups of modules on Nibiru. The idea here is to add
-/// information on which module or group of modules a particular execute message  
-/// belongs to.
-#[cw_serde]
-pub enum NibiruRoute {
-    Perp,
-    NoOp,
 }
 
 #[cw_serde]
