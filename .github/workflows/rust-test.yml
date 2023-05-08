@@ -88,7 +88,8 @@ jobs:
         run: cargo generate-lockfile
       - name: cargo llvm-cov
         # Outputs the code coverage in a format that codecov.io can understand
-        run: cargo llvm-cov --locked --all-features --lcov --output-path lcov.info
+        run: cargo llvm-cov --lcov --output-path lcov.info
+        # run: cargo llvm-cov --locked --all-features --lcov --output-path lcov.info
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v3
         with:
