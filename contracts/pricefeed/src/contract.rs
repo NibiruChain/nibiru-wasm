@@ -10,12 +10,13 @@ use crate::state::{
 };
 use crate::AssetPair;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Decimal, Deps, DepsMut, Empty, Env, Event,
-    MessageInfo, Order, Response, StdResult, Storage, Uint128,
+    entry_point, to_binary, Addr, Binary, Decimal, Deps, DepsMut, Empty, Env,
+    Event, MessageInfo, Order, Response, StdResult, Uint128,
 };
 
 use std::collections::HashSet;
 
+#[entry_point]
 pub fn instantiate(
     _deps: DepsMut,
     _env: Env,
@@ -25,6 +26,7 @@ pub fn instantiate(
     Ok(Response::new())
 }
 
+#[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Price { pair_id } => to_binary(&QueryPriceResponse {
@@ -90,6 +92,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
+#[entry_point]
 pub fn sudo(
     deps: DepsMut,
     env: Env,
