@@ -264,7 +264,8 @@ pub mod dummy {
                 quote_reserve: dec_69(),
                 sqrt_depth: dec_69(),
                 depth: Uint256::from(69u64 * 69u64),
-                bias: dec_420(),
+                total_long: dec_420(),
+                total_short: dec_69(),
                 peg_mult: dec_420(),
                 config: MarketConfig {
                     trade_limit_ratio: dec_420(),
