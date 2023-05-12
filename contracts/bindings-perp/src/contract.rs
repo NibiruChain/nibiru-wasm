@@ -121,16 +121,6 @@ pub fn execute(
             )
         }
 
-        ExecuteMsg::PegShift { pair, peg_mult } => nibiru_msg_to_cw_response(
-            NibiruExecuteMsg::peg_shift(pair, peg_mult),
-        ),
-
-        ExecuteMsg::DepthShift { pair, depth_mult } => {
-            nibiru_msg_to_cw_response(NibiruExecuteMsg::depth_shift(
-                pair, depth_mult,
-            ))
-        }
-
         ExecuteMsg::NoOp {} => {
             nibiru_msg_to_cw_response(NibiruExecuteMsg::no_op())
         }

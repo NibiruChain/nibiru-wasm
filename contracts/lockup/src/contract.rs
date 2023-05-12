@@ -11,6 +11,7 @@ use cosmwasm_std::{
 };
 use cw_storage_plus::Bound;
 
+#[entry_point]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,

@@ -1,31 +1,3 @@
-/// "Shifter" is a simple contract that can be used to execute peg shift and
-/// depth shifts in the x/perp module of Nibiru. The contract stores a whitelist
-/// of addresses, managed by an admin. This whitelist design takes inspiration
-/// from cw-plus/contracts/cw1-whitelist.
-///
-/// The contract initializes with an admin address and allows the admin to add
-/// or remove addresses from the whitelist. Users can query whether an address
-/// is whitelisted or not.
-///
-/// ### Entry Points
-///
-/// - InitMsg: Initializes the contract with the admin address.
-/// - ExecuteMsg: Enum for executing msgs
-///   - ExecuteMsg::DepthShift
-///   - ExecuteMsg::PegShift
-///   - ExecuteMsg::AddMember adds an address to the whitelist
-///   - ExecuteMsg::RemoveMember removes and address from the whitelist.
-///   - ExecuteMsg::ChangeAdmin lets the current admin set a new one.
-///
-/// ### Contained Functionality
-///
-/// 1. Initialize the contract with an admin address.
-/// 2. Allow the admin to add or remove addresses from the whitelist.
-/// 3. Allow anyone to query if an address is on the whitelist.
-/// 4. Members of the whitelist set can execute permissioned calls on the Nibiru
-///    x/perp module for dynamic optimizations like peg shift and depth shift.
-use std::collections::HashSet;
-
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     attr, entry_point, Binary, CosmosMsg, CustomMsg, Deps, DepsMut, Env,
@@ -47,7 +19,7 @@ pub fn instantiate(
     msg: InitMsg,
 ) -> StdResult<Response> {
     let whitelist = Whitelist {
-        members: HashSet::new(),
+        members: vec![msg.admin.clone()].into_iter().collect(),
         admin: msg.admin,
     };
     WHITELIST.save(deps.storage, &whitelist)?;
@@ -133,6 +105,7 @@ pub fn execute(
             let addr = api.addr_validate(address.as_str()).unwrap();
             whitelist.members.insert(addr.into_string());
             WHITELIST.save(deps.storage, &whitelist)?;
+
             let cw_msg = ContractExecMsg {
                 route: Some(NibiruRoute::NoOp),
                 msg: None,
@@ -148,6 +121,7 @@ pub fn execute(
             check_admin(check)?;
             whitelist.members.remove(address.as_str());
             WHITELIST.save(deps.storage, &whitelist)?;
+
             let cw_msg = ContractExecMsg {
                 route: Some(NibiruRoute::NoOp),
                 msg: None,
@@ -164,8 +138,10 @@ pub fn execute(
             check_admin(check)?;
             let api = deps.api;
             let addr = api.addr_validate(address.as_str()).unwrap();
-            whitelist.admin = addr.into_string();
+            whitelist.admin = addr.clone().into_string();
+            whitelist.members.remove(addr.as_str());
             WHITELIST.save(deps.storage, &whitelist)?;
+
             let cw_msg = ContractExecMsg {
                 route: Some(NibiruRoute::NoOp),
                 msg: None,
@@ -225,6 +201,7 @@ mod tests {
     };
 
     use cosmwasm_std::{coins, testing, Addr};
+    use std::collections::HashSet;
 
     // ---------------------------------------------------------------------------
     // Tests
@@ -377,7 +354,7 @@ mod tests {
             .map(|&s| s.to_string())
             .collect();
         let mut whitelist = WHITELIST.load(&deps.storage).unwrap();
-        assert_eq!(whitelist.members.len(), 0);
+        assert_eq!(whitelist.members.len(), 1); // admin remains
         for member in members_start.iter() {
             whitelist.members.insert(member.clone());
         }
@@ -418,7 +395,7 @@ mod tests {
             query(deps.as_ref(), testing::mock_env(), query_req).unwrap();
         let response: WhitelistResponse =
             cosmwasm_std::from_binary(&binary).unwrap();
-        let expected_members: HashSet<String> = vec!["vitalik", "musk"]
+        let expected_members: HashSet<String> = vec!["vitalik", "musk", "admin"]
             .iter()
             .map(|&s| s.to_string())
             .collect();
