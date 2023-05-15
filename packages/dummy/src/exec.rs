@@ -7,9 +7,10 @@ pub mod test {
 
     use bindings_perp::msg::{ExecuteMsg as NBExecuteMsg, LiquidationArgs};
     use shifter::msgs::ExecuteMsg as ShifterExecuteMsg;
+    use controller::msgs::ExecuteMsg as ControllerExecuteMsg;
 
     use cosmwasm_schema::cw_serde;
-    use cosmwasm_std::{Coin, Decimal, Uint128};
+    use cosmwasm_std::{Coin, Decimal, Uint128, Uint256};
 
     #[cw_serde]
     pub struct ExampleExecuteMsgJson {
@@ -21,6 +22,7 @@ pub mod test {
         donate_to_insurance_fund: NBExecuteMsg,
         peg_shift: ShifterExecuteMsg,
         depth_shift: ShifterExecuteMsg,
+        insurance_fund_withdraw: ControllerExecuteMsg,
     }
 
     #[test]
@@ -34,6 +36,7 @@ pub mod test {
             donate_to_insurance_fund: execute_donate_to_insurance_fund(),
             peg_shift: execute_peg_shift(),
             depth_shift: execute_depth_shift(),
+            insurance_fund_withdraw: execute_insurance_fund_withdraw(),
         };
         let json_str = serde_json::to_string_pretty(&example_msgs).unwrap();
         let mut file = File::create("./execute_msg.json").unwrap();
@@ -117,6 +120,13 @@ pub mod test {
         ShifterExecuteMsg::DepthShift {
             pair: DUMMY_PAIR.to_string(),
             depth_mult: dec_420(),
+        }
+    }
+
+    pub fn execute_insurance_fund_withdraw() -> ControllerExecuteMsg {
+        ControllerExecuteMsg::InsuranceFundWithdraw {
+            amount: Uint256::from(420u128),
+            to: DUMMY_ADDR_2.to_string(),
         }
     }
 
