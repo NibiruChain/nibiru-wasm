@@ -1,7 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{
-    Coin, CosmosMsg, CustomMsg, Decimal, Response, StdResult, Uint128,
-};
+use cosmwasm_std::{Coin, CosmosMsg, CustomMsg, Decimal, Response, StdResult, Uint128, Uint64};
 
 use nibiru_bindings::route::NibiruRoute;
 use nibiru_macro::cw_custom;
@@ -73,7 +71,7 @@ pub struct LiquidationArgs {
 
 #[cw_serde]
 pub struct OracleParams {
-    pub vote_period: u64,
+    pub vote_period: Uint64,
 }
 
 /// nibiru_msg_to_cw_response: Converts a CosmosMsg to the response type
