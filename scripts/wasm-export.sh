@@ -3,8 +3,14 @@ wasm_binding_dir="../nibiru/x/wasm/binding"
 
 copy_artifacts() {
   local wasmbin="$wasm_binding_dir/wasmbin"
-  cp artifacts/bindings_perp.wasm $wasmbin/bindings_perp.wasm
-  cp artifacts/shifter.wasm $wasmbin/shifter.wasm
+  copy_artifact() {
+    local contract_binary="$1"
+    cp artifacts/$contract_binary $wasmbin/$contract_binary
+  }
+
+  copy_artifact bindings_perp.wasm
+  copy_artifact shifter.wasm
+  copy_artifact controller.wasm
 }
 
 copy_json_examples() {
