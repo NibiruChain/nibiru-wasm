@@ -121,6 +121,10 @@ pub fn execute(
             )
         }
 
+        ExecuteMsg::OracleParams { oracle_params} => {
+            nibiru_msg_to_cw_response(NibiruExecuteMsg::oracle_params(oracle_params))
+        }
+
         ExecuteMsg::NoOp {} => {
             nibiru_msg_to_cw_response(NibiruExecuteMsg::no_op())
         }

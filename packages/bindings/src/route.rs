@@ -9,6 +9,9 @@ pub enum NibiruRoute {
     /// "perp" is the route corresponding to bindings for the x/perp module.
     Perp,
 
+    /// "oracle" is the route corresponding to bindings for the x/oracle module.
+    Oracle,
+
     /// "no_op" is a valid route that doesn't do anything. It's necessary for
     /// formatting in the custom Wasm execute handler.
     NoOp,

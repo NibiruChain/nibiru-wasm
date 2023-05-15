@@ -58,6 +58,10 @@ pub enum ExecuteMsg {
         donation: Coin,
     },
 
+    OracleParams {
+        oracle_params: OracleParams,
+    },
+
     NoOp {},
 }
 
@@ -65,6 +69,11 @@ pub enum ExecuteMsg {
 pub struct LiquidationArgs {
     pub pair: String,
     pub trader: String,
+}
+
+#[cw_serde]
+pub struct OracleParams {
+    pub vote_period: u64,
 }
 
 /// nibiru_msg_to_cw_response: Converts a CosmosMsg to the response type
@@ -159,6 +168,16 @@ impl NibiruExecuteMsg {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
             msg: ExecuteMsg::DonateToInsuranceFund { sender, donation },
+        }
+        .into()
+    }
+
+    pub fn oracle_params(
+       oracle_params : OracleParams,
+    ) -> CosmosMsg<NibiruExecuteMsg> {
+        NibiruExecuteMsg {
+            route: NibiruRoute::Oracle,
+            msg: ExecuteMsg::OracleParams { oracle_params: oracle_params },
         }
         .into()
     }
