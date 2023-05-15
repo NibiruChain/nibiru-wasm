@@ -5,11 +5,14 @@ pub mod test {
 
     use crate::common::{dec_420, DUMMY_ADDR, DUMMY_ADDR_2, DUMMY_PAIR};
 
-    use bindings_perp::msg::{ExecuteMsg as NBExecuteMsg, LiquidationArgs};
+    use bindings_perp::msg::{
+        ExecuteMsg as NBExecuteMsg, LiquidationArgs,
+    };
     use shifter::msgs::ExecuteMsg as ShifterExecuteMsg;
+    use controller::msgs::ExecuteMsg as ControllerExecuteMsg;
 
     use cosmwasm_schema::cw_serde;
-    use cosmwasm_std::{Coin, Decimal, Uint128};
+    use cosmwasm_std::{Coin, Decimal, Uint128, Uint64};
 
     #[cw_serde]
     pub struct ExampleExecuteMsgJson {
@@ -21,6 +24,7 @@ pub mod test {
         donate_to_insurance_fund: NBExecuteMsg,
         peg_shift: ShifterExecuteMsg,
         depth_shift: ShifterExecuteMsg,
+        oracle_params: ControllerExecuteMsg,
     }
 
     #[test]
@@ -34,6 +38,7 @@ pub mod test {
             donate_to_insurance_fund: execute_donate_to_insurance_fund(),
             peg_shift: execute_peg_shift(),
             depth_shift: execute_depth_shift(),
+            oracle_params: execute_oracle_params(),
         };
         let json_str = serde_json::to_string_pretty(&example_msgs).unwrap();
         let mut file = File::create("./execute_msg.json").unwrap();
@@ -124,6 +129,12 @@ pub mod test {
         LiquidationArgs {
             pair: DUMMY_PAIR.to_string(),
             trader: "trader".to_string(),
+        }
+    }
+
+    pub fn execute_oracle_params() -> ControllerExecuteMsg{
+        ControllerExecuteMsg::EditOracleParams {
+                vote_period: Uint64::from(12345_u64).into(),
         }
     }
 }

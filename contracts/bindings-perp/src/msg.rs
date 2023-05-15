@@ -1,5 +1,7 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Coin, CosmosMsg, CustomMsg, Decimal, Response, StdResult, Uint128, Uint64};
+use cosmwasm_std::{
+    Coin, CosmosMsg, CustomMsg, Decimal, Response, StdResult, Uint128,
+};
 
 use nibiru_bindings::route::NibiruRoute;
 use nibiru_macro::cw_custom;
@@ -56,10 +58,6 @@ pub enum ExecuteMsg {
         donation: Coin,
     },
 
-    OracleParams {
-        oracle_params: OracleParams,
-    },
-
     NoOp {},
 }
 
@@ -67,11 +65,6 @@ pub enum ExecuteMsg {
 pub struct LiquidationArgs {
     pub pair: String,
     pub trader: String,
-}
-
-#[cw_serde]
-pub struct OracleParams {
-    pub vote_period: Uint64,
 }
 
 /// nibiru_msg_to_cw_response: Converts a CosmosMsg to the response type
@@ -166,16 +159,6 @@ impl NibiruExecuteMsg {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
             msg: ExecuteMsg::DonateToInsuranceFund { sender, donation },
-        }
-        .into()
-    }
-
-    pub fn oracle_params(
-       oracle_params : OracleParams,
-    ) -> CosmosMsg<NibiruExecuteMsg> {
-        NibiruExecuteMsg {
-            route: NibiruRoute::Oracle,
-            msg: ExecuteMsg::OracleParams { oracle_params: oracle_params },
         }
         .into()
     }
