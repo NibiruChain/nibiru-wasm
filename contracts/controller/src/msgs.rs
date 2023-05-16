@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Uint256;
+use cosmwasm_std::{Uint256, Uint64};
 
 use crate::state::Whitelist;
 
@@ -14,6 +14,8 @@ pub struct InitMsg {
 pub enum ExecuteMsg {
     SetMarketEnabled { pair: String, enabled: bool },
     InsuranceFundWithdraw { amount: Uint256, to: String },
+    EditOracleParams { vote_period: Option<Uint64> },
+
     AddMember { address: String },
     RemoveMember { address: String },
     ChangeAdmin { address: String },

@@ -99,6 +99,18 @@ pub fn execute(
             Ok(res)
         }
 
+        ExecuteMsg::EditOracleParams { vote_period } => {
+            check_member(check)?;
+            let cw_msg = ContractExecMsg {
+                route: Some(NibiruRoute::Oracle),
+                msg: Some(ExecuteMsg::EditOracleParams { vote_period }),
+            };
+            let res = Response::new()
+                .add_message(cw_msg)
+                .add_attributes(vec![attr("action", "edit_oracle")]);
+            Ok(res)
+        }
+
         ExecuteMsg::AddMember { address } => {
             check_admin(check)?;
             let api = deps.api;
