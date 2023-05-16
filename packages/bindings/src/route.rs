@@ -8,6 +8,7 @@ use cosmwasm_schema::cw_serde;
 pub enum NibiruRoute {
     /// "perp" is the route corresponding to bindings for the x/perp module.
     Perp,
+    Oracle,
 
     /// "no_op" is a valid route that doesn't do anything. It's necessary for
     /// formatting in the custom Wasm execute handler.
