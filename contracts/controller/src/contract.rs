@@ -99,11 +99,33 @@ pub fn execute(
             Ok(res)
         }
 
-        ExecuteMsg::EditOracleParams { vote_period } => {
+        ExecuteMsg::EditOracleParams {
+            vote_period,
+            vote_threshold,
+            reward_band,
+            whitelist,
+            slash_fraction,
+            slash_window,
+            min_valid_per_window,
+            twap_lookback_window,
+            min_voters,
+            validator_fee_ratio,
+        } => {
             check_member(check)?;
             let cw_msg = ContractExecMsg {
                 route: Some(NibiruRoute::Oracle),
-                msg: Some(ExecuteMsg::EditOracleParams { vote_period }),
+                msg: Some(ExecuteMsg::EditOracleParams {
+                    vote_period,
+                    vote_threshold,
+                    reward_band,
+                    whitelist,
+                    slash_fraction,
+                    slash_window,
+                    min_valid_per_window,
+                    twap_lookback_window,
+                    min_voters,
+                    validator_fee_ratio,
+                }),
             };
             let res = Response::new()
                 .add_message(cw_msg)
