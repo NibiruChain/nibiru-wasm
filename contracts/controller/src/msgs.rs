@@ -12,8 +12,14 @@ pub struct InitMsg {
 /// ExecuteMsg specifies the args for the execute entry point of the contract.
 #[cw_serde]
 pub enum ExecuteMsg {
-    SetMarketEnabled { pair: String, enabled: bool },
-    InsuranceFundWithdraw { amount: Uint256, to: String },
+    SetMarketEnabled {
+        pair: String,
+        enabled: bool,
+    },
+    InsuranceFundWithdraw {
+        amount: Uint256,
+        to: String,
+    },
     EditOracleParams {
         vote_period: Option<Uint64>,
         vote_threshold: Option<Decimal>,
@@ -27,9 +33,15 @@ pub enum ExecuteMsg {
         validator_fee_ratio: Option<Decimal>,
     },
 
-    AddMember { address: String },
-    RemoveMember { address: String },
-    ChangeAdmin { address: String },
+    AddMember {
+        address: String,
+    },
+    RemoveMember {
+        address: String,
+    },
+    ChangeAdmin {
+        address: String,
+    },
 }
 
 /// QueryMsg specifies the args for the query entry point of the contract.
