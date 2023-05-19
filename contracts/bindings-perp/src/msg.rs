@@ -22,7 +22,6 @@ pub struct NibiruExecuteMsg {
 
 #[cw_serde]
 pub enum ExecuteMsgWithSender {
-
     OpenPosition {
         sender: String,
         pair: String,
@@ -47,6 +46,11 @@ pub enum ExecuteMsgWithSender {
         sender: String,
         pair: String,
         margin: Coin,
+    },
+
+    MultiLiquidate {
+        pair: String,
+        liquidations: Vec<LiquidationArgs>,
     },
 
     DonateToInsuranceFund {
@@ -120,7 +124,7 @@ impl NibiruExecuteMsg {
     ) -> CosmosMsg<NibiruExecuteMsg> {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
-            msg: ExecuteMsg::OpenPosition {
+            msg: ExecuteMsgWithSender::OpenPosition {
                 sender,
                 pair,
                 is_long,
@@ -138,7 +142,7 @@ impl NibiruExecuteMsg {
     ) -> CosmosMsg<NibiruExecuteMsg> {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
-            msg: ExecuteMsg::ClosePositionWithSender { sender, pair },
+            msg: ExecuteMsgWithSender::ClosePosition { sender, pair },
         }
         .into()
     }
@@ -150,7 +154,7 @@ impl NibiruExecuteMsg {
     ) -> CosmosMsg<NibiruExecuteMsg> {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
-            msg: ExecuteMsg::AddMargin {
+            msg: ExecuteMsgWithSender::AddMargin {
                 sender,
                 pair,
                 margin,
@@ -181,7 +185,7 @@ impl NibiruExecuteMsg {
     ) -> CosmosMsg<NibiruExecuteMsg> {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
-            msg: ExecuteMsg::MultiLiquidate { pair, liquidations },
+            msg: ExecuteMsgWithSender::MultiLiquidate { pair, liquidations },
         }
         .into()
     }
@@ -192,7 +196,7 @@ impl NibiruExecuteMsg {
     ) -> CosmosMsg<NibiruExecuteMsg> {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
-            msg: ExecuteMsg::DonateToInsuranceFund { sender, donation },
+            msg: ExecuteMsgWithSender::DonateToInsuranceFund { sender, donation },
         }
         .into()
     }
@@ -200,7 +204,7 @@ impl NibiruExecuteMsg {
     pub fn no_op() -> CosmosMsg<NibiruExecuteMsg> {
         NibiruExecuteMsg {
             route: NibiruRoute::NoOp,
-            msg: ExecuteMsg::NoOp {},
+            msg: ExecuteMsgWithSender::NoOp {},
         }
         .into()
     }

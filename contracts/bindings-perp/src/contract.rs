@@ -73,43 +73,49 @@ pub fn execute(
 ) -> StdResult<Response<NibiruExecuteMsg>> {
     match msg {
         ExecuteMsg::OpenPosition {
-            sender,
             pair,
             is_long,
             quote_amount,
             leverage,
             base_amount_limit,
-        } => nibiru_msg_to_cw_response(NibiruExecuteMsg::open_position(
-            sender,
-            pair,
-            is_long,
-            quote_amount,
-            leverage,
-            base_amount_limit,
-        )),
+        } => {
+            let sender: Addr = info.sender;
+            nibiru_msg_to_cw_response(NibiruExecuteMsg::open_position(
+                sender.into_string(),
+                pair,
+                is_long,
+                quote_amount,
+                leverage,
+                base_amount_limit,
+            ))
+        },
 
         ExecuteMsg::ClosePosition { pair } => {
-            let sender: Addr = info.sender; 
+            let sender: Addr = info.sender;
             nibiru_msg_to_cw_response(
                 NibiruExecuteMsg::close_position(sender.into_string(), pair)
             )
         }
 
         ExecuteMsg::AddMargin {
-            sender,
             pair,
             margin,
-        } => nibiru_msg_to_cw_response(NibiruExecuteMsg::add_margin(
-            sender, pair, margin,
-        )),
+        } => nibiru_msg_to_cw_response({
+            let sender: Addr = info.sender;
+            NibiruExecuteMsg::add_margin(
+                sender.into_string(), pair, margin,
+            )
+        }),
 
         ExecuteMsg::RemoveMargin {
-            sender,
             pair,
             margin,
-        } => nibiru_msg_to_cw_response(NibiruExecuteMsg::remove_margin(
-            sender, pair, margin,
-        )),
+        } => {
+            let sender: Addr = info.sender;
+            nibiru_msg_to_cw_response(NibiruExecuteMsg::remove_margin(
+                sender.into_string(), pair, margin,
+            ))
+        },
 
         ExecuteMsg::MultiLiquidate { pair, liquidations } => {
             nibiru_msg_to_cw_response(NibiruExecuteMsg::multi_liquidate(
@@ -118,9 +124,10 @@ pub fn execute(
             ))
         }
 
-        ExecuteMsg::DonateToInsuranceFund { sender, donation } => {
+        ExecuteMsg::DonateToInsuranceFund { donation } => {
+            let sender: Addr = info.sender;
             nibiru_msg_to_cw_response(
-                NibiruExecuteMsg::donate_to_insurance_fund(sender, donation),
+                NibiruExecuteMsg::donate_to_insurance_fund(sender.into_string(), donation),
             )
         }
 
