@@ -3,10 +3,12 @@ pub mod test {
 
     use std::{fs::File, io::Write, str::FromStr};
 
-    use crate::common::{dec_420, DUMMY_ADDR, DUMMY_ADDR_2, DUMMY_PAIR};
+    use crate::common::{
+        dec_420, u64_420, DUMMY_ADDR, DUMMY_ADDR_2, DUMMY_PAIR,
+    };
 
     use bindings_perp::msg::{ExecuteMsg as NBExecuteMsg, LiquidationArgs};
-    use controller::msgs::ExecuteMsg as ControllerExecuteMsg;
+    use controller::msgs::{ExecuteMsg as ControllerExecuteMsg, MarketParams};
     use shifter::msgs::ExecuteMsg as ShifterExecuteMsg;
 
     use cosmwasm_schema::cw_serde;
@@ -26,6 +28,8 @@ pub mod test {
 
         insurance_fund_withdraw: ControllerExecuteMsg,
         set_market_enabled: ControllerExecuteMsg,
+        edit_oracle_params: ControllerExecuteMsg,
+        create_market: ControllerExecuteMsg,
     }
 
     #[test]
@@ -41,6 +45,8 @@ pub mod test {
             depth_shift: execute_depth_shift(),
             insurance_fund_withdraw: execute_insurance_fund_withdraw(),
             set_market_enabled: execute_set_market_enabled(),
+            edit_oracle_params: execute_edit_oracle_params(),
+            create_market: execute_create_market(),
         };
         let json_str = serde_json::to_string_pretty(&example_msgs).unwrap();
         let mut file = File::create("./execute_msg.json").unwrap();
@@ -138,6 +144,35 @@ pub mod test {
         ControllerExecuteMsg::SetMarketEnabled {
             pair: DUMMY_PAIR.to_string(),
             enabled: true,
+        }
+    }
+
+    pub fn execute_edit_oracle_params() -> ControllerExecuteMsg {
+        ControllerExecuteMsg::EditOracleParams {
+            vote_period: Some(u64_420()),
+            vote_threshold: Some(dec_420()),
+            reward_band: Some(dec_420()),
+            whitelist: Some(
+                vec![DUMMY_ADDR, DUMMY_ADDR_2]
+                    .iter()
+                    .map(|&s| s.to_string())
+                    .collect(),
+            ),
+            slash_fraction: Some(dec_420()),
+            slash_window: Some(u64_420()),
+            min_valid_per_window: Some(dec_420()),
+            twap_lookback_window: Some(u64_420()),
+            min_voters: Some(u64_420()),
+            validator_fee_ratio: Some(dec_420()),
+        }
+    }
+
+    pub fn execute_create_market() -> ControllerExecuteMsg {
+        ControllerExecuteMsg::CreateMarket { 
+            pair: DUMMY_PAIR.to_string(),
+            peg_mult: dec_420(), 
+            sqrt_depth: dec_420(), 
+            market_params: None, 
         }
     }
 
