@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult,
+    StdResult, Addr,
 };
 
 use cw2::set_contract_version;
@@ -68,7 +68,7 @@ pub fn query(
 pub fn execute(
     _deps: DepsMut<QueryPerpMsg>,
     _env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response<NibiruExecuteMsg>> {
     match msg {
@@ -88,9 +88,12 @@ pub fn execute(
             base_amount_limit,
         )),
 
-        ExecuteMsg::ClosePosition { sender, pair } => nibiru_msg_to_cw_response(
-            NibiruExecuteMsg::close_position(sender, pair),
-        ),
+        ExecuteMsg::ClosePosition { pair } => {
+            let sender: Addr = info.sender; 
+            nibiru_msg_to_cw_response(
+                NibiruExecuteMsg::close_position(sender.into_string(), pair)
+            )
+        }
 
         ExecuteMsg::AddMargin {
             sender,
