@@ -99,6 +99,28 @@ pub fn execute(
             Ok(res)
         }
 
+        ExecuteMsg::CreateMarket {
+            pair,
+            peg_mult,
+            sqrt_depth,
+            market_params,
+        } => {
+            check_member(check)?;
+            let cw_msg = ContractExecMsg {
+                route: Some(NibiruRoute::Perp),
+                msg: Some(ExecuteMsg::CreateMarket {
+                    pair,
+                    peg_mult,
+                    sqrt_depth,
+                    market_params,
+                }),
+            };
+            let res = Response::new()
+                .add_message(cw_msg)
+                .add_attributes(vec![attr("action", "create_market")]);
+            Ok(res)
+        }
+
         ExecuteMsg::EditOracleParams {
             vote_period,
             vote_threshold,
