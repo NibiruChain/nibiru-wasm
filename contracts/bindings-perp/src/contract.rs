@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo,
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo,
     Response, StdResult,
 };
 
@@ -68,7 +68,7 @@ pub fn query(
 pub fn execute(
     _deps: DepsMut<QueryPerpMsg>,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response<NibiruExecuteMsg>> {
     match msg {
@@ -78,39 +78,25 @@ pub fn execute(
             quote_amount,
             leverage,
             base_amount_limit,
-        } => {
-            let sender: Addr = info.sender;
-            nibiru_msg_to_cw_response(NibiruExecuteMsg::open_position(
-                sender.into_string(),
-                pair,
-                is_long,
-                quote_amount,
-                leverage,
-                base_amount_limit,
-            ))
-        }
+        } => nibiru_msg_to_cw_response(NibiruExecuteMsg::open_position(
+            pair,
+            is_long,
+            quote_amount,
+            leverage,
+            base_amount_limit,
+        )),
 
         ExecuteMsg::ClosePosition { pair } => {
-            let sender: Addr = info.sender;
-            nibiru_msg_to_cw_response(NibiruExecuteMsg::close_position(
-                sender.into_string(),
-                pair,
-            ))
+            nibiru_msg_to_cw_response(NibiruExecuteMsg::close_position(pair))
         }
 
         ExecuteMsg::AddMargin { pair, margin } => nibiru_msg_to_cw_response({
-            let sender: Addr = info.sender;
-            NibiruExecuteMsg::add_margin(sender.into_string(), pair, margin)
+            NibiruExecuteMsg::add_margin(pair, margin)
         }),
 
-        ExecuteMsg::RemoveMargin { pair, margin } => {
-            let sender: Addr = info.sender;
-            nibiru_msg_to_cw_response(NibiruExecuteMsg::remove_margin(
-                sender.into_string(),
-                pair,
-                margin,
-            ))
-        }
+        ExecuteMsg::RemoveMargin { pair, margin } => nibiru_msg_to_cw_response(
+            NibiruExecuteMsg::remove_margin(pair, margin),
+        ),
 
         ExecuteMsg::MultiLiquidate { pair, liquidations } => {
             nibiru_msg_to_cw_response(NibiruExecuteMsg::multi_liquidate(
@@ -120,12 +106,8 @@ pub fn execute(
         }
 
         ExecuteMsg::DonateToInsuranceFund { donation } => {
-            let sender: Addr = info.sender;
             nibiru_msg_to_cw_response(
-                NibiruExecuteMsg::donate_to_insurance_fund(
-                    sender.into_string(),
-                    donation,
-                ),
+                NibiruExecuteMsg::donate_to_insurance_fund(donation),
             )
         }
 

@@ -17,48 +17,7 @@ pub struct InstantiateMsg {}
 #[cw_custom]
 pub struct NibiruExecuteMsg {
     pub route: NibiruRoute,
-    pub msg: ExecuteMsgWithSender,
-}
-
-#[cw_serde]
-pub enum ExecuteMsgWithSender {
-    OpenPosition {
-        sender: String,
-        pair: String,
-        is_long: bool,
-        quote_amount: Uint128,
-        leverage: Decimal,
-        base_amount_limit: Uint128,
-    },
-
-    ClosePosition {
-        sender: String,
-        pair: String,
-    },
-
-    AddMargin {
-        sender: String,
-        pair: String,
-        margin: Coin,
-    },
-
-    RemoveMargin {
-        sender: String,
-        pair: String,
-        margin: Coin,
-    },
-
-    MultiLiquidate {
-        pair: String,
-        liquidations: Vec<LiquidationArgs>,
-    },
-
-    DonateToInsuranceFund {
-        sender: String,
-        donation: Coin,
-    },
-
-    NoOp {},
+    pub msg: ExecuteMsg,
 }
 
 #[cw_serde]
@@ -113,7 +72,6 @@ pub fn nibiru_msg_to_cw_response(
 
 impl NibiruExecuteMsg {
     pub fn open_position(
-        sender: String,
         pair: String,
         is_long: bool,
         quote_amount: Uint128,
@@ -122,8 +80,7 @@ impl NibiruExecuteMsg {
     ) -> CosmosMsg<NibiruExecuteMsg> {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
-            msg: ExecuteMsgWithSender::OpenPosition {
-                sender,
+            msg: ExecuteMsg::OpenPosition {
                 pair,
                 is_long,
                 quote_amount,
@@ -134,45 +91,32 @@ impl NibiruExecuteMsg {
         .into()
     }
 
-    pub fn close_position(
-        sender: String,
-        pair: String,
-    ) -> CosmosMsg<NibiruExecuteMsg> {
+    pub fn close_position(pair: String) -> CosmosMsg<NibiruExecuteMsg> {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
-            msg: ExecuteMsgWithSender::ClosePosition { sender, pair },
+            msg: ExecuteMsg::ClosePosition { pair },
         }
         .into()
     }
 
     pub fn add_margin(
-        sender: String,
         pair: String,
         margin: Coin,
     ) -> CosmosMsg<NibiruExecuteMsg> {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
-            msg: ExecuteMsgWithSender::AddMargin {
-                sender,
-                pair,
-                margin,
-            },
+            msg: ExecuteMsg::AddMargin { pair, margin },
         }
         .into()
     }
 
     pub fn remove_margin(
-        sender: String,
         pair: String,
         margin: Coin,
     ) -> CosmosMsg<NibiruExecuteMsg> {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
-            msg: ExecuteMsgWithSender::RemoveMargin {
-                sender,
-                pair,
-                margin,
-            },
+            msg: ExecuteMsg::RemoveMargin { pair, margin },
         }
         .into()
     }
@@ -183,21 +127,17 @@ impl NibiruExecuteMsg {
     ) -> CosmosMsg<NibiruExecuteMsg> {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
-            msg: ExecuteMsgWithSender::MultiLiquidate { pair, liquidations },
+            msg: ExecuteMsg::MultiLiquidate { pair, liquidations },
         }
         .into()
     }
 
     pub fn donate_to_insurance_fund(
-        sender: String,
         donation: Coin,
     ) -> CosmosMsg<NibiruExecuteMsg> {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
-            msg: ExecuteMsgWithSender::DonateToInsuranceFund {
-                sender,
-                donation,
-            },
+            msg: ExecuteMsg::DonateToInsuranceFund { donation },
         }
         .into()
     }
@@ -205,7 +145,7 @@ impl NibiruExecuteMsg {
     pub fn no_op() -> CosmosMsg<NibiruExecuteMsg> {
         NibiruExecuteMsg {
             route: NibiruRoute::NoOp,
-            msg: ExecuteMsgWithSender::NoOp {},
+            msg: ExecuteMsg::NoOp {},
         }
         .into()
     }
