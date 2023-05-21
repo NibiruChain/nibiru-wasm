@@ -55,7 +55,6 @@ pub mod test {
 
     pub fn execute_open_position() -> NBExecuteMsg {
         NBExecuteMsg::OpenPosition {
-            sender: DUMMY_ADDR.to_string(),
             pair: DUMMY_PAIR.to_string(),
             is_long: true,
             quote_amount: Uint128::from(100u128),
@@ -66,14 +65,12 @@ pub mod test {
 
     pub fn execute_close_position() -> NBExecuteMsg {
         NBExecuteMsg::ClosePosition {
-            sender: DUMMY_ADDR.to_string(),
             pair: DUMMY_PAIR.to_string(),
         }
     }
 
     pub fn execute_add_margin() -> NBExecuteMsg {
         NBExecuteMsg::AddMargin {
-            sender: DUMMY_ADDR.to_string(),
             pair: DUMMY_PAIR.to_string(),
             margin: Coin {
                 denom: "uusd".to_string(),
@@ -84,7 +81,6 @@ pub mod test {
 
     pub fn execute_remove_margin() -> NBExecuteMsg {
         NBExecuteMsg::RemoveMargin {
-            sender: DUMMY_ADDR.to_string(),
             pair: DUMMY_PAIR.to_string(),
             margin: Coin {
                 denom: "uusd".to_string(),
@@ -111,7 +107,6 @@ pub mod test {
 
     pub fn execute_donate_to_insurance_fund() -> NBExecuteMsg {
         NBExecuteMsg::DonateToInsuranceFund {
-            sender: DUMMY_ADDR.to_string(),
             donation: Coin {
                 denom: "uusd".to_string(),
                 amount: Uint128::from(100u128),
@@ -168,11 +163,11 @@ pub mod test {
     }
 
     pub fn execute_create_market() -> ControllerExecuteMsg {
-        ControllerExecuteMsg::CreateMarket { 
+        ControllerExecuteMsg::CreateMarket {
             pair: DUMMY_PAIR.to_string(),
-            peg_mult: dec_420(), 
-            sqrt_depth: dec_420(), 
-            market_params: None, 
+            peg_mult: dec_420(),
+            sqrt_depth: dec_420(),
+            market_params: None,
         }
     }
 
