@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult,
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo,
+    Response, StdResult,
 };
 
 use cw2::set_contract_version;
@@ -73,14 +73,12 @@ pub fn execute(
 ) -> StdResult<Response<NibiruExecuteMsg>> {
     match msg {
         ExecuteMsg::OpenPosition {
-            sender,
             pair,
             is_long,
             quote_amount,
             leverage,
             base_amount_limit,
         } => nibiru_msg_to_cw_response(NibiruExecuteMsg::open_position(
-            sender,
             pair,
             is_long,
             quote_amount,
@@ -88,25 +86,17 @@ pub fn execute(
             base_amount_limit,
         )),
 
-        ExecuteMsg::ClosePosition { sender, pair } => nibiru_msg_to_cw_response(
-            NibiruExecuteMsg::close_position(sender, pair),
+        ExecuteMsg::ClosePosition { pair } => {
+            nibiru_msg_to_cw_response(NibiruExecuteMsg::close_position(pair))
+        }
+
+        ExecuteMsg::AddMargin { pair, margin } => nibiru_msg_to_cw_response({
+            NibiruExecuteMsg::add_margin(pair, margin)
+        }),
+
+        ExecuteMsg::RemoveMargin { pair, margin } => nibiru_msg_to_cw_response(
+            NibiruExecuteMsg::remove_margin(pair, margin),
         ),
-
-        ExecuteMsg::AddMargin {
-            sender,
-            pair,
-            margin,
-        } => nibiru_msg_to_cw_response(NibiruExecuteMsg::add_margin(
-            sender, pair, margin,
-        )),
-
-        ExecuteMsg::RemoveMargin {
-            sender,
-            pair,
-            margin,
-        } => nibiru_msg_to_cw_response(NibiruExecuteMsg::remove_margin(
-            sender, pair, margin,
-        )),
 
         ExecuteMsg::MultiLiquidate { pair, liquidations } => {
             nibiru_msg_to_cw_response(NibiruExecuteMsg::multi_liquidate(
@@ -115,9 +105,9 @@ pub fn execute(
             ))
         }
 
-        ExecuteMsg::DonateToInsuranceFund { sender, donation } => {
+        ExecuteMsg::DonateToInsuranceFund { donation } => {
             nibiru_msg_to_cw_response(
-                NibiruExecuteMsg::donate_to_insurance_fund(sender, donation),
+                NibiruExecuteMsg::donate_to_insurance_fund(donation),
             )
         }
 
