@@ -7,8 +7,11 @@ pub mod test {
         dec_420, u64_420, DUMMY_ADDR, DUMMY_ADDR_2, DUMMY_PAIR,
     };
 
-    use bindings_perp::msg::{ExecuteMsg as NBExecuteMsg, LiquidationArgs};
-    use controller::msgs::{ExecuteMsg as ControllerExecuteMsg, MarketParams};
+    use bindings_perp::msg::{
+        ExecuteMsg as NBExecuteMsg,
+        ExecuteMsgWithSender as NBExecuteMsgWithSender, LiquidationArgs,
+    };
+    use controller::msgs::{ExecuteMsg as ControllerExecuteMsg};
     use shifter::msgs::ExecuteMsg as ShifterExecuteMsg;
 
     use cosmwasm_schema::cw_serde;
@@ -16,12 +19,12 @@ pub mod test {
 
     #[cw_serde]
     pub struct ExampleExecuteMsgJson {
-        open_position: NBExecuteMsg,
-        close_position: NBExecuteMsg,
-        add_margin: NBExecuteMsg,
-        remove_margin: NBExecuteMsg,
+        open_position: NBExecuteMsgWithSender,
+        close_position: NBExecuteMsgWithSender,
+        add_margin: NBExecuteMsgWithSender,
+        remove_margin: NBExecuteMsgWithSender,
         multi_liquidate: NBExecuteMsg,
-        donate_to_insurance_fund: NBExecuteMsg,
+        donate_to_insurance_fund: NBExecuteMsgWithSender,
 
         peg_shift: ShifterExecuteMsg,
         depth_shift: ShifterExecuteMsg,
@@ -53,8 +56,8 @@ pub mod test {
         assert!(file.write_all(json_str.as_bytes()).is_ok());
     }
 
-    pub fn execute_open_position() -> NBExecuteMsg {
-        NBExecuteMsg::OpenPosition {
+    pub fn execute_open_position() -> NBExecuteMsgWithSender {
+        NBExecuteMsgWithSender::OpenPosition {
             sender: DUMMY_ADDR.to_string(),
             pair: DUMMY_PAIR.to_string(),
             is_long: true,
@@ -64,15 +67,15 @@ pub mod test {
         }
     }
 
-    pub fn execute_close_position() -> NBExecuteMsg {
-        NBExecuteMsg::ClosePosition {
+    pub fn execute_close_position() -> NBExecuteMsgWithSender {
+        NBExecuteMsgWithSender::ClosePosition {
             sender: DUMMY_ADDR.to_string(),
             pair: DUMMY_PAIR.to_string(),
         }
     }
 
-    pub fn execute_add_margin() -> NBExecuteMsg {
-        NBExecuteMsg::AddMargin {
+    pub fn execute_add_margin() -> NBExecuteMsgWithSender {
+        NBExecuteMsgWithSender::AddMargin {
             sender: DUMMY_ADDR.to_string(),
             pair: DUMMY_PAIR.to_string(),
             margin: Coin {
@@ -82,8 +85,8 @@ pub mod test {
         }
     }
 
-    pub fn execute_remove_margin() -> NBExecuteMsg {
-        NBExecuteMsg::RemoveMargin {
+    pub fn execute_remove_margin() -> NBExecuteMsgWithSender {
+        NBExecuteMsgWithSender::RemoveMargin {
             sender: DUMMY_ADDR.to_string(),
             pair: DUMMY_PAIR.to_string(),
             margin: Coin {
@@ -109,8 +112,8 @@ pub mod test {
         }
     }
 
-    pub fn execute_donate_to_insurance_fund() -> NBExecuteMsg {
-        NBExecuteMsg::DonateToInsuranceFund {
+    pub fn execute_donate_to_insurance_fund() -> NBExecuteMsgWithSender {
+        NBExecuteMsgWithSender::DonateToInsuranceFund {
             sender: DUMMY_ADDR.to_string(),
             donation: Coin {
                 denom: "uusd".to_string(),
@@ -168,11 +171,11 @@ pub mod test {
     }
 
     pub fn execute_create_market() -> ControllerExecuteMsg {
-        ControllerExecuteMsg::CreateMarket { 
+        ControllerExecuteMsg::CreateMarket {
             pair: DUMMY_PAIR.to_string(),
-            peg_mult: dec_420(), 
-            sqrt_depth: dec_420(), 
-            market_params: None, 
+            peg_mult: dec_420(),
+            sqrt_depth: dec_420(),
+            market_params: None,
         }
     }
 

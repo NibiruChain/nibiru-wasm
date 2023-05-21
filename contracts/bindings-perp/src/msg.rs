@@ -61,8 +61,6 @@ pub enum ExecuteMsgWithSender {
     NoOp {},
 }
 
-
-
 #[cw_serde]
 pub enum ExecuteMsg {
     OpenPosition {
@@ -196,7 +194,10 @@ impl NibiruExecuteMsg {
     ) -> CosmosMsg<NibiruExecuteMsg> {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
-            msg: ExecuteMsgWithSender::DonateToInsuranceFund { sender, donation },
+            msg: ExecuteMsgWithSender::DonateToInsuranceFund {
+                sender,
+                donation,
+            },
         }
         .into()
     }

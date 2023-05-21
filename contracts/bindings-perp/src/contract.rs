@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult, Addr,
+    entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo,
+    Response, StdResult,
 };
 
 use cw2::set_contract_version;
@@ -88,34 +88,29 @@ pub fn execute(
                 leverage,
                 base_amount_limit,
             ))
-        },
+        }
 
         ExecuteMsg::ClosePosition { pair } => {
             let sender: Addr = info.sender;
-            nibiru_msg_to_cw_response(
-                NibiruExecuteMsg::close_position(sender.into_string(), pair)
-            )
+            nibiru_msg_to_cw_response(NibiruExecuteMsg::close_position(
+                sender.into_string(),
+                pair,
+            ))
         }
 
-        ExecuteMsg::AddMargin {
-            pair,
-            margin,
-        } => nibiru_msg_to_cw_response({
+        ExecuteMsg::AddMargin { pair, margin } => nibiru_msg_to_cw_response({
             let sender: Addr = info.sender;
-            NibiruExecuteMsg::add_margin(
-                sender.into_string(), pair, margin,
-            )
+            NibiruExecuteMsg::add_margin(sender.into_string(), pair, margin)
         }),
 
-        ExecuteMsg::RemoveMargin {
-            pair,
-            margin,
-        } => {
+        ExecuteMsg::RemoveMargin { pair, margin } => {
             let sender: Addr = info.sender;
             nibiru_msg_to_cw_response(NibiruExecuteMsg::remove_margin(
-                sender.into_string(), pair, margin,
+                sender.into_string(),
+                pair,
+                margin,
             ))
-        },
+        }
 
         ExecuteMsg::MultiLiquidate { pair, liquidations } => {
             nibiru_msg_to_cw_response(NibiruExecuteMsg::multi_liquidate(
@@ -127,7 +122,10 @@ pub fn execute(
         ExecuteMsg::DonateToInsuranceFund { donation } => {
             let sender: Addr = info.sender;
             nibiru_msg_to_cw_response(
-                NibiruExecuteMsg::donate_to_insurance_fund(sender.into_string(), donation),
+                NibiruExecuteMsg::donate_to_insurance_fund(
+                    sender.into_string(),
+                    donation,
+                ),
             )
         }
 
