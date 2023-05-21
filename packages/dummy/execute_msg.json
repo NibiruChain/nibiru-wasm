@@ -1,6 +1,7 @@
 {
   "open_position": {
     "open_position": {
+      "sender": "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl",
       "pair": "ETH:USD",
       "is_long": true,
       "quote_amount": "100",
@@ -10,11 +11,13 @@
   },
   "close_position": {
     "close_position": {
+      "sender": "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl",
       "pair": "ETH:USD"
     }
   },
   "add_margin": {
     "add_margin": {
+      "sender": "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl",
       "pair": "ETH:USD",
       "margin": {
         "denom": "uusd",
@@ -24,6 +27,7 @@
   },
   "remove_margin": {
     "remove_margin": {
+      "sender": "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl",
       "pair": "ETH:USD",
       "margin": {
         "denom": "uusd",
@@ -48,6 +52,7 @@
   },
   "donate_to_insurance_fund": {
     "donate_to_insurance_fund": {
+      "sender": "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl",
       "donation": {
         "denom": "uusd",
         "amount": "100"
