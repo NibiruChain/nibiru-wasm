@@ -8,7 +8,7 @@ pub mod test {
     };
 
     use bindings_perp::msg::{ExecuteMsg as NBExecuteMsg, LiquidationArgs};
-    use controller::msgs::{ExecuteMsg as ControllerExecuteMsg, MarketParams};
+    use controller::msgs::ExecuteMsg as ControllerExecuteMsg;
     use shifter::msgs::ExecuteMsg as ShifterExecuteMsg;
 
     use cosmwasm_schema::cw_serde;
