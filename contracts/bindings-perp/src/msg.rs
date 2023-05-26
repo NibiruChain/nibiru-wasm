@@ -4,7 +4,7 @@ use cosmwasm_std::{
     Uint128, Uint256,
 };
 
-use nibiru_bindings::{route::NibiruRoute};
+use nibiru_bindings::route::NibiruRoute;
 use nibiru_macro::cw_custom;
 
 use crate::state::Sudoers;
@@ -74,8 +74,6 @@ pub struct LiquidationArgs {
     pub pair: String,
     pub trader: String,
 }
-
-// TODO test  nibiru_msg_to_cw_response
 
 /// nibiru_msg_to_cw_response: Converts a CosmosMsg to the response type
 /// expected by the execute entry point of smart contract's .
