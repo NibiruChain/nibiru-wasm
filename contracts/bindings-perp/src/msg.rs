@@ -1,13 +1,26 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    Coin, CosmosMsg, CustomMsg, Decimal, Response, StdResult, Uint128,
+    Coin, CosmosMsg, CustomMsg, CustomQuery, Decimal, Response, StdResult,
+    Uint128, Uint256,
 };
 
 use nibiru_bindings::route::NibiruRoute;
 use nibiru_macro::cw_custom;
 
+use crate::state::Sudoers;
+
+// ---------------------------------------------------------------------------
+// Entry Point - Instantiate
+// ---------------------------------------------------------------------------
+
 #[cw_serde]
-pub struct InstantiateMsg {}
+pub struct InitMsg {
+    pub admin: Option<String>,
+}
+
+// ---------------------------------------------------------------------------
+// Entry Point - Execute
+// ---------------------------------------------------------------------------
 
 /// NibiruExecuteMsg is an override of CosmosMsg::Custom. Using this msg
 /// wrapper for the ExecuteMsg handlers show that their return values are valid
@@ -149,4 +162,58 @@ impl NibiruExecuteMsg {
         }
         .into()
     }
+}
+
+// ---------------------------------------------------------------------------
+// Entry Point - Query
+// ---------------------------------------------------------------------------
+
+#[cw_serde]
+pub enum QueryMsg {
+    Sudoers {},
+    // -----------------------------------------------------------------
+    // From x/perp/amm
+    // -----------------------------------------------------------------
+    AllMarkets {},
+
+    Reserves {
+        pair: String,
+    },
+
+    BasePrice {
+        pair: String,
+        is_long: bool,
+        base_amount: Uint256,
+    },
+
+    // -----------------------------------------------------------------
+    // From x/perp
+    // -----------------------------------------------------------------
+    Position {
+        trader: String,
+        pair: String,
+    },
+
+    Positions {
+        trader: String,
+    },
+
+    ModuleParams {},
+
+    PremiumFraction {
+        pair: String,
+    },
+
+    Metrics {
+        pair: String,
+    },
+
+    ModuleAccounts {},
+}
+
+impl CustomQuery for QueryMsg {}
+
+#[cw_serde]
+pub struct SudoersQueryResponse {
+    pub sudoers: Sudoers,
 }

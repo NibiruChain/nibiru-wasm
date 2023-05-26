@@ -8,8 +8,12 @@ use cw2::set_contract_version;
 use nibiru_bindings::querier::NibiruQuerier;
 use nibiru_bindings::query::QueryPerpMsg;
 
-use crate::msg::{
-    nibiru_msg_to_cw_response, ExecuteMsg, InstantiateMsg, NibiruExecuteMsg,
+use crate::{
+    msg::{
+        nibiru_msg_to_cw_response, ExecuteMsg, InitMsg, NibiruExecuteMsg,
+        QueryMsg, SudoersQueryResponse,
+    },
+    state::{Sudoers, SUDOERS},
 };
 
 const CONTRACT_NAME: &str = "cw-nibiru-bindings-perp";
@@ -17,56 +21,66 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[entry_point]
 pub fn instantiate(
-    deps: DepsMut<QueryPerpMsg>,
+    deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    _msg: InstantiateMsg,
+    msg: InitMsg,
 ) -> StdResult<Response> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    let admin: String = match msg.admin {
+        Some(msg_admin) => msg_admin,
+        None => info.sender.to_string(),
+    };
+    let sudoers = Sudoers {
+        members: vec![admin.clone()].into_iter().collect(),
+        admin,
+    };
+    SUDOERS.save(deps.storage, &sudoers)?;
     Ok(Response::new()
         .add_attribute("action", "instantiate")
         .add_attribute("owner", info.sender))
 }
 
+// TODO test
 #[entry_point]
 pub fn query(
     deps: Deps<QueryPerpMsg>,
     _env: Env,
-    msg: QueryPerpMsg,
+    msg: QueryMsg,
 ) -> StdResult<Binary> {
     let querier = NibiruQuerier::new(&deps.querier);
     match msg {
-        QueryPerpMsg::AllMarkets {} => {
-            to_binary(&querier.all_markets().unwrap())
-        }
-        QueryPerpMsg::BasePrice {
+        QueryMsg::AllMarkets {} => to_binary(&querier.all_markets().unwrap()),
+        QueryMsg::BasePrice {
             pair,
             is_long,
             base_amount,
         } => to_binary(&querier.base_price(pair, is_long, base_amount).unwrap()),
-        QueryPerpMsg::Position { trader, pair } => {
+        QueryMsg::Position { trader, pair } => {
             to_binary(&querier.position(trader, pair).unwrap())
         }
-        QueryPerpMsg::Positions { trader } => {
+        QueryMsg::Positions { trader } => {
             to_binary(&querier.positions(trader).unwrap())
         }
-        QueryPerpMsg::Metrics { pair } => {
-            to_binary(&querier.metrics(pair).unwrap())
-        }
-        QueryPerpMsg::ModuleAccounts {} => {
-            to_binary(&querier.module_accounts()?)
-        }
-        QueryPerpMsg::ModuleParams {} => to_binary(&querier.module_params()?),
-        QueryPerpMsg::PremiumFraction { pair } => {
+        QueryMsg::Metrics { pair } => to_binary(&querier.metrics(pair).unwrap()),
+        QueryMsg::ModuleAccounts {} => to_binary(&querier.module_accounts()?),
+        QueryMsg::ModuleParams {} => to_binary(&querier.module_params()?),
+        QueryMsg::PremiumFraction { pair } => {
             to_binary(&querier.premium_fraction(pair)?)
         }
-        QueryPerpMsg::Reserves { pair } => to_binary(&querier.reserves(pair)?),
+        QueryMsg::Reserves { pair } => to_binary(&querier.reserves(pair)?),
+        // TODO test
+        QueryMsg::Sudoers {} => {
+            let sudoers = SUDOERS.load(deps.storage)?;
+            let res = SudoersQueryResponse { sudoers };
+            cosmwasm_std::to_binary(&res)
+        }
     }
 }
 
 #[entry_point]
 pub fn execute(
-    _deps: DepsMut<QueryPerpMsg>,
+    _deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
     msg: ExecuteMsg,
@@ -98,6 +112,7 @@ pub fn execute(
             NibiruExecuteMsg::remove_margin(pair, margin),
         ),
 
+        // TODO test
         ExecuteMsg::MultiLiquidate { pair, liquidations } => {
             nibiru_msg_to_cw_response(NibiruExecuteMsg::multi_liquidate(
                 pair,
@@ -105,12 +120,14 @@ pub fn execute(
             ))
         }
 
+        // TODO test
         ExecuteMsg::DonateToInsuranceFund { donation } => {
             nibiru_msg_to_cw_response(
                 NibiruExecuteMsg::donate_to_insurance_fund(donation),
             )
         }
 
+        // TODO test
         ExecuteMsg::NoOp {} => {
             nibiru_msg_to_cw_response(NibiruExecuteMsg::no_op())
         }
@@ -118,55 +135,122 @@ pub fn execute(
 }
 
 #[cfg(test)]
-pub mod integration_tests {
-    use crate::msg::InstantiateMsg;
-    use cosmwasm_std::{coins, Decimal, Response};
-    use cosmwasm_vm::testing::{
-        instantiate, mock_env, mock_info, mock_instance,
-    };
+pub mod tests {
     use std::str::FromStr;
 
-    // TODO test that the file exists
-    static WASM: &[u8] = include_bytes!("../../../artifacts/bindings_perp.wasm");
+    use cosmwasm_std::{
+        coin, coins,
+        testing::{self, mock_env},
+        CosmosMsg, Decimal, Uint128,
+    };
+    use nibiru_bindings::route::NibiruRoute;
+
+    use super::*;
 
     #[test]
     fn msg_init() {
-        let mut deps = mock_instance(WASM, &[]);
-        let sender = String::from("sender");
-        let info = mock_info(&sender, &coins(1000, "unibi"));
-        let inst_msg = InstantiateMsg {};
-        let result: Response =
-            instantiate(&mut deps, mock_env(), info, inst_msg).unwrap();
+        let mut deps = testing::mock_dependencies();
+        let admin = "admin";
+        let msg = InitMsg {
+            admin: Some(admin.to_string()),
+        };
+        let sender = "sender";
+        let info: MessageInfo = testing::mock_info(sender, &coins(2, "token"));
+
+        let result =
+            instantiate(deps.as_mut(), testing::mock_env(), info, msg).unwrap();
         assert_eq!(result.messages.len(), 0);
+
+        let sudoers = SUDOERS.load(&deps.storage).unwrap();
+        assert_eq!(sudoers.admin, admin)
     }
 
     #[test]
-    fn negative_decimal_not_possible() {
-        let neg = Decimal::from_str("-420");
-        assert!(neg.is_err())
+    fn msg_init_admin_as_sender() {
+        let mut deps = testing::mock_dependencies();
+        let msg = InitMsg { admin: None };
+        let sender = "sender";
+        let info: MessageInfo = testing::mock_info(sender, &coins(2, "token"));
+
+        let result =
+            instantiate(deps.as_mut(), testing::mock_env(), info, msg).unwrap();
+        assert_eq!(result.messages.len(), 0);
+
+        let sudoers = SUDOERS.load(&deps.storage).unwrap();
+        assert_eq!(sudoers.admin, sender)
     }
 
-    // Example integration test for a custom query
-    // TODO This requires writing a test querier that registers the custom enum
-    //
-    // const DESERIALIZATION_LIMIT: usize = 20_000;
-    //
-    // #[test]
-    // fn query_reserves() {
-    //     let mut deps = mock_instance(WASM, &[]);
-    //     let sender = String::from("sender");
-    //     let info = mock_info(&sender, &coins(1000, "unibi"));
-    //     let inst_msg = InstantiateMsg {};
-    //     let result: Response =
-    //         instantiate(&mut deps, mock_env(), info, inst_msg).unwrap();
-    //     assert_eq!(result.messages.len(), 0);
+    #[test]
+    fn execute_perp_msgs_happy() {
+        let mut deps = testing::mock_dependencies();
+        let admin = "admin";
+        let _msg = InitMsg {
+            admin: Some(admin.to_string()),
+        };
+        let sender = "sender";
+        let info: MessageInfo = testing::mock_info(sender, &coins(2, "token"));
 
-    //     let pair = String::from("ueth:unusd");
-    //     let query_msg = NibiruQuery::Reserves { pair };
-    //     let raw_resp = query(&mut deps, mock_env(), query_msg);
-    //     assert!(raw_resp.is_err(), "err: {}", raw_resp.unwrap_err());
-    //     let resp: ReservesResponse =
-    //         from_slice(&raw_resp.unwrap(), DESERIALIZATION_LIMIT).unwrap();
-    //     assert_eq!(resp.pair, pair)
-    // }
+        let pair = "ETH:USD".to_string();
+        let dummy_u128 = Uint128::new(420u128);
+        let dummy_coin = coin(dummy_u128.clone().u128(), "token");
+        let exec_msgs: Vec<(ExecuteMsg, NibiruRoute)> = vec![
+            (
+                ExecuteMsg::OpenPosition {
+                    pair: pair.clone(),
+                    is_long: true,
+                    quote_amount: dummy_u128,
+                    leverage: Decimal::from_str("5").unwrap(),
+                    base_amount_limit: Uint128::zero(),
+                },
+                NibiruRoute::Perp,
+            ),
+            (
+                ExecuteMsg::ClosePosition { pair: pair.clone() },
+                NibiruRoute::Perp,
+            ),
+            (
+                ExecuteMsg::AddMargin {
+                    pair: pair.clone(),
+                    margin: dummy_coin.clone(),
+                },
+                NibiruRoute::Perp,
+            ),
+            (
+                ExecuteMsg::RemoveMargin {
+                    pair: pair.clone(),
+                    margin: dummy_coin,
+                },
+                NibiruRoute::Perp,
+            ),
+        ];
+        for (exec_msg, route) in &exec_msgs {
+            let resp = execute(
+                deps.as_mut(),
+                mock_env(),
+                info.clone(),
+                exec_msg.clone(),
+            )
+            .unwrap();
+            assert_eq!(
+                resp.messages.len(),
+                1,
+                "resp.messages: {:?}",
+                resp.messages
+            );
+
+            // Inspect the message contained in the response to see if it has the expected route
+            let msg = &resp.messages[0];
+            let custom_exec_msg: &CosmosMsg<NibiruExecuteMsg> = &msg.msg;
+            let msg_json = serde_json::to_string_pretty(&custom_exec_msg)
+                .expect("Failed to serialized JSON");
+            let route_json: String =
+                serde_json::to_string_pretty(route).unwrap();
+            let route_field_json = format!("\"route\": {}", route_json);
+            assert!(
+                msg_json.to_string().clone().contains(&route_field_json),
+                "route_string {}",
+                route_field_json
+            );
+        }
+    }
 }
