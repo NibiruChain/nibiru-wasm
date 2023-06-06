@@ -323,4 +323,37 @@ pub mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_execute_claim() {
+        // Prepare the test environment
+        let mut deps = testing::mock_dependencies();
+        let env = mock_env();
+        let contract_address = env.contract.address.clone();
+        let to_address = String::from("recipient_address");
+
+        // Set up a mock querier with contract balance
+        let balances: &[(&str, &[Coin])] = &[(
+            contract_address.as_str(),
+            &[Coin::new(100, "token")],
+        )];
+        let querier = testing::MockQuerier::new(balances);
+        deps.querier = querier.into();
+
+        // Define the ExecuteMsg::Claim variant
+        let msg = ExecuteMsg::Claim {
+            funds: Some(Coin::new(50, "token")),
+            claim_all: None,
+            to: to_address.clone(),
+        };
+
+        // Execute the claim
+        let sender = to_address.as_str(); // send to self
+        let info: MessageInfo = testing::mock_info(sender, &coins(2, "token"));
+        let res = execute(deps.as_mut(), env, info, msg);
+
+        // Assert the result
+        assert!(res.is_ok());
+    }
+
 }
