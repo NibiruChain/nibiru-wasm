@@ -66,6 +66,12 @@ pub enum ExecuteMsg {
         donation: Coin,
     },
 
+    Claim {
+        funds: Option<Coin>,
+        claim_all: Option<bool>,
+        to: String,
+    },
+
     NoOp {},
 }
 

@@ -80,8 +80,8 @@ pub fn query(
 
 #[entry_point]
 pub fn execute(
-    _deps: DepsMut,
-    _env: Env,
+    deps: DepsMut,
+    env_ctx: Env,
     _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response<NibiruExecuteMsg>> {
@@ -125,6 +125,76 @@ pub fn execute(
             nibiru_msg_to_cw_response(
                 NibiruExecuteMsg::donate_to_insurance_fund(donation),
             )
+        }
+
+        // TODO test
+        ExecuteMsg::Claim {
+            funds,
+            claim_all,
+            to,
+        } => {
+            // let querier = NibiruQuerier::new(&deps.querier);
+            let contract_address = env_ctx.contract.address;
+            let event_key = "execute_claim";
+            if let Some(claim_all_value) = claim_all {
+                if !claim_all_value {
+                    return Err(StdError::generic_err(
+                        "setting 'claim_all' to false causes an error: "
+                            .to_string()
+                            + "try removing claim_all as an argument entirely.",
+                    ));
+                }
+                // Query all contract balances
+                let query_request = QueryRequest::Bank(BankQuery::AllBalances {
+                    address: contract_address.to_string(),
+                });
+                let query_result = deps.querier.query(&query_request).unwrap();
+                let balances: AllBalanceResponse =
+                    from_binary(&query_result).unwrap();
+
+                // Send all funds to the specified recipient.
+                let transfer_msg = BankMsg::Send {
+                    to_address: to.clone(),
+                    amount: balances.amount,
+                };
+                let cw_msg: CosmosMsg<NibiruExecuteMsg> = NibiruExecuteMsg {
+                    route: NibiruRoute::NoOp,
+                    msg: ExecuteMsg::NoOp {},
+                }
+                .into();
+                return Ok(Response::new()
+                    .add_message(transfer_msg)
+                    .add_message(cw_msg)
+                    .add_attribute(
+                        event_key,
+                        format!("successfully claimed to {}", to),
+                    ));
+            } else if let Some(funds_value) = funds {
+                // Send all funds to the specified recipient.
+                let transfer_msg = BankMsg::Send {
+                    to_address: to.clone(),
+                    amount: vec![funds_value],
+                };
+                let cw_msg: CosmosMsg<NibiruExecuteMsg> = NibiruExecuteMsg {
+                    route: NibiruRoute::NoOp,
+                    msg: ExecuteMsg::NoOp {},
+                }
+                .into();
+                return Ok(Response::new()
+                    .add_message(transfer_msg)
+                    .add_message(cw_msg)
+                    .add_attribute(
+                        event_key,
+                        format!("successfully claimed to {}", to),
+                    ));
+            } else if funds.is_none() && claim_all.is_none() {
+                return Err(StdError::generic_err(
+                    "either the 'funds' or 'claim_all' arguments must be specified"));
+            } else {
+                return Err(StdError::generic_err(
+                    "invalid 'funds' or 'claim_all' arguments passed",
+                ));
+            }
         }
 
         // TODO test
