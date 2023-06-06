@@ -1,8 +1,7 @@
-
 use cosmwasm_std::{
-    entry_point, to_binary, AllBalanceResponse, BankMsg, BankQuery,
-    Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest,
-    Response, StdError, StdResult,
+    entry_point, to_binary, AllBalanceResponse, BankMsg, BankQuery, Binary,
+    Deps, DepsMut, Env, MessageInfo, QueryRequest, Response, StdError,
+    StdResult,
 };
 
 use cw2::set_contract_version;
