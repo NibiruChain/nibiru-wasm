@@ -1,13 +1,13 @@
 use cosmwasm_std::{
     entry_point, from_binary, to_binary, AllBalanceResponse, BankMsg, BankQuery,
-    Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Binary, Deps, DepsMut, Env, MessageInfo,
     QueryRequest, Response, StdError, StdResult,
 };
 
 use cw2::set_contract_version;
 
 use nibiru_bindings::query::QueryPerpMsg;
-use nibiru_bindings::{querier::NibiruQuerier, route::NibiruRoute};
+use nibiru_bindings::{querier::NibiruQuerier};
 
 use crate::{
     msg::{
@@ -128,16 +128,14 @@ pub fn execute(
             )
         }
 
-        // TODO test
         ExecuteMsg::Claim {
             funds,
             claim_all,
             to,
         } => {
-            // let querier = NibiruQuerier::new(&deps.querier);
-            let contract_address = env_ctx.contract.address;
             let event_key = "execute_claim";
             if let Some(claim_all_value) = claim_all {
+                // TODO test
                 if !claim_all_value {
                     return Err(StdError::generic_err(
                         "setting 'claim_all' to false causes an error: "
@@ -146,6 +144,7 @@ pub fn execute(
                     ));
                 }
                 // Query all contract balances
+                let contract_address = env_ctx.contract.address;
                 let query_request = QueryRequest::Bank(BankQuery::AllBalances {
                     address: contract_address.to_string(),
                 });
@@ -158,14 +157,8 @@ pub fn execute(
                     to_address: to.clone(),
                     amount: balances.amount,
                 };
-                let cw_msg: CosmosMsg<NibiruExecuteMsg> = NibiruExecuteMsg {
-                    route: NibiruRoute::NoOp,
-                    msg: ExecuteMsg::NoOp {},
-                }
-                .into();
                 Ok(Response::new()
                     .add_message(transfer_msg)
-                    .add_message(cw_msg)
                     .add_attribute(
                         event_key,
                         format!("successfully claimed to {}", to),
@@ -176,14 +169,8 @@ pub fn execute(
                     to_address: to.clone(),
                     amount: vec![funds_value],
                 };
-                let cw_msg: CosmosMsg<NibiruExecuteMsg> = NibiruExecuteMsg {
-                    route: NibiruRoute::NoOp,
-                    msg: ExecuteMsg::NoOp {},
-                }
-                .into();
                 return Ok(Response::new()
                     .add_message(transfer_msg)
-                    .add_message(cw_msg)
                     .add_attribute(
                         event_key,
                         format!("successfully claimed to {}", to),
@@ -192,6 +179,7 @@ pub fn execute(
                 return Err(StdError::generic_err(
                     "either the 'funds' or 'claim_all' arguments must be specified"));
             } else {
+                // TODO test
                 return Err(StdError::generic_err(
                     "invalid 'funds' or 'claim_all' arguments passed",
                 ));
