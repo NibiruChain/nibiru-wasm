@@ -1,6 +1,7 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo,
-    Response, StdResult,
+    entry_point, to_binary, AllBalanceResponse, BankMsg, BankQuery, Binary,
+    Deps, DepsMut, Env, MessageInfo, QueryRequest, Response, StdError,
+    StdResult,
 };
 
 use cw2::set_contract_version;
@@ -80,8 +81,8 @@ pub fn query(
 
 #[entry_point]
 pub fn execute(
-    _deps: DepsMut,
-    _env: Env,
+    deps: DepsMut,
+    env_ctx: Env,
     _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response<NibiruExecuteMsg>> {
@@ -127,11 +128,75 @@ pub fn execute(
             )
         }
 
+        ExecuteMsg::Claim {
+            funds,
+            claim_all,
+            to,
+        } => {
+            let event_key = "execute_claim";
+            if let Some(claim_all_value) = claim_all {
+                if !claim_all_value {
+                    return Err(StdError::generic_err(
+                        "setting 'claim_all' to false causes an error: "
+                            .to_string()
+                            + "try removing claim_all as an argument entirely.",
+                    ));
+                }
+                let contract_address = env_ctx.contract.address;
+                let balances = query_contract_balance(
+                    contract_address.to_string(),
+                    deps.as_ref(),
+                )?;
+
+                // Send all funds to the specified recipient.
+                let transfer_msg = BankMsg::Send {
+                    to_address: to.clone(),
+                    amount: balances.amount,
+                };
+                Ok(Response::new().add_message(transfer_msg).add_attribute(
+                    event_key,
+                    format!("successfully claimed to {}", to),
+                ))
+            } else if let Some(funds_value) = funds {
+                // Send all funds to the specified recipient.
+                let transfer_msg = BankMsg::Send {
+                    to_address: to.clone(),
+                    amount: vec![funds_value],
+                };
+                return Ok(Response::new()
+                    .add_message(transfer_msg)
+                    .add_attribute(
+                        event_key,
+                        format!("successfully claimed to {}", to),
+                    ));
+            } else {
+                return Err(StdError::generic_err(
+                    "either the 'funds' or 'claim_all' arguments must be specified"));
+            }
+        }
+
         // TODO test
         ExecuteMsg::NoOp {} => {
             nibiru_msg_to_cw_response(NibiruExecuteMsg::no_op())
         }
     }
+}
+
+/// Query all contract balances or return an empty response
+fn query_contract_balance(
+    contract_address: String,
+    deps: Deps,
+) -> StdResult<AllBalanceResponse> {
+    let query_result =
+        deps.querier
+            .query(&QueryRequest::Bank(BankQuery::AllBalances {
+                address: contract_address,
+            }))?;
+    let balances: AllBalanceResponse = match query_result {
+        Some(res) => res,
+        None => AllBalanceResponse::default(),
+    };
+    Ok(balances)
 }
 
 #[cfg(test)]
@@ -141,9 +206,11 @@ pub mod tests {
     use cosmwasm_std::{
         coin, coins,
         testing::{self, mock_env},
-        CosmosMsg, Decimal, Uint128,
+        Coin, CosmosMsg, Decimal, SubMsg, Uint128,
     };
     use nibiru_bindings::route::NibiruRoute;
+
+    use crate::msg;
 
     use super::*;
 
@@ -217,7 +284,7 @@ pub mod tests {
             ),
             (
                 ExecuteMsg::RemoveMargin {
-                    pair: pair.clone(),
+                    pair,
                     margin: dummy_coin,
                 },
                 NibiruRoute::Perp,
@@ -252,5 +319,149 @@ pub mod tests {
                 route_field_json
             );
         }
+    }
+
+    #[test]
+    fn test_execute_claim() {
+        // Prepare the test environment
+        let mut deps = testing::mock_dependencies();
+        let env = mock_env();
+        let contract_address = env.contract.address.clone();
+        let to_address = String::from("recipient_address");
+
+        // Set up a mock querier with contract balance
+        let balances: &[(&str, &[Coin])] =
+            &[(contract_address.as_str(), &[Coin::new(100, "token")])];
+        let querier = testing::MockQuerier::new(balances);
+        deps.querier = querier;
+
+        // Define the ExecuteMsg::Claim variant
+        let msg = ExecuteMsg::Claim {
+            funds: Some(Coin::new(50, "token")),
+            claim_all: None,
+            to: to_address.clone(),
+        };
+
+        // Execute the claim
+        let sender = to_address.as_str(); // send to self
+        let info: MessageInfo = testing::mock_info(sender, &coins(2, "token"));
+        let res = execute(deps.as_mut(), env, info, msg);
+
+        // Assert the result
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_execute_claim_with_no_args() {
+        // Prepare the test environment
+        let mut deps = testing::mock_dependencies();
+        let env = mock_env();
+        let contract_address = env.contract.address.clone();
+        let to_address = String::from("recipient_address");
+
+        // Set up a mock querier with contract balance
+        let balances: &[(&str, &[Coin])] =
+            &[(contract_address.as_str(), &[Coin::new(100, "token")])];
+        let querier = testing::MockQuerier::new(balances);
+        deps.querier = querier;
+
+        // Define the ExecuteMsg::Claim variant
+        let msg = ExecuteMsg::Claim {
+            funds: None,
+            claim_all: None,
+            to: to_address.clone(),
+        };
+
+        // Execute the claim
+        let sender = to_address.as_str(); // send to self
+        let info: MessageInfo = testing::mock_info(sender, &coins(2, "token"));
+        let res = execute(deps.as_mut(), env, info, msg);
+
+        // Assert the result
+        assert!(res.is_err());
+        assert!(res
+            .unwrap_err()
+            .to_string()
+            .contains("arguments must be specified"))
+    }
+
+    #[test]
+    fn test_execute_claim_all() {
+        // Prepare the test environment
+        let mut deps = testing::mock_dependencies();
+        let env = mock_env();
+        let contract_address = env.contract.address.clone();
+        let to_address = String::from("recipient_address");
+
+        // Set up a mock querier with contract balance
+        let balances: &[(&str, &[Coin])] =
+            &[(contract_address.as_str(), &[Coin::new(100, "token")])];
+        let querier = testing::MockQuerier::new(balances);
+        deps.querier = querier;
+
+        // Define the ExecuteMsg::Claim variant
+        let msg = ExecuteMsg::Claim {
+            funds: None,
+            claim_all: Some(true),
+            to: to_address.clone(),
+        };
+
+        // Execute the claim
+        let sender = to_address.as_str(); // send to self
+        let info: MessageInfo = testing::mock_info(sender, &coins(2, "token"));
+        let res = execute(deps.as_mut(), env, info, msg);
+
+        // Assert the result
+        assert!(res.is_ok(), "res: {:?}", res);
+        let resp = res.unwrap();
+        assert_eq!(resp.messages.len(), 1);
+
+        let sub_msg: &SubMsg<msg::NibiruExecuteMsg> = &resp.messages[0];
+        let transfer_msg: &CosmosMsg<msg::NibiruExecuteMsg> = &sub_msg.msg;
+        let msg_json: String = serde_json::to_string_pretty(&transfer_msg)
+            .expect("Failed to serialized JSON");
+        println!("msg_json: {:?}", msg_json);
+
+        let contract_balance: &Coin = &balances[0].1[0];
+        let denom: String = contract_balance.denom.clone();
+        let amount: String = contract_balance.amount.to_string();
+        let expected_json_elements: Vec<String> = vec![
+            format!(r#""denom": "{}""#, denom),
+            format!(r#""amount": "{}""#, amount),
+        ];
+        for elem in &expected_json_elements {
+            assert!(
+                msg_json.to_string().clone().contains(elem),
+                "elem: {}",
+                elem
+            );
+        }
+    }
+
+    #[test]
+    fn test_execute_claim_all_set_to_false() {
+        // Prepare the test environment
+        let mut deps = testing::mock_dependencies();
+        let env = mock_env();
+        let to_address = String::from("recipient_address");
+
+        // Define the ExecuteMsg::Claim variant
+        let msg = ExecuteMsg::Claim {
+            funds: None,
+            claim_all: Some(false),
+            to: to_address.clone(),
+        };
+
+        // Execute the claim
+        let sender = to_address.as_str(); // send to self
+        let info: MessageInfo = testing::mock_info(sender, &coins(2, "token"));
+        let res = execute(deps.as_mut(), env, info, msg);
+
+        // Assert the result
+        assert!(res.is_err(), "res: {:?}", res);
+        assert!(res
+            .unwrap_err()
+            .to_string()
+            .contains("false causes an error"))
     }
 }
