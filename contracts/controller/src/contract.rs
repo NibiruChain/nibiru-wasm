@@ -190,12 +190,11 @@ pub fn execute(
         }
 
         ExecuteMsg::ChangeAdmin { address } => {
-            // TODO test
             check_admin(check)?;
             let api = deps.api;
-            let addr = api.addr_validate(address.as_str()).unwrap();
-            whitelist.admin = addr.clone().into_string();
-            whitelist.members.remove(addr.as_str());
+            let new_admin = api.addr_validate(address.as_str()).unwrap();
+            whitelist.admin = new_admin.clone().into_string();
+            whitelist.members.insert(new_admin.to_string());
             WHITELIST.save(deps.storage, &whitelist)?;
 
             let cw_msg = ContractExecMsg {
@@ -460,5 +459,69 @@ mod tests {
             "got: {:#?}, wanted: {:#?}",
             response.whitelist.members, expected_members
         );
+    }
+
+    #[test]
+    fn test_execute_change_admin() {
+        // Init contract
+        let mut deps = testing::mock_dependencies();
+        let admin = Addr::unchecked("admin");
+
+        let init_msg = InitMsg {
+            admin: admin.as_str().to_string(),
+        };
+        let init_info = testing::mock_info("addr0000", &coins(2, "token"));
+        instantiate(deps.as_mut(), testing::mock_env(), init_info, init_msg)
+            .unwrap();
+
+        let new_admin = "new_admin";
+        let whitelist = WHITELIST.load(&deps.storage).unwrap();
+        let has: bool = whitelist.is_admin(new_admin);
+        assert!(!has);
+
+        // Add a member to whitelist
+        let execute_msg = ExecuteMsg::ChangeAdmin {
+            address: new_admin.to_string(),
+        };
+        let execute_info = testing::mock_info(admin.as_str(), &[]);
+
+        let check_resp = |resp: Response<ContractExecMsg>| {
+            assert_eq!(
+                resp.messages.len(),
+                1,
+                "resp.messages: {:?}",
+                resp.messages
+            );
+            assert_eq!(
+                resp.attributes.len(),
+                2,
+                "resp.attributes: {:#?}",
+                resp.attributes
+            );
+        };
+
+        let result = execute(
+            deps.as_mut(),
+            testing::mock_env(),
+            execute_info,
+            execute_msg,
+        )
+        .unwrap();
+        check_resp(result);
+
+        // Check correctness of the result
+        let whitelist = WHITELIST.load(&deps.storage).unwrap();
+        let has: bool = whitelist.has(new_admin);
+        assert!(has);
+
+        // The new admin should not yet be a member
+        let query_req = QueryMsg::IsMember {
+            address: new_admin.to_string(),
+        };
+        let binary =
+            query(deps.as_ref(), testing::mock_env(), query_req).unwrap();
+        let response: IsMemberResponse =
+            cosmwasm_std::from_binary(&binary).unwrap();
+        assert!(response.is_member);
     }
 }
