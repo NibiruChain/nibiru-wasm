@@ -60,6 +60,7 @@ jobs:
         run: cargo build
 
   coverage:
+    if: github.event_name != 'push' || github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
     name: ubuntu / stable / coverage
     steps:
