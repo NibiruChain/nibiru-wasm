@@ -3,12 +3,11 @@ c65dd8ba501207911ea5f37bb7354f120094c7c683caa7cc5529671cde1bc029  target/wasm32-
 dcd590fef2b6181ee467c5fe8495060d8bcac3791cb42b27e2f93da770030a63  target/wasm32-unknown-unknown/release/incentives.wasm
 d639a02138854e78e0b0edb37985b026bdda02be0c655be999ddd47aa581cb37  target/wasm32-unknown-unknown/release/lockup.wasm
 404360df977067505c3ef36bf48279f99c49904de1a5f809beca6a8b29b01f2d  target/wasm32-unknown-unknown/release/pricefeed.wasm
-6b36a9afb5a4e69002093a7c68c2a13a89f6e5cbc6de13b26cd5b80f49e7519a  target/wasm32-unknown-unknown/release/shifter.wasm
 =======
 e6f93267495f120ae8be89f106c6445420fee489178b610dfb2eaa9ed7021b5f  target/wasm32-unknown-unknown/release/incentives.wasm
 e0c3076f0b6837cfba03da5a9c0dcde60e8895aecfc34a49b01cdbf4d99fcf13  target/wasm32-unknown-unknown/release/lockup.wasm
 51537ec24467a617341168ae3fd64c428b70773a3b7894be780c51ea61eabc10  target/wasm32-unknown-unknown/release/pricefeed.wasm
-bc83aa4bfce144b08625526a3e7924170fab2fe696dfb75b5e37b1c711436930  target/wasm32-unknown-unknown/release/shifter.wasm
 >>>>>>> main
 a79907a1760a072596cb8ea0f4fe6c450f963ac0d50f328b9fa150b89d1734ab  target/wasm32-unknown-unknown/release/bindings_perp.wasm
 2f785c42e36b3f7953e71124e12fb21c7e93cbcfc2088ff1a9c3d15f824fb7dd  target/wasm32-unknown-unknown/release/controller.wasm
+e44bb38786ca44557c3392e389ca7fbe4aa4ec6db869f48156995b41d98b9468  target/wasm32-unknown-unknown/release/shifter.wasm
