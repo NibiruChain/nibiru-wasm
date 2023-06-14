@@ -83,9 +83,12 @@ pub fn query(
 pub fn execute(
     deps: DepsMut,
     env_ctx: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response<NibiruExecuteMsg>> {
+    let deps_for_check = &deps;
+    let can_execute: CanExecute =
+        check_can_execute(deps_for_check.as_ref(), info.sender.as_ref())?;
     match msg {
         ExecuteMsg::OpenPosition {
             pair,
@@ -93,28 +96,37 @@ pub fn execute(
             quote_amount,
             leverage,
             base_amount_limit,
-        } => nibiru_msg_to_cw_response(NibiruExecuteMsg::open_position(
-            pair,
-            is_long,
-            quote_amount,
-            leverage,
-            base_amount_limit,
-        )),
+        } => {
+            can_execute.check_member()?; // TODO test
+            nibiru_msg_to_cw_response(NibiruExecuteMsg::open_position(
+                pair,
+                is_long,
+                quote_amount,
+                leverage,
+                base_amount_limit,
+            ))
+        }
 
         ExecuteMsg::ClosePosition { pair } => {
+            can_execute.check_member()?; // TODO test
             nibiru_msg_to_cw_response(NibiruExecuteMsg::close_position(pair))
         }
 
-        ExecuteMsg::AddMargin { pair, margin } => nibiru_msg_to_cw_response({
-            NibiruExecuteMsg::add_margin(pair, margin)
-        }),
+        ExecuteMsg::AddMargin { pair, margin } => {
+            can_execute.check_member()?; // TODO test
+            nibiru_msg_to_cw_response(NibiruExecuteMsg::add_margin(pair, margin))
+        }
 
-        ExecuteMsg::RemoveMargin { pair, margin } => nibiru_msg_to_cw_response(
-            NibiruExecuteMsg::remove_margin(pair, margin),
-        ),
+        ExecuteMsg::RemoveMargin { pair, margin } => {
+            can_execute.check_member()?; // TODO test
+            nibiru_msg_to_cw_response(NibiruExecuteMsg::remove_margin(
+                pair, margin,
+            ))
+        }
 
         // TODO test
         ExecuteMsg::MultiLiquidate { pair, liquidations } => {
+            can_execute.check_member()?; // TODO test
             nibiru_msg_to_cw_response(NibiruExecuteMsg::multi_liquidate(
                 pair,
                 liquidations,
@@ -123,6 +135,7 @@ pub fn execute(
 
         // TODO test
         ExecuteMsg::DonateToInsuranceFund { donation } => {
+            can_execute.check_member()?; // TODO test
             nibiru_msg_to_cw_response(
                 NibiruExecuteMsg::donate_to_insurance_fund(donation),
             )
@@ -133,6 +146,7 @@ pub fn execute(
             claim_all,
             to,
         } => {
+            can_execute.check_admin()?; // TODO test
             let event_key = "execute_claim";
             if let Some(claim_all_value) = claim_all {
                 if !claim_all_value {
@@ -182,6 +196,43 @@ pub fn execute(
     }
 }
 
+struct CanExecute {
+    is_admin: bool,
+    is_member: bool,
+    sender: String,
+}
+
+impl CanExecute {
+    pub fn check_admin(&self) -> Result<(), cosmwasm_std::StdError> {
+        match self.is_admin {
+            true => Ok(()),
+            false => Err(cosmwasm_std::StdError::generic_err(format!(
+                "unauthorized : sender {} is not an admin",
+                self.sender,
+            ))),
+        }
+    }
+
+    pub fn check_member(&self) -> Result<(), cosmwasm_std::StdError> {
+        match self.is_member {
+            true => Ok(()),
+            false => Err(cosmwasm_std::StdError::generic_err(format!(
+                "unauthorized : sender {} is not a sudoers member",
+                self.sender,
+            ))),
+        }
+    }
+}
+
+fn check_can_execute(deps: Deps, sender: &str) -> StdResult<CanExecute> {
+    let sudoers = SUDOERS.load(deps.storage).unwrap();
+    Ok(CanExecute {
+        is_admin: sudoers.is_admin(sender),
+        is_member: sudoers.is_member(sender),
+        sender: sender.into(),
+    })
+}
+
 /// Query all contract balances or return an empty response
 fn query_contract_balance(
     contract_address: String,
@@ -205,12 +256,13 @@ pub mod tests {
 
     use cosmwasm_std::{
         coin, coins,
-        testing::{self, mock_env},
-        Coin, CosmosMsg, Decimal, SubMsg, Uint128,
+        testing::{self, mock_env, MockApi, MockQuerier},
+        Coin, CosmosMsg, Decimal, MemoryStorage, OwnedDeps, SubMsg, Uint128,
     };
     use nibiru_bindings::route::NibiruRoute;
 
     use crate::msg;
+    use crate::state;
 
     use super::*;
 
@@ -247,15 +299,43 @@ pub mod tests {
         assert_eq!(sudoers.admin, sender)
     }
 
-    #[test]
-    fn execute_perp_msgs_happy() {
-        let mut deps = testing::mock_dependencies();
-        let admin = "admin";
-        let _msg = InitMsg {
+    fn do_init(
+        admin: &str,
+        sender: &str,
+        mut deps: OwnedDeps<MemoryStorage, MockApi, MockQuerier>,
+    ) -> (
+        state::Sudoers,
+        OwnedDeps<MemoryStorage, MockApi, MockQuerier>,
+        cosmwasm_std::MessageInfo,
+    ) {
+        let msg_init = InitMsg {
             admin: Some(admin.to_string()),
         };
-        let sender = "sender";
+
+        // let mut deps = testing::mock_dependencies();
         let info: MessageInfo = testing::mock_info(sender, &coins(2, "token"));
+
+        let result = instantiate(
+            deps.as_mut(),
+            testing::mock_env(),
+            info.clone(),
+            msg_init,
+        )
+        .unwrap();
+        assert_eq!(result.messages.len(), 0);
+        let sudoers = SUDOERS.load(&deps.storage).unwrap();
+        assert_eq!(sudoers.admin, admin);
+        (sudoers, deps, info)
+    }
+
+    #[test]
+    fn execute_perp_msgs_happy() {
+        let deps = testing::mock_dependencies();
+
+        // Instantiate contract
+        let admin = "admin";
+        let sender = admin.clone();
+        let (_sudoers, mut deps, info) = do_init(admin, sender, deps);
 
         let pair = "ETH:USD".to_string();
         let dummy_u128 = Uint128::new(420u128);
@@ -322,12 +402,70 @@ pub mod tests {
     }
 
     #[test]
-    fn test_execute_claim() {
+    fn execute_perp_msgs_no_permission() {
+        let deps = testing::mock_dependencies();
+
+        // Instantiate contract
+        let admin = "admin";
+        let sender = "sender";
+        let (_sudoers, mut deps, info) = do_init(admin, sender, deps);
+
+        let pair = "ETH:USD".to_string();
+        let dummy_u128 = Uint128::new(420u128);
+        let dummy_coin = coin(dummy_u128.clone().u128(), "token");
+        let exec_msgs: Vec<(ExecuteMsg, NibiruRoute)> = vec![
+            (
+                ExecuteMsg::OpenPosition {
+                    pair: pair.clone(),
+                    is_long: true,
+                    quote_amount: dummy_u128,
+                    leverage: Decimal::from_str("5").unwrap(),
+                    base_amount_limit: Uint128::zero(),
+                },
+                NibiruRoute::Perp,
+            ),
+            (
+                ExecuteMsg::ClosePosition { pair: pair.clone() },
+                NibiruRoute::Perp,
+            ),
+            (
+                ExecuteMsg::AddMargin {
+                    pair: pair.clone(),
+                    margin: dummy_coin.clone(),
+                },
+                NibiruRoute::Perp,
+            ),
+            (
+                ExecuteMsg::RemoveMargin {
+                    pair,
+                    margin: dummy_coin,
+                },
+                NibiruRoute::Perp,
+            ),
+        ];
+        for (exec_msg, _route) in &exec_msgs {
+            let resp = execute(
+                deps.as_mut(),
+                mock_env(),
+                info.clone(),
+                exec_msg.clone(),
+            );
+            assert!(resp.is_err(), "resp.err: {:?}", resp.err());
+        }
+    }
+
+    #[test]
+    fn execute_claim() {
         // Prepare the test environment
-        let mut deps = testing::mock_dependencies();
+        let deps = testing::mock_dependencies();
         let env = mock_env();
         let contract_address = env.contract.address.clone();
         let to_address = String::from("recipient_address");
+
+        // Instantiate contract
+        let admin = to_address.as_str();
+        let sender = to_address.as_str();
+        let (_sudoers, mut deps, _info) = do_init(admin, sender, deps);
 
         // Set up a mock querier with contract balance
         let balances: &[(&str, &[Coin])] =
@@ -352,12 +490,17 @@ pub mod tests {
     }
 
     #[test]
-    fn test_execute_claim_with_no_args() {
+    fn execute_claim_with_no_args() {
         // Prepare the test environment
-        let mut deps = testing::mock_dependencies();
+        let deps = testing::mock_dependencies();
         let env = mock_env();
         let contract_address = env.contract.address.clone();
         let to_address = String::from("recipient_address");
+
+        // Instantiate contract
+        let admin = to_address.as_str();
+        let sender = to_address.as_str();
+        let (_sudoers, mut deps, _info) = do_init(admin, sender, deps);
 
         // Set up a mock querier with contract balance
         let balances: &[(&str, &[Coin])] =
@@ -386,12 +529,17 @@ pub mod tests {
     }
 
     #[test]
-    fn test_execute_claim_all() {
+    fn execute_claim_all() {
         // Prepare the test environment
-        let mut deps = testing::mock_dependencies();
+        let deps = testing::mock_dependencies();
         let env = mock_env();
         let contract_address = env.contract.address.clone();
         let to_address = String::from("recipient_address");
+
+        // Instantiate contract
+        let admin = to_address.as_str();
+        let sender = to_address.as_str();
+        let (_sudoers, mut deps, _info) = do_init(admin, sender, deps);
 
         // Set up a mock querier with contract balance
         let balances: &[(&str, &[Coin])] =
@@ -439,11 +587,16 @@ pub mod tests {
     }
 
     #[test]
-    fn test_execute_claim_all_set_to_false() {
+    fn execute_claim_all_set_to_false() {
         // Prepare the test environment
-        let mut deps = testing::mock_dependencies();
+        let deps = testing::mock_dependencies();
         let env = mock_env();
         let to_address = String::from("recipient_address");
+
+        // Instantiate contract
+        let admin = to_address.as_str();
+        let sender = to_address.as_str();
+        let (_sudoers, mut deps, _info) = do_init(admin, sender, deps);
 
         // Define the ExecuteMsg::Claim variant
         let msg = ExecuteMsg::Claim {
