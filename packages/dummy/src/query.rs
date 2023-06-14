@@ -30,9 +30,6 @@ pub fn all_markets_response() -> AllMarketsResponse {
             total_short: dec_69(),
             peg_mult: dec_420(),
             config: MarketConfig {
-                trade_limit_ratio: dec_420(),
-                fluct_limit_ratio: dec_420(),
-                max_oracle_spread_ratio: dec_420(),
                 maintenance_margin_ratio: dec_420(),
                 max_leverage: dec_420(),
             },
