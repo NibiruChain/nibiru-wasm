@@ -1,6 +1,6 @@
 [package]
 name = "nibiru-bindings"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Bindings for CosmWasm contracts to call into custom modules of Nibiru Chain"
 

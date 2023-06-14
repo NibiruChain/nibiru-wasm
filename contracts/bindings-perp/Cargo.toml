@@ -1,6 +1,6 @@
 [package]
 name = "bindings-perp"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 homepage = "https://nibiru.fi"
 repository = "https://github.com/NibiruChain/cw-nibiru"
