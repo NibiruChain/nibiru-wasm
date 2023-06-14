@@ -97,7 +97,7 @@ pub fn execute(
             leverage,
             base_amount_limit,
         } => {
-            can_execute.check_member()?; // TODO test
+            can_execute.check_member()?;
             nibiru_msg_to_cw_response(NibiruExecuteMsg::open_position(
                 pair,
                 is_long,
@@ -108,25 +108,24 @@ pub fn execute(
         }
 
         ExecuteMsg::ClosePosition { pair } => {
-            can_execute.check_member()?; // TODO test
+            can_execute.check_member()?;
             nibiru_msg_to_cw_response(NibiruExecuteMsg::close_position(pair))
         }
 
         ExecuteMsg::AddMargin { pair, margin } => {
-            can_execute.check_member()?; // TODO test
+            can_execute.check_member()?;
             nibiru_msg_to_cw_response(NibiruExecuteMsg::add_margin(pair, margin))
         }
 
         ExecuteMsg::RemoveMargin { pair, margin } => {
-            can_execute.check_member()?; // TODO test
+            can_execute.check_member()?;
             nibiru_msg_to_cw_response(NibiruExecuteMsg::remove_margin(
                 pair, margin,
             ))
         }
 
-        // TODO test
         ExecuteMsg::MultiLiquidate { pair, liquidations } => {
-            can_execute.check_member()?; // TODO test
+            can_execute.check_member()?;
             nibiru_msg_to_cw_response(NibiruExecuteMsg::multi_liquidate(
                 pair,
                 liquidations,
@@ -135,7 +134,7 @@ pub fn execute(
 
         // TODO test
         ExecuteMsg::DonateToInsuranceFund { donation } => {
-            can_execute.check_member()?; // TODO test
+            can_execute.check_member()?;
             nibiru_msg_to_cw_response(
                 NibiruExecuteMsg::donate_to_insurance_fund(donation),
             )
@@ -146,7 +145,7 @@ pub fn execute(
             claim_all,
             to,
         } => {
-            can_execute.check_admin()?; // TODO test
+            can_execute.check_admin()?;
             let event_key = "execute_claim";
             if let Some(claim_all_value) = claim_all {
                 if !claim_all_value {
