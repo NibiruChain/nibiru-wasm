@@ -124,6 +124,7 @@ pub fn execute(
             ))
         }
 
+        // TODO test
         ExecuteMsg::MultiLiquidate { pair, liquidations } => {
             can_execute.check_member()?;
             nibiru_msg_to_cw_response(NibiruExecuteMsg::multi_liquidate(
@@ -187,6 +188,10 @@ pub fn execute(
                     "either the 'funds' or 'claim_all' arguments must be specified"));
             }
         }
+
+        // TODO test: add member
+        // TODO test: remove member
+        // TODO test: change admin
 
         // TODO test
         ExecuteMsg::NoOp {} => {
