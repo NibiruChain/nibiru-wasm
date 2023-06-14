@@ -33,9 +33,6 @@ pub struct Market {
 
 #[cw_serde]
 pub struct MarketConfig {
-    pub trade_limit_ratio: Decimal,
-    pub fluct_limit_ratio: Decimal,
-    pub max_oracle_spread_ratio: Decimal,
     pub maintenance_margin_ratio: Decimal,
     pub max_leverage: Decimal,
 }
