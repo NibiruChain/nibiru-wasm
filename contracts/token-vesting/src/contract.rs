@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{from_binary, to_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult, Uint128, WasmMsg, Storage};
+use cosmwasm_std::{from_binary, to_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult, Uint128, WasmMsg, Storage, Timestamp};
 
 use serde_json::to_string;
 
@@ -40,7 +40,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             let deposit_coin = info.funds[0].clone();
             register_vesting_account(
                 deps.storage,
-                env,
+                env.block.time,
                 master_address,
                 address,
                 Denom::Native(deposit_coin.denom),
@@ -68,7 +68,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
 
 fn register_vesting_account(
     storage: &mut dyn Storage,
-    env: Env,
+    block_time: Timestamp,
     master_address: Option<String>,
     address: String,
     deposit_denom: Denom,
@@ -101,7 +101,7 @@ fn register_vesting_account(
                 .parse::<u64>()
                 .map_err(|_| StdError::generic_err("invalid end_time"))?;
 
-            if start_time < env.block.time.seconds() {
+            if start_time < block_time.seconds() {
                 return Err(StdError::generic_err("assert(start_time < block_time)"));
             }
 
@@ -139,7 +139,7 @@ fn register_vesting_account(
                 .parse::<u64>()
                 .map_err(|_| StdError::generic_err("invalid vesting_interval"))?;
 
-            if start_time < env.block.time.seconds() {
+            if start_time < block_time.seconds() {
                 return Err(StdError::generic_err("invalid start_time"));
             }
 
@@ -392,7 +392,7 @@ pub fn receive_cw20(
             vesting_schedule,
         }) => register_vesting_account(
             deps.storage,
-            env,
+            env.block.time,
             master_address,
             address,
             Denom::Cw20(contract),
