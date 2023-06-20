@@ -14,7 +14,7 @@ use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, Denom};
 
 #[test]
 fn proper_initialization() {
-    let mut deps = mock_dependencies(&[]);
+    let mut deps = mock_dependencies();
 
     let msg = InstantiateMsg {};
 
@@ -26,7 +26,7 @@ fn proper_initialization() {
 
 #[test]
 fn register_vesting_account_with_native_token() {
-    let mut deps = mock_dependencies(&[]);
+    let mut deps = mock_dependencies();
     let _res = instantiate(
         deps.as_mut(),
         mock_env(),
@@ -148,7 +148,7 @@ fn register_vesting_account_with_native_token() {
 
 #[test]
 fn register_vesting_account_with_cw20_token() {
-    let mut deps = mock_dependencies(&[]);
+    let mut deps = mock_dependencies();
     let _res = instantiate(
         deps.as_mut(),
         mock_env(),
@@ -274,7 +274,7 @@ fn register_vesting_account_with_cw20_token() {
 
 #[test]
 fn claim_native() {
-    let mut deps = mock_dependencies(&[]);
+    let mut deps = mock_dependencies();
     let _res = instantiate(
         deps.as_mut(),
         mock_env(),
@@ -434,7 +434,7 @@ fn claim_native() {
 
 #[test]
 fn claim_cw20() {
-    let mut deps = mock_dependencies(&[]);
+    let mut deps = mock_dependencies();
     let _res = instantiate(
         deps.as_mut(),
         mock_env(),
@@ -604,7 +604,7 @@ fn claim_cw20() {
 
 #[test]
 fn query_vesting_account() {
-    let mut deps = mock_dependencies(&[]);
+    let mut deps = mock_dependencies();
     let _res = instantiate(
         deps.as_mut(),
         mock_env(),

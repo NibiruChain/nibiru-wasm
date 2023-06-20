@@ -436,7 +436,7 @@ fn vesting_account(
             start_after
                 .map(denom_to_key)
                 .map(|v| v.as_bytes().to_vec())
-                .map(Bound::Exclusive),
+                .map(Bound::ExclusiveRaw),
             None,
             Order::Ascending,
         )
