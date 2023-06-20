@@ -1,9 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    from_binary, to_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env,
-    MessageInfo, Order, Response, StdError, StdResult, Uint128, WasmMsg,
-};
+use cosmwasm_std::{from_binary, to_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult, Uint128, WasmMsg, Storage};
 
 use serde_json::to_string;
 
@@ -42,7 +39,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
 
             let deposit_coin = info.funds[0].clone();
             register_vesting_account(
-                deps,
+                deps.storage,
                 env,
                 master_address,
                 address,
@@ -70,7 +67,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
 }
 
 fn register_vesting_account(
-    deps: DepsMut,
+    storage: &mut dyn Storage,
     env: Env,
     master_address: Option<String>,
     address: String,
@@ -81,7 +78,7 @@ fn register_vesting_account(
     let denom_key = denom_to_key(deposit_denom.clone());
 
     // vesting_account existence check
-    if VESTING_ACCOUNTS.has(deps.storage, (address.as_str(), &denom_key)) {
+    if VESTING_ACCOUNTS.has(storage, (address.as_str(), &denom_key)) {
         return Err(StdError::generic_err("already exists"));
     }
 
@@ -172,7 +169,7 @@ fn register_vesting_account(
     }
 
     VESTING_ACCOUNTS.save(
-        deps.storage,
+        storage,
         (address.as_str(), &denom_key),
         &VestingAccount {
             master_address: master_address.clone(),
@@ -394,7 +391,7 @@ pub fn receive_cw20(
             address,
             vesting_schedule,
         }) => register_vesting_account(
-            deps,
+            deps.storage,
             env,
             master_address,
             address,
