@@ -4,12 +4,7 @@ use crate::msg::{
     VestingSchedule,
 };
 
-use cosmwasm_std::{
-    from_binary,
-    testing::{mock_dependencies, mock_env, mock_info},
-    to_binary, Addr, Attribute, BankMsg, Coin, Response, StdError, SubMsg, Timestamp, Uint128,
-    WasmMsg,
-};
+use cosmwasm_std::{from_binary, testing::{mock_dependencies, mock_env, mock_info}, to_binary, Addr, Attribute, BankMsg, Coin, Response, StdError, SubMsg, Timestamp, Uint128, WasmMsg, Uint64};
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, Denom};
 
 #[test]
@@ -43,8 +38,8 @@ fn register_vesting_account_with_native_token() {
         master_address: None,
         address: "addr0001".to_string(),
         vesting_schedule: VestingSchedule::LinearVesting {
-            start_time: "100".to_string(),
-            end_time: "110".to_string(),
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(110),
             vesting_amount: Uint128::zero(),
         },
     };
@@ -64,8 +59,8 @@ fn register_vesting_account_with_native_token() {
         master_address: None,
         address: "addr0001".to_string(),
         vesting_schedule: VestingSchedule::LinearVesting {
-            start_time: "100".to_string(),
-            end_time: "110".to_string(),
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(110),
             vesting_amount: Uint128::new(1000000u128),
         },
     };
@@ -136,8 +131,8 @@ fn register_vesting_account_with_native_token() {
                 vesting_amount: Uint128::new(1000000),
                 vested_amount: Uint128::zero(),
                 vesting_schedule: VestingSchedule::LinearVesting {
-                    start_time: "100".to_string(),
-                    end_time: "110".to_string(),
+                    start_time: Uint64::new(100),
+                    end_time: Uint64::new(110),
                     vesting_amount: Uint128::new(1000000u128),
                 },
                 claimable_amount: Uint128::zero(),
@@ -168,8 +163,8 @@ fn register_vesting_account_with_cw20_token() {
             master_address: None,
             address: "addr0001".to_string(),
             vesting_schedule: VestingSchedule::LinearVesting {
-                start_time: "100".to_string(),
-                end_time: "110".to_string(),
+                start_time: Uint64::new(100),
+                end_time: Uint64::new(110),
                 vesting_amount: Uint128::zero(),
             },
         })
@@ -193,8 +188,8 @@ fn register_vesting_account_with_cw20_token() {
             master_address: None,
             address: "addr0001".to_string(),
             vesting_schedule: VestingSchedule::LinearVesting {
-                start_time: "100".to_string(),
-                end_time: "110".to_string(),
+                start_time: Uint64::new(100),
+                end_time: Uint64::new(110),
                 vesting_amount: Uint128::new(999000u128),
             },
         })
@@ -218,8 +213,8 @@ fn register_vesting_account_with_cw20_token() {
             master_address: None,
             address: "addr0001".to_string(),
             vesting_schedule: VestingSchedule::LinearVesting {
-                start_time: "100".to_string(),
-                end_time: "110".to_string(),
+                start_time: Uint64::new(100),
+                end_time: Uint64::new(110),
                 vesting_amount: Uint128::new(1000000u128),
             },
         })
@@ -262,8 +257,8 @@ fn register_vesting_account_with_cw20_token() {
                 vesting_amount: Uint128::new(1000000),
                 vested_amount: Uint128::zero(),
                 vesting_schedule: VestingSchedule::LinearVesting {
-                    start_time: "100".to_string(),
-                    end_time: "110".to_string(),
+                    start_time: Uint64::new(100),
+                    end_time: Uint64::new(110),
                     vesting_amount: Uint128::new(1000000u128),
                 },
                 claimable_amount: Uint128::zero(),
@@ -292,8 +287,8 @@ fn claim_native() {
         master_address: None,
         address: "addr0001".to_string(),
         vesting_schedule: VestingSchedule::LinearVesting {
-            start_time: "100".to_string(),
-            end_time: "110".to_string(),
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(110),
             vesting_amount: Uint128::new(1000000u128),
         },
     };
@@ -375,8 +370,8 @@ fn claim_native() {
                 vesting_amount: Uint128::new(1000000),
                 vested_amount: Uint128::new(500000),
                 vesting_schedule: VestingSchedule::LinearVesting {
-                    start_time: "100".to_string(),
-                    end_time: "110".to_string(),
+                    start_time: Uint64::new(100),
+                    end_time: Uint64::new(110),
                     vesting_amount: Uint128::new(1000000u128),
                 },
                 claimable_amount: Uint128::zero(),
@@ -455,8 +450,8 @@ fn claim_cw20() {
             master_address: None,
             address: "addr0001".to_string(),
             vesting_schedule: VestingSchedule::LinearVesting {
-                start_time: "100".to_string(),
-                end_time: "110".to_string(),
+                start_time: Uint64::new(100),
+                end_time: Uint64::new(110),
                 vesting_amount: Uint128::new(1000000u128),
             },
         })
@@ -543,8 +538,8 @@ fn claim_cw20() {
                 vesting_amount: Uint128::new(1000000),
                 vested_amount: Uint128::new(500000),
                 vesting_schedule: VestingSchedule::LinearVesting {
-                    start_time: "100".to_string(),
-                    end_time: "110".to_string(),
+                    start_time: Uint64::new(100),
+                    end_time: Uint64::new(110),
                     vesting_amount: Uint128::new(1000000u128),
                 },
                 claimable_amount: Uint128::zero(),
@@ -622,8 +617,8 @@ fn query_vesting_account() {
         master_address: None,
         address: "addr0001".to_string(),
         vesting_schedule: VestingSchedule::LinearVesting {
-            start_time: "100".to_string(),
-            end_time: "110".to_string(),
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(110),
             vesting_amount: Uint128::new(1000000u128),
         },
     };
@@ -638,8 +633,8 @@ fn query_vesting_account() {
             master_address: None,
             address: "addr0001".to_string(),
             vesting_schedule: VestingSchedule::LinearVesting {
-                start_time: "100".to_string(),
-                end_time: "110".to_string(),
+                start_time: Uint64::new(100),
+                end_time: Uint64::new(110),
                 vesting_amount: Uint128::new(1000000u128),
             },
         })
@@ -677,8 +672,8 @@ fn query_vesting_account() {
                     vesting_amount: Uint128::new(1000000),
                     vested_amount: Uint128::new(500000),
                     vesting_schedule: VestingSchedule::LinearVesting {
-                        start_time: "100".to_string(),
-                        end_time: "110".to_string(),
+                        start_time: Uint64::new(100),
+                        end_time: Uint64::new(110),
                         vesting_amount: Uint128::new(1000000u128),
                     },
                     claimable_amount: Uint128::new(500000),
@@ -689,8 +684,8 @@ fn query_vesting_account() {
                     vesting_amount: Uint128::new(1000000),
                     vested_amount: Uint128::new(500000),
                     vesting_schedule: VestingSchedule::LinearVesting {
-                        start_time: "100".to_string(),
-                        end_time: "110".to_string(),
+                        start_time: Uint64::new(100),
+                        end_time: Uint64::new(110),
                         vesting_amount: Uint128::new(1000000u128),
                     },
                     claimable_amount: Uint128::new(500000),
@@ -722,8 +717,8 @@ fn query_vesting_account() {
                 vesting_amount: Uint128::new(1000000),
                 vested_amount: Uint128::new(500000),
                 vesting_schedule: VestingSchedule::LinearVesting {
-                    start_time: "100".to_string(),
-                    end_time: "110".to_string(),
+                    start_time: Uint64::new(100),
+                    end_time: Uint64::new(110),
                     vesting_amount: Uint128::new(1000000u128),
                 },
                 claimable_amount: Uint128::new(500000),
@@ -754,8 +749,8 @@ fn query_vesting_account() {
                 vesting_amount: Uint128::new(1000000),
                 vested_amount: Uint128::new(500000),
                 vesting_schedule: VestingSchedule::LinearVesting {
-                    start_time: "100".to_string(),
-                    end_time: "110".to_string(),
+                    start_time: Uint64::new(100),
+                    end_time: Uint64::new(110),
                     vesting_amount: Uint128::new(1000000u128),
                 },
                 claimable_amount: Uint128::new(500000),
