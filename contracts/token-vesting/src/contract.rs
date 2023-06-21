@@ -13,6 +13,7 @@ use crate::msg::{
 };
 use crate::state::{denom_to_key, VestingAccount, VESTING_ACCOUNTS};
 
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     _deps: DepsMut,
@@ -115,8 +116,8 @@ fn register_vesting_account(
                 ));
             }
         }
-        VestingSchedule::LinearVestingWithInitialAmount { .. } => {
-            todo!("not implemented yet")
+        VestingSchedule::LinearVestingWithCliff { .. } => {
+            todo!("VestingSchedule::LinearVestingWithCliff")
         }
     }
 
@@ -368,6 +369,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 const MAX_LIMIT: u32 = 30;
 const DEFAULT_LIMIT: u32 = 10;
+
 fn vesting_account(
     deps: Deps,
     env: Env,

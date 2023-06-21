@@ -77,7 +77,7 @@ checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
 name = "bindings-perp"
 version = "0.2.0"
 dependencies = [
- "cosmwasm-schema 1.2.5",
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-vm",
  "cw-storage-plus",
@@ -197,7 +197,7 @@ checksum = "520fbf3c07483f94e3e3ca9d0cfd913d7718ef2483d2cfd91c0d9e91474ab913"
 name = "controller"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-schema 1.2.5",
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",
  "nibiru-bindings",
@@ -244,19 +244,9 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-schema"
-version = "0.16.7"
+version = "1.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b021bdefb9d855c5135e83046e5407a9fddba869e42e78b6036b53a606dc8c10"
-dependencies = [
- "schemars",
- "serde_json",
-]
-
-[[package]]
-name = "cosmwasm-schema"
-version = "1.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f00b363610218eea83f24bbab09e1a7c3920b79f068334fdfcc62f6129ef9fc"
+checksum = "230e5d1cefae5331db8934763c81b9c871db6a2cd899056a5694fa71d292c815"
 dependencies = [
  "cosmwasm-schema-derive",
  "schemars",
@@ -267,9 +257,9 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-schema-derive"
-version = "1.2.5"
+version = "1.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae38f909b2822d32b275c9e2db9728497aa33ffe67dd463bc67c6a3b7092785c"
+checksum = "43dadf7c23406cb28079d69e6cb922c9c29b9157b0fe887e3b79c783b7d4bcb8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -517,7 +507,7 @@ version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c80e93d1deccb8588db03945016a292c3c631e6325d349ebb35d2db6f4f946f7"
 dependencies = [
- "cosmwasm-schema 1.2.5",
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw2",
  "schemars",
@@ -532,7 +522,7 @@ version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fb70cee2cf0b4a8ff7253e6bc6647107905e8eb37208f87d54f67810faa62f8"
 dependencies = [
- "cosmwasm-schema 1.2.5",
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",
  "schemars",
@@ -545,7 +535,7 @@ version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "91666da6c7b40c8dd5ff94df655a28114efc10c79b70b4d06f13c31e37d60609"
 dependencies = [
- "cosmwasm-schema 1.2.5",
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-utils",
  "schemars",
@@ -633,7 +623,7 @@ version = "0.1.0"
 dependencies = [
  "bindings-perp",
  "controller",
- "cosmwasm-schema 1.2.5",
+ "cosmwasm-schema",
  "cosmwasm-std",
  "nibiru-bindings",
  "serde_json",
@@ -937,7 +927,7 @@ checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 name = "incentives"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-schema 1.2.5",
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-multi-test",
  "cw-storage-plus",
@@ -1056,7 +1046,7 @@ checksum = "ef53942eb7bf7ff43a617b3e2c1c4a5ecf5944a7c1bc12d7ee39bbb15e5c1519"
 name = "lockup"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-schema 1.2.5",
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",
  "cw-utils",
@@ -1158,7 +1148,7 @@ checksum = "7843ec2de400bcbc6a6328c958dc38e5359da6e93e72e37bc5246bf1ae776389"
 name = "nibiru-bindings"
 version = "0.2.0"
 dependencies = [
- "cosmwasm-schema 1.2.5",
+ "cosmwasm-schema",
  "cosmwasm-std",
 ]
 
@@ -1166,7 +1156,7 @@ dependencies = [
 name = "nibiru-macro"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-schema 1.2.5",
+ "cosmwasm-schema",
  "cosmwasm-std",
  "quote",
  "syn 2.0.16",
@@ -1241,7 +1231,7 @@ dependencies = [
 name = "pricefeed"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-schema 1.2.5",
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",
  "cw-utils",
@@ -1642,7 +1632,7 @@ dependencies = [
 name = "shifter"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-schema 1.2.5",
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",
  "nibiru-bindings",
@@ -1788,7 +1778,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 name = "token-vesting"
 version = "0.0.0"
 dependencies = [
- "cosmwasm-schema 0.16.7",
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",
  "cw20",

@@ -83,12 +83,13 @@ pub enum VestingSchedule {
         end_time: String,        // vesting end time in second unit
         vesting_amount: Uint128, // total vesting amount
     },
-    LinearVestingWithInitialAmount {
+    LinearVestingWithCliff {
         start_time: String,      // vesting start time in second unit
         end_time: String,        // vesting end time in second unit
         vesting_amount: Uint128, // total vesting amount
-        initial_amount: Uint128, // initial amount that will be unvested in one year
-    },
+        cliff_amount: Uint128,   // amount that will be unvested at cliff_time
+        cliff_time: String,      // cliff time in second unit
+    }
 }
 
 impl VestingSchedule {
@@ -116,15 +117,15 @@ impl VestingSchedule {
 
                 Ok(vested_token)
             }
-            VestingSchedule::LinearVestingWithInitialAmount { .. } => {
-                todo!("LinearVestingWithInitialAmount is not implemented yet")
+            VestingSchedule::LinearVestingWithCliff { .. } => {
+                todo!("VestingSchedule::LinearVestingWithCliff is not implemented yet")
             }
         }
     }
 }
 
 #[test]
-fn linear_vesting_vested_amount() {
+fn linear_vesting_vested_amount_no_cliff() {
     let schedule = VestingSchedule::LinearVesting {
         start_time: "100".to_string(),
         end_time: "110".to_string(),
