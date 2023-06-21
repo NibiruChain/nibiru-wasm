@@ -83,7 +83,7 @@ fn register_vesting_account(
     }
 
     // validate vesting schedule
-    match vesting_schedule.clone() {
+    match &vesting_schedule {
         VestingSchedule::LinearVesting {
             start_time,
             end_time,
