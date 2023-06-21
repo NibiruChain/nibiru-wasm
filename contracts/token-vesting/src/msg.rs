@@ -89,17 +89,6 @@ pub enum VestingSchedule {
         vesting_amount: Uint128, // total vesting amount
         initial_amount: Uint128, // initial amount that will be unvested in one year
     },
-    /// PeriodicVesting is used to vest tokens
-    /// at regular intervals for a specific period.
-    /// To minimize calculation error,
-    /// (end_time - start_time) should be multiple of vesting_interval
-    /// deposit_amount = amount * ((end_time - start_time) / vesting_interval + 1)
-    PeriodicVesting {
-        start_time: String,       // vesting start time in second unit
-        end_time: String,         // vesting end time in second unit
-        vesting_interval: String, // vesting interval in second unit
-        amount: Uint128,          // the amount will be vested in a interval
-    },
 }
 
 impl VestingSchedule {
@@ -130,28 +119,6 @@ impl VestingSchedule {
             VestingSchedule::LinearVestingWithInitialAmount { .. } => {
                 todo!("LinearVestingWithInitialAmount is not implemented yet")
             }
-            VestingSchedule::PeriodicVesting {
-                start_time,
-                end_time,
-                vesting_interval,
-                amount,
-            } => {
-                let start_time = start_time.parse::<u64>().unwrap();
-                let end_time = end_time.parse::<u64>().unwrap();
-                let vesting_interval = vesting_interval.parse::<u64>().unwrap();
-
-                if block_time < start_time {
-                    return Ok(Uint128::zero());
-                }
-
-                let num_interval = 1 + (end_time - start_time) / vesting_interval;
-                if block_time >= end_time {
-                    return Ok(amount.checked_mul(Uint128::from(num_interval))?);
-                }
-
-                let passed_interval = 1 + (block_time - start_time) / vesting_interval;
-                Ok(amount.checked_mul(Uint128::from(passed_interval))?)
-            }
         }
     }
 }
@@ -162,30 +129,6 @@ fn linear_vesting_vested_amount() {
         start_time: "100".to_string(),
         end_time: "110".to_string(),
         vesting_amount: Uint128::new(1000000u128),
-    };
-
-    assert_eq!(schedule.vested_amount(100).unwrap(), Uint128::zero());
-    assert_eq!(
-        schedule.vested_amount(105).unwrap(),
-        Uint128::new(500000u128)
-    );
-    assert_eq!(
-        schedule.vested_amount(110).unwrap(),
-        Uint128::new(1000000u128)
-    );
-    assert_eq!(
-        schedule.vested_amount(115).unwrap(),
-        Uint128::new(1000000u128)
-    );
-}
-
-#[test]
-fn periodic_vesting_vested_amount() {
-    let schedule = VestingSchedule::PeriodicVesting {
-        start_time: "105".to_string(),
-        end_time: "110".to_string(),
-        vesting_interval: "5".to_string(),
-        amount: Uint128::new(500000u128),
     };
 
     assert_eq!(schedule.vested_amount(100).unwrap(), Uint128::zero());

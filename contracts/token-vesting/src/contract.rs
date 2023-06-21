@@ -118,57 +118,6 @@ fn register_vesting_account(
         VestingSchedule::LinearVestingWithInitialAmount { .. } => {
             todo!("not implemented yet")
         }
-        VestingSchedule::PeriodicVesting {
-            start_time,
-            end_time,
-            vesting_interval,
-            amount,
-        } => {
-            if amount.is_zero() {
-                return Err(StdError::generic_err(
-                    "cannot make zero token vesting account",
-                ));
-            }
-
-            let start_time = start_time
-                .parse::<u64>()
-                .map_err(|_| StdError::generic_err("invalid start_time"))?;
-
-            let end_time = end_time
-                .parse::<u64>()
-                .map_err(|_| StdError::generic_err("invalid end_time"))?;
-
-            let vesting_interval = vesting_interval
-                .parse::<u64>()
-                .map_err(|_| StdError::generic_err("invalid vesting_interval"))?;
-
-            if start_time < block_time.seconds() {
-                return Err(StdError::generic_err("invalid start_time"));
-            }
-
-            if end_time <= start_time {
-                return Err(StdError::generic_err("assert(end_time > start_time)"));
-            }
-
-            if vesting_interval == 0 {
-                return Err(StdError::generic_err("assert(vesting_interval != 0)"));
-            }
-
-            let time_period = end_time - start_time;
-            if time_period != (time_period / vesting_interval) * vesting_interval {
-                return Err(StdError::generic_err(
-                    "assert((end_time - start_time) % vesting_interval == 0)",
-                ));
-            }
-
-            let num_interval = 1 + time_period / vesting_interval;
-            let vesting_amount = amount.checked_mul(Uint128::from(num_interval))?;
-            if vesting_amount != deposit_amount {
-                return Err(StdError::generic_err(
-                    "assert(deposit_amount = amount * ((end_time - start_time) / vesting_interval + 1))",
-                ));
-            }
-        }
     }
 
     VESTING_ACCOUNTS.save(
