@@ -116,8 +116,14 @@ fn register_vesting_account(
                 ));
             }
         }
-        VestingSchedule::LinearVestingWithCliff { .. } => {
-            todo!("VestingSchedule::LinearVestingWithCliff")
+        VestingSchedule::LinearVestingWithCliff {
+            start_time,
+            end_time,
+            vesting_amount,
+            cliff_time,
+            cliff_amount,
+        } => {
+            todo!("LinearVestingWithCliff")
         }
     }
 
