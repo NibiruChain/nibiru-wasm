@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{StdResult, Timestamp, Uint128};
+use cosmwasm_std::{StdResult, Timestamp, Uint128, Uint64};
 use cw20::{Cw20ReceiveMsg, Denom};
 
 #[cw_serde]
@@ -74,9 +74,9 @@ pub enum VestingSchedule {
     /// LinearVesting is used to vest tokens linearly during a time period.
     /// The total_amount will be vested during this period.
     LinearVesting {
-        start_time: String,      // vesting start time in second unit
-        end_time: String,        // vesting end time in second unit
-        vesting_amount: Uint128, // total vesting amount
+        start_time: Uint64,      // vesting start time in second unit
+        end_time: Uint64,        // vesting end time in second unit
+        vesting_amount: Uint128,  // total vesting amount
     },
     LinearVestingWithCliff {
         start_time: String,      // vesting start time in second unit
@@ -95,19 +95,16 @@ impl VestingSchedule {
                 end_time,
                 vesting_amount,
             } => {
-                let start_time = start_time.parse::<u64>().unwrap();
-                let end_time = end_time.parse::<u64>().unwrap();
-
-                if block_time <= start_time {
+                if block_time <= start_time.u64() {
                     return Ok(Uint128::zero());
                 }
 
-                if block_time >= end_time {
+                if block_time >= end_time.u64() {
                     return Ok(*vesting_amount);
                 }
 
                 let vested_token = vesting_amount
-                    .checked_mul(Uint128::from(block_time - start_time))?
+                    .checked_mul(Uint128::from(block_time - start_time.u64()))?
                     .checked_div(Uint128::from(end_time - start_time))?;
 
                 Ok(vested_token)
@@ -139,10 +136,14 @@ impl VestingSchedule {
 #[test]
 fn linear_vesting_vested_amount() {
     let schedule = VestingSchedule::LinearVesting {
-        start_time: "100".to_string(),
-        end_time: "110".to_string(),
+        start_time: Uint64::new(100),
+        end_time: Uint64::new(110),
         vesting_amount: Uint128::new(1000000u128),
     };
+
+    println!("string: {}", "100".to_string());
+    println!("timestamp: {}", Timestamp::from_seconds(100));
+    println!("timestamp: {}", Timestamp::from_nanos(100));
 
     assert_eq!(schedule.vested_amount(100).unwrap(), Uint128::zero());
     assert_eq!(

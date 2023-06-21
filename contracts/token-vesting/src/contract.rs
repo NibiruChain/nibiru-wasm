@@ -94,15 +94,7 @@ fn register_vesting_account(
                 return Err(StdError::generic_err("assert(vesting_amount > 0)"));
             }
 
-            let start_time = start_time
-                .parse::<u64>()
-                .map_err(|_| StdError::generic_err("invalid start_time"))?;
-
-            let end_time = end_time
-                .parse::<u64>()
-                .map_err(|_| StdError::generic_err("invalid end_time"))?;
-
-            if start_time < block_time.seconds() {
+            if start_time.u64() < block_time.seconds() {
                 return Err(StdError::generic_err("assert(start_time < block_time)"));
             }
 
