@@ -115,6 +115,9 @@ fn register_vesting_account(
                 ));
             }
         }
+        VestingSchedule::LinearVestingWithInitialAmount { .. } => {
+            todo!("not implemented yet")
+        }
         VestingSchedule::PeriodicVesting {
             start_time,
             end_time,

@@ -83,6 +83,12 @@ pub enum VestingSchedule {
         end_time: String,        // vesting end time in second unit
         vesting_amount: Uint128, // total vesting amount
     },
+    LinearVestingWithInitialAmount {
+        start_time: String,      // vesting start time in second unit
+        end_time: String,        // vesting end time in second unit
+        vesting_amount: Uint128, // total vesting amount
+        initial_amount: Uint128, // initial amount that will be unvested in one year
+    },
     /// PeriodicVesting is used to vest tokens
     /// at regular intervals for a specific period.
     /// To minimize calculation error,
@@ -120,6 +126,9 @@ impl VestingSchedule {
                     .checked_div(Uint128::from(end_time - start_time))?;
 
                 Ok(vested_token)
+            }
+            VestingSchedule::LinearVestingWithInitialAmount { .. } => {
+                todo!("LinearVestingWithInitialAmount is not implemented yet")
             }
             VestingSchedule::PeriodicVesting {
                 start_time,
