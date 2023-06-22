@@ -110,7 +110,7 @@ impl VestingSchedule {
                 Ok(vested_token)
             }
             VestingSchedule::LinearVestingWithCliff {
-                start_time,
+                start_time: _start_time,
                 end_time,
                 vesting_amount,
                 cliff_amount,
