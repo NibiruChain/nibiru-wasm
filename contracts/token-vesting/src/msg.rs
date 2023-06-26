@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{StdResult, Timestamp, Uint128, Uint64};
+use cosmwasm_std::{StdResult, Uint128, Uint64};
 use cw20::{Cw20ReceiveMsg, Denom};
 
 #[cw_serde]
@@ -146,10 +146,6 @@ fn linear_vesting_vested_amount() {
         end_time: Uint64::new(110),
         vesting_amount: Uint128::new(1000000u128),
     };
-
-    println!("string: {}", "100".to_string());
-    println!("timestamp: {}", Timestamp::from_seconds(100));
-    println!("timestamp: {}", Timestamp::from_nanos(100));
 
     assert_eq!(schedule.vested_amount(100).unwrap(), Uint128::zero());
     assert_eq!(
