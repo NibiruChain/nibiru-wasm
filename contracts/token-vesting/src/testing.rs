@@ -4,7 +4,8 @@ use crate::msg::{
     VestingSchedule,
 };
 
-use cosmwasm_std::{from_binary, testing::{mock_dependencies, mock_env, mock_info}, to_binary, Addr, Attribute, BankMsg, Coin, Response, StdError, SubMsg, Timestamp, Uint128, WasmMsg, Uint64};
+use cosmwasm_std::{from_binary, testing::{mock_dependencies, mock_env, mock_info}, to_binary, Addr, Attribute, BankMsg, Coin, Response, StdError, SubMsg, Timestamp, Uint128, WasmMsg, Uint64, Env, OwnedDeps};
+use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, Denom};
 
 #[test]
@@ -17,6 +18,87 @@ fn proper_initialization() {
 
     // we can just call .unwrap() to assert this was a success
     let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+}
+
+#[test]
+fn register_cliff_vesting_account_with_native_token() {
+    let mut deps = mock_dependencies();
+    let _res = instantiate(
+        deps.as_mut(),
+        mock_env(),
+        mock_info("addr0000", &[]),
+        InstantiateMsg {},
+    ).unwrap();
+
+    let mut env = mock_env();
+    env.block.time = Timestamp::from_seconds(100);
+
+    // zero amount vesting token
+    let msg = ExecuteMsg::RegisterVestingAccount {
+        master_address: None,
+        address: "addr0001".to_string(),
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(110),
+            vesting_amount: Uint128::zero(),
+            cliff_amount: Uint128::zero(),
+            cliff_time: Uint64::new(105),
+        },
+    };
+    require_error(&mut deps, &env, msg, "assert(vesting_amount > 0)");
+
+    // zero amount cliff token
+    let msg = ExecuteMsg::RegisterVestingAccount {
+        master_address: None,
+        address: "addr0001".to_string(),
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(110),
+            vesting_amount: Uint128::new(1000),
+            cliff_amount: Uint128::zero(),
+            cliff_time: Uint64::new(105),
+        },
+    };
+    require_error(&mut deps, &env, msg, "assert(cliff_amount > 0)");
+
+    // cliff time less than block time
+    let msg = ExecuteMsg::RegisterVestingAccount {
+        master_address: None,
+        address: "addr0001".to_string(),
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(110),
+            vesting_amount: Uint128::new(1000),
+            cliff_amount: Uint128::new(1000),
+            cliff_time: Uint64::new(99),
+        },
+    };
+    require_error(&mut deps, &env, msg, "assert(cliff_time < block_time)");
+
+    // end time less than start time
+    let msg = ExecuteMsg::RegisterVestingAccount {
+        master_address: None,
+        address: "addr0001".to_string(),
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
+            start_time: Uint64::new(110),
+            end_time: Uint64::new(100),
+            vesting_amount: Uint128::new(1000),
+            cliff_amount: Uint128::new(1000),
+            cliff_time: Uint64::new(105),
+        },
+    };
+    require_error(&mut deps, &env, msg, "assert(end_time <= start_time)");
+}
+
+fn require_error(deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>, env: &Env, msg: ExecuteMsg, error_message:&str) {
+    let info = mock_info("addr0000", &[Coin::new(0u128, "uusd")]);
+    let res = execute(deps.as_mut(), env.clone(), info, msg);
+    match res.unwrap_err() {
+        StdError::GenericErr { msg, .. } => {
+            assert_eq!(msg, error_message)
+        }
+        _ => panic!("should not enter"),
+    }
 }
 
 #[test]
@@ -43,16 +125,7 @@ fn register_vesting_account_with_native_token() {
             vesting_amount: Uint128::zero(),
         },
     };
-
-    // invalid zero amount
-    let info = mock_info("addr0000", &[Coin::new(0u128, "uusd")]);
-    let res = execute(deps.as_mut(), env.clone(), info, msg);
-    match res.unwrap_err() {
-        StdError::GenericErr { msg, .. } => {
-            assert_eq!(msg, "assert(vesting_amount > 0)")
-        }
-        _ => panic!("should not enter"),
-    }
+    require_error(&mut deps, &env, msg, "assert(vesting_amount > 0)");
 
     // normal amount vesting token
     let msg = ExecuteMsg::RegisterVestingAccount {

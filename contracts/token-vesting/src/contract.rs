@@ -109,13 +109,27 @@ fn register_vesting_account(
             }
         }
         VestingSchedule::LinearVestingWithCliff {
-            start_time: _start_time,
-            end_time: _end_time,
-            vesting_amount: _vesting_amount,
-            cliff_time: _cliff_time,
-            cliff_amount: _cliff_amount,
+            start_time,
+            end_time,
+            vesting_amount,
+            cliff_time,
+            cliff_amount,
         } => {
-            todo!("LinearVestingWithCliff")
+            if vesting_amount.is_zero() {
+                return Err(StdError::generic_err("assert(vesting_amount > 0)"));
+            }
+
+            if cliff_amount.is_zero() {
+                return Err(StdError::generic_err("assert(cliff_amount > 0)"));
+            }
+
+            if cliff_time.u64() < block_time.seconds() {
+                return Err(StdError::generic_err("assert(cliff_time < block_time)"));
+            }
+
+            if end_time <= start_time {
+                return Err(StdError::generic_err("assert(end_time <= start_time)"));
+            }
         }
     }
 
