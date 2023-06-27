@@ -33,61 +33,39 @@ fn register_cliff_vesting_account_with_native_token() {
     let mut env = mock_env();
     env.block.time = Timestamp::from_seconds(100);
 
-    // zero amount vesting token
-    let msg = ExecuteMsg::RegisterVestingAccount {
-        master_address: None,
-        address: "addr0001".to_string(),
-        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
-            start_time: Uint64::new(100),
-            end_time: Uint64::new(110),
-            vesting_amount: Uint128::zero(),
-            cliff_amount: Uint128::zero(),
-            cliff_time: Uint64::new(105),
-        },
+    let create_msg = |start_time:u64, end_time:u64, vesting_amount:u128, cliff_amount:u128, cliff_time:u64| -> ExecuteMsg {
+        ExecuteMsg::RegisterVestingAccount {
+            master_address: None,
+            address: "addr0001".to_string(),
+            vesting_schedule: VestingSchedule::LinearVestingWithCliff {
+                start_time: Uint64::new(start_time),
+                end_time: Uint64::new(end_time),
+                vesting_amount: Uint128::new(vesting_amount),
+                cliff_amount: Uint128::new(cliff_amount),
+                cliff_time: Uint64::new(cliff_time),
+            },
+        }
     };
+
+    // zero amount vesting token
+    let msg = create_msg(100, 110, 0, 1000, 105);
     require_error(&mut deps, &env, msg, "assert(vesting_amount > 0)");
 
     // zero amount cliff token
-    let msg = ExecuteMsg::RegisterVestingAccount {
-        master_address: None,
-        address: "addr0001".to_string(),
-        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
-            start_time: Uint64::new(100),
-            end_time: Uint64::new(110),
-            vesting_amount: Uint128::new(1000),
-            cliff_amount: Uint128::zero(),
-            cliff_time: Uint64::new(105),
-        },
-    };
+    let msg = create_msg(100, 110, 1000, 0, 105);
     require_error(&mut deps, &env, msg, "assert(cliff_amount > 0)");
 
     // cliff time less than block time
-    let msg = ExecuteMsg::RegisterVestingAccount {
-        master_address: None,
-        address: "addr0001".to_string(),
-        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
-            start_time: Uint64::new(100),
-            end_time: Uint64::new(110),
-            vesting_amount: Uint128::new(1000),
-            cliff_amount: Uint128::new(1000),
-            cliff_time: Uint64::new(99),
-        },
-    };
+    let msg = create_msg(100, 110, 1000, 1000, 99);
     require_error(&mut deps, &env, msg, "assert(cliff_time < block_time)");
 
     // end time less than start time
-    let msg = ExecuteMsg::RegisterVestingAccount {
-        master_address: None,
-        address: "addr0001".to_string(),
-        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
-            start_time: Uint64::new(110),
-            end_time: Uint64::new(100),
-            vesting_amount: Uint128::new(1000),
-            cliff_amount: Uint128::new(1000),
-            cliff_time: Uint64::new(105),
-        },
-    };
+    let msg = create_msg(110, 100, 1000, 1000, 105);
     require_error(&mut deps, &env, msg, "assert(end_time <= start_time)");
+
+    // start time less than block time
+    let msg = create_msg(99, 110, 1000, 1000, 105);
+    require_error(&mut deps, &env, msg, "assert(start_time < block_time)");
 }
 
 fn require_error(deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>, env: &Env, msg: ExecuteMsg, error_message:&str) {
