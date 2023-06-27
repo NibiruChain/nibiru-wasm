@@ -57,15 +57,19 @@ fn register_cliff_vesting_account_with_native_token() {
 
     // cliff time less than block time
     let msg = create_msg(100, 110, 1000, 1000, 99);
-    require_error(&mut deps, &env, msg, "assert(cliff_time < block_time)");
+    require_error(&mut deps, &env, msg, "assert(cliff_time > block_time)");
 
     // end time less than start time
     let msg = create_msg(110, 100, 1000, 1000, 105);
-    require_error(&mut deps, &env, msg, "assert(end_time <= start_time)");
+    require_error(&mut deps, &env, msg, "assert(end_time > start_time)");
 
     // start time less than block time
     let msg = create_msg(99, 110, 1000, 1000, 105);
-    require_error(&mut deps, &env, msg, "assert(start_time < block_time)");
+    require_error(&mut deps, &env, msg, "assert(start_time > block_time)");
+
+    // cliff amount greater than vesting amount
+    let msg = create_msg(100, 110, 1000, 1001, 105);
+    require_error(&mut deps, &env, msg, "assert(cliff_amount <= vesting_amount)");
 }
 
 fn require_error(deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>, env: &Env, msg: ExecuteMsg, error_message:&str) {

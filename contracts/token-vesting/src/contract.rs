@@ -124,15 +124,21 @@ fn register_vesting_account(
             }
 
             if cliff_time.u64() < block_time.seconds() {
-                return Err(StdError::generic_err("assert(cliff_time < block_time)"));
+                return Err(StdError::generic_err("assert(cliff_time > block_time)"));
             }
 
             if end_time <= start_time {
-                return Err(StdError::generic_err("assert(end_time <= start_time)"));
+                return Err(StdError::generic_err("assert(end_time > start_time)"));
             }
 
             if start_time.u64() < block_time.seconds() {
-                return Err(StdError::generic_err("assert(start_time < block_time)"));
+                return Err(StdError::generic_err("assert(start_time > block_time)"));
+            }
+
+            if cliff_amount.u128() > vesting_amount.u128() {
+                return Err(StdError::generic_err(
+                    "assert(cliff_amount <= vesting_amount)",
+                ));
             }
         }
     }
