@@ -35,7 +35,7 @@ pub struct NibiruExecuteMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    OpenPosition {
+    MarketOrder {
         pair: String,
         is_long: bool,
         quote_amount: Uint128,
@@ -90,7 +90,7 @@ pub fn nibiru_msg_to_cw_response(
 }
 
 impl NibiruExecuteMsg {
-    pub fn open_position(
+    pub fn market_order(
         pair: String,
         is_long: bool,
         quote_amount: Uint128,
@@ -99,7 +99,7 @@ impl NibiruExecuteMsg {
     ) -> CosmosMsg<NibiruExecuteMsg> {
         NibiruExecuteMsg {
             route: NibiruRoute::Perp,
-            msg: ExecuteMsg::OpenPosition {
+            msg: ExecuteMsg::MarketOrder {
                 pair,
                 is_long,
                 quote_amount,

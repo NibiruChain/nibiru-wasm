@@ -16,3 +16,6 @@ target/
 *.pdb
 
 *.profraw
+
+node_modules/
+yarn.lock
