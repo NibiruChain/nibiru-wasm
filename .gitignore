@@ -18,3 +18,4 @@ target/
 *.profraw
 
 node_modules/
+yarn.lock
