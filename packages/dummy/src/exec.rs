@@ -16,7 +16,7 @@ pub mod test {
 
     #[cw_serde]
     pub struct ExampleExecuteMsgJson {
-        open_position: NBExecuteMsg,
+        market_order: NBExecuteMsg,
         close_position: NBExecuteMsg,
         add_margin: NBExecuteMsg,
         remove_margin: NBExecuteMsg,
@@ -35,7 +35,7 @@ pub mod test {
     #[test]
     fn save_example_json() {
         let example_msgs = ExampleExecuteMsgJson {
-            open_position: execute_open_position(),
+            market_order: execute_market_order(),
             close_position: execute_close_position(),
             add_margin: execute_add_margin(),
             remove_margin: execute_remove_margin(),
@@ -53,8 +53,8 @@ pub mod test {
         assert!(file.write_all(json_str.as_bytes()).is_ok());
     }
 
-    pub fn execute_open_position() -> NBExecuteMsg {
-        NBExecuteMsg::OpenPosition {
+    pub fn execute_market_order() -> NBExecuteMsg {
+        NBExecuteMsg::MarketOrder {
             pair: DUMMY_PAIR.to_string(),
             is_long: true,
             quote_amount: Uint128::from(100u128),
