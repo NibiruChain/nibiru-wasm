@@ -96,13 +96,16 @@ pub fn execute(
             quote_amount,
             leverage,
             base_amount_limit,
-        } => nibiru_msg_to_cw_response(NibiruExecuteMsg::market_order(
-            pair,
-            is_long,
-            quote_amount,
-            leverage,
-            base_amount_limit,
-        )),
+        } => {
+            can_execute.check_member()?;
+            nibiru_msg_to_cw_response(NibiruExecuteMsg::market_order(
+                pair,
+                is_long,
+                quote_amount,
+                leverage,
+                base_amount_limit,
+            ))
+        }
 
         ExecuteMsg::ClosePosition { pair } => {
             can_execute.check_member()?;
