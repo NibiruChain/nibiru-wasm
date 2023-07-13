@@ -1,4 +1,4 @@
-use cosmwasm_std::{QuerierWrapper, StdResult, Uint256};
+use cosmwasm_std::{QuerierWrapper, StdResult, Uint256, Decimal};
 
 use crate::query::{
     AllMarketsResponse, BasePriceResponse, MetricsResponse,
@@ -58,7 +58,7 @@ impl<'a> NibiruQuerier<'a> {
     pub fn oracle_exchange_rate(
         &self,
         pair: String,
-    ) -> StdResult<Uint256> {
+    ) -> StdResult<Decimal> {
         let request = QueryPerpMsg::OracleExchangeRate {
             pair,
         };
