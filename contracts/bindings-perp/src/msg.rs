@@ -215,6 +215,13 @@ pub enum QueryMsg {
     },
 
     ModuleAccounts {},
+
+    // -----------------------------------------------------------------
+    // From x/oracle
+    // -----------------------------------------------------------------
+    OracleExchangeRate {
+        pair: String,
+    },
 }
 
 impl CustomQuery for QueryMsg {}
