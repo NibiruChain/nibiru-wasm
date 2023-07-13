@@ -55,6 +55,16 @@ impl<'a> NibiruQuerier<'a> {
         self.querier.query(&request.into())
     }
 
+    pub fn oracle_exchange_rate(
+        &self,
+        pair: String,
+    ) -> StdResult<Uint256> {
+        let request = QueryPerpMsg::OracleExchangeRate {
+            pair,
+        };
+        self.querier.query(&request.into())
+    }
+
     pub fn premium_fraction(
         &self,
         pair: String,

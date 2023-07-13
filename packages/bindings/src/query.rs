@@ -47,6 +47,13 @@ pub enum QueryPerpMsg {
     },
 
     ModuleAccounts {},
+
+    // -----------------------------------------------------------------
+    // From x/oracle
+    // -----------------------------------------------------------------
+    OracleExchangeRate {
+        pair: String,
+    },
 }
 
 impl CustomQuery for QueryPerpMsg {}
@@ -61,6 +68,11 @@ pub struct ReservesResponse {
     pub pair: String,
     pub base_reserve: Decimal,
     pub quote_reserve: Decimal,
+}
+
+#[cw_serde]
+pub struct OracleExchangeRateResponse {
+    pub exchange_rate: Decimal,
 }
 
 #[cw_serde]

@@ -9,7 +9,7 @@ use crate::common::DUMMY_ADDR;
 use nibiru_bindings::query::{
     AllMarketsResponse, BasePriceResponse, MetricsResponse,
     ModuleAccountsResponse, ModuleParamsResponse, PositionResponse,
-    PositionsResponse, PremiumFractionResponse, ReservesResponse,
+    PositionsResponse, PremiumFractionResponse, ReservesResponse, OracleExchangeRateResponse
 };
 use nibiru_bindings::state::{
     Market, MarketConfig, Metrics, ModuleAccountWithBalance, ModuleParams,
@@ -47,6 +47,12 @@ pub fn reserves_response() -> ReservesResponse {
         pair: "ETH:USD".to_string(),
         base_reserve: dec_420(),
         quote_reserve: dec_69(),
+    }
+}
+
+pub fn oracle_exchange_rate_response() -> OracleExchangeRateResponse {
+    OracleExchangeRateResponse {
+        exchange_rate: dec_420(),
     }
 }
 

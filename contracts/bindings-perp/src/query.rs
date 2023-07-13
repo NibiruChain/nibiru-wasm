@@ -7,7 +7,7 @@ mod tests {
     use nibiru_bindings::query::{
         AllMarketsResponse, BasePriceResponse, MetricsResponse,
         ModuleAccountsResponse, ModuleParamsResponse, PremiumFractionResponse,
-        QueryPerpMsg, ReservesResponse,
+        QueryPerpMsg, ReservesResponse,OracleExchangeRateResponse
     };
     use std::{collections::HashSet, marker::PhantomData, str::FromStr};
 
@@ -120,7 +120,7 @@ mod tests {
         }
         .into();
         let querier_wrapper = QuerierWrapper::new(&deps.querier);
-        let resp: BasePriceResponse = querier_wrapper.query(&req).unwrap();
+        let resp: OracleExchangeRateResponse = querier_wrapper.query(&req).unwrap();
 
         // Check the result
         assert_eq!(resp.exchange_rate, dec_420());
