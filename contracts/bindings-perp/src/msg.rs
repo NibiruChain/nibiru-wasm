@@ -219,9 +219,7 @@ pub enum QueryMsg {
     // -----------------------------------------------------------------
     // From x/oracle
     // -----------------------------------------------------------------
-    OracleExchangeRate {
-        pair: String,
-    },
+    OracleExchangeRates {},
 }
 
 impl CustomQuery for QueryMsg {}

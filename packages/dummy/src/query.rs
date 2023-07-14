@@ -51,7 +51,7 @@ pub fn reserves_response() -> ReservesResponse {
     }
 }
 
-pub fn oracle_exchange_rate_response() -> OracleExchangeRateResponse {
+pub fn oracle_exchange_rates_response() -> OracleExchangeRateResponse {
     OracleExchangeRateResponse {
         rates: HashMap::from_iter(vec![("ETH:USD".to_string(), dec_420())]),
     }

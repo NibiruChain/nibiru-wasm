@@ -57,7 +57,7 @@ impl<'a> NibiruQuerier<'a> {
         self.querier.query(&request.into())
     }
 
-    pub fn oracle_exchange_rate(
+    pub fn oracle_exchange_rates(
         &self,
         pair: Option<Vec<String>>,
     ) -> StdResult<OracleExchangeRateResponse> {

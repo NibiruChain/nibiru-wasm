@@ -69,7 +69,7 @@ mod tests {
                 to_binary(&dq::reserves_response()).into()
             }
             QueryPerpMsg::OracleExchangeRates {} => {
-                to_binary(&dq::oracle_exchange_rate_response()).into()
+                to_binary(&dq::oracle_exchange_rates_response()).into()
             }
         }
     }
@@ -112,7 +112,7 @@ mod tests {
     }
 
     #[test]
-    fn oracle_exchange_rate_query() {
+    fn oracle_exchange_rates_query() {
         let deps = mock_dependencies_with_custom_querier(&[]);
 
         // Call the query
