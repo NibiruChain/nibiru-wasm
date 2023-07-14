@@ -8,8 +8,9 @@ use cosmwasm_std::{Addr, Coin, Decimal, Uint128, Uint64};
 use crate::common::DUMMY_ADDR;
 use nibiru_bindings::query::{
     AllMarketsResponse, BasePriceResponse, MetricsResponse,
-    ModuleAccountsResponse, ModuleParamsResponse, PositionResponse,
-    PositionsResponse, PremiumFractionResponse, ReservesResponse, OracleExchangeRateResponse
+    ModuleAccountsResponse, ModuleParamsResponse, OracleExchangeRateResponse,
+    PositionResponse, PositionsResponse, PremiumFractionResponse,
+    ReservesResponse,
 };
 use nibiru_bindings::state::{
     Market, MarketConfig, Metrics, ModuleAccountWithBalance, ModuleParams,
@@ -52,7 +53,7 @@ pub fn reserves_response() -> ReservesResponse {
 
 pub fn oracle_exchange_rate_response() -> OracleExchangeRateResponse {
     OracleExchangeRateResponse {
-        exchange_rate: dec_420(),
+        rates: HashMap::from_iter(vec![("ETH:USD".to_string(), dec_420())]),
     }
 }
 

@@ -6,8 +6,9 @@ mod tests {
     };
     use nibiru_bindings::query::{
         AllMarketsResponse, BasePriceResponse, MetricsResponse,
-        ModuleAccountsResponse, ModuleParamsResponse, PremiumFractionResponse,
-        QueryPerpMsg, ReservesResponse,OracleExchangeRateResponse
+        ModuleAccountsResponse, ModuleParamsResponse,
+        OracleExchangeRateResponse, PremiumFractionResponse, QueryPerpMsg,
+        ReservesResponse,
     };
     use std::{collections::HashSet, marker::PhantomData, str::FromStr};
 
@@ -67,7 +68,7 @@ mod tests {
             QueryPerpMsg::Reserves { pair: _ } => {
                 to_binary(&dq::reserves_response()).into()
             }
-            QueryPerpMsg::OracleExchangeRate { pair: _ } => {
+            QueryPerpMsg::OracleExchangeRates {} => {
                 to_binary(&dq::oracle_exchange_rate_response()).into()
             }
         }
@@ -115,15 +116,14 @@ mod tests {
         let deps = mock_dependencies_with_custom_querier(&[]);
 
         // Call the query
-        let req: QueryRequest<QueryPerpMsg> = QueryPerpMsg::OracleExchangeRate {
-            pair: String::from("ETH:USD"),
-        }
-        .into();
+        let req: QueryRequest<QueryPerpMsg> =
+            QueryPerpMsg::OracleExchangeRates {}.into();
         let querier_wrapper = QuerierWrapper::new(&deps.querier);
-        let resp: OracleExchangeRateResponse = querier_wrapper.query(&req).unwrap();
+        let resp: OracleExchangeRateResponse =
+            querier_wrapper.query(&req).unwrap();
 
-        // Check the result
-        assert_eq!(resp.exchange_rate, dec_420());
+        // Check the ETH:USD rate
+        assert_eq!(resp.rates.get("ETH:USD").unwrap(), dec_420());
     }
 
     #[test]

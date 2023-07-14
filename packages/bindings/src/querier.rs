@@ -1,10 +1,12 @@
-use cosmwasm_std::{QuerierWrapper, StdResult, Uint256, Decimal};
+use cosmwasm_std::{QuerierWrapper, StdResult, Uint256};
 
 use crate::query::{
     AllMarketsResponse, BasePriceResponse, MetricsResponse,
-    ModuleAccountsResponse, ModuleParamsResponse, PositionResponse,
-    PositionsResponse, PremiumFractionResponse, QueryPerpMsg, ReservesResponse,
+    ModuleAccountsResponse, ModuleParamsResponse, OracleExchangeRateResponse,
+    PositionResponse, PositionsResponse, PremiumFractionResponse, QueryPerpMsg,
+    ReservesResponse,
 };
+use std::collections::HashMap;
 
 /// NibiruQuerier makes it easy to export the functions that correspond to each
 /// request without needing to know as much about the underlying types.
@@ -57,12 +59,24 @@ impl<'a> NibiruQuerier<'a> {
 
     pub fn oracle_exchange_rate(
         &self,
-        pair: String,
-    ) -> StdResult<Decimal> {
-        let request = QueryPerpMsg::OracleExchangeRate {
-            pair,
-        };
-        self.querier.query(&request.into())
+        pair: Option<Vec<String>>,
+    ) -> StdResult<OracleExchangeRateResponse> {
+        let request = QueryPerpMsg::OracleExchangeRates {};
+        let res: OracleExchangeRateResponse =
+            self.querier.query(&request.into())?;
+
+        match pair {
+            Some(pair) => {
+                let mut rates = HashMap::new();
+                for p in pair {
+                    if let Some(rate) = res.rates.get(&p) {
+                        rates.insert(p.clone(), rate.clone());
+                    }
+                }
+                Ok(OracleExchangeRateResponse { rates })
+            }
+            None => Ok(res),
+        }
     }
 
     pub fn premium_fraction(

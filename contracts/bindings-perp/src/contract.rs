@@ -70,7 +70,10 @@ pub fn query(
             to_binary(&querier.premium_fraction(pair)?)
         }
         QueryMsg::Reserves { pair } => to_binary(&querier.reserves(pair)?),
-        QueryMsg::OracleExchangeRate { pair } => to_binary(&querier.oracle_exchange_rate(pair)?),
+        QueryMsg::OracleExchangeRate { pair } => {
+            to_binary(&querier.oracle_exchange_rate(Some(vec![pair]))?)
+        }
+
         // TODO test
         QueryMsg::Sudoers {} => {
             let sudoers = SUDOERS.load(deps.storage)?;
