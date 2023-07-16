@@ -1,9 +1,10 @@
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{
     Coin, CosmosMsg, CustomMsg, CustomQuery, Decimal, Response, StdResult,
     Uint128, Uint256,
 };
 
+use nibiru_bindings::query as bindings_query;
 use nibiru_bindings::route::NibiruRoute;
 use nibiru_macro::cw_custom;
 
@@ -175,17 +176,20 @@ impl NibiruExecuteMsg {
 // ---------------------------------------------------------------------------
 
 #[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
+    #[returns(SudoersQueryResponse)]
     Sudoers {},
     // -----------------------------------------------------------------
     // From x/perp/amm
     // -----------------------------------------------------------------
+    #[returns(bindings_query::AllMarketsResponse)]
     AllMarkets {},
 
-    Reserves {
-        pair: String,
-    },
+    #[returns(bindings_query::ReservesResponse)]
+    Reserves { pair: String },
 
+    #[returns(bindings_query::BasePriceResponse)]
     BasePrice {
         pair: String,
         is_long: bool,
@@ -195,26 +199,29 @@ pub enum QueryMsg {
     // -----------------------------------------------------------------
     // From x/perp
     // -----------------------------------------------------------------
-    Position {
-        trader: String,
-        pair: String,
-    },
+    #[returns(bindings_query::PositionResponse)]
+    Position { trader: String, pair: String },
 
-    Positions {
-        trader: String,
-    },
+    #[returns(bindings_query::PositionsResponse)]
+    Positions { trader: String },
 
+    #[returns(bindings_query::ModuleParamsResponse)]
     ModuleParams {},
 
-    PremiumFraction {
-        pair: String,
-    },
+    #[returns(bindings_query::PremiumFractionResponse)]
+    PremiumFraction { pair: String },
 
-    Metrics {
-        pair: String,
-    },
+    #[returns(bindings_query::MetricsResponse)]
+    Metrics { pair: String },
 
+    #[returns(bindings_query::ModuleAccountsResponse)]
     ModuleAccounts {},
+
+    // -----------------------------------------------------------------
+    // From x/oracle
+    // -----------------------------------------------------------------
+    #[returns(bindings_query::OraclePricesResponse)]
+    OraclePrices { pairs: Option<Vec<String>> },
 }
 
 impl CustomQuery for QueryMsg {}
