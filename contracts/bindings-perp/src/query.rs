@@ -6,9 +6,8 @@ mod tests {
     };
     use nibiru_bindings::query::{
         AllMarketsResponse, BasePriceResponse, MetricsResponse,
-        ModuleAccountsResponse, ModuleParamsResponse,
-        OracleExchangeRateResponse, PremiumFractionResponse, QueryPerpMsg,
-        ReservesResponse,
+        ModuleAccountsResponse, ModuleParamsResponse, OraclePricesResponse,
+        PremiumFractionResponse, QueryPerpMsg, ReservesResponse,
     };
     use std::{collections::HashSet, marker::PhantomData, str::FromStr};
 
@@ -68,8 +67,8 @@ mod tests {
             QueryPerpMsg::Reserves { pair: _ } => {
                 to_binary(&dq::reserves_response()).into()
             }
-            QueryPerpMsg::OracleExchangeRates {} => {
-                to_binary(&dq::oracle_exchange_rates_response()).into()
+            QueryPerpMsg::OraclePrices {} => {
+                to_binary(&dq::oracle_prices_response()).into()
             }
         }
     }
@@ -112,18 +111,26 @@ mod tests {
     }
 
     #[test]
-    fn oracle_exchange_rates_query() {
+    fn oracle_prices_query() {
         let deps = mock_dependencies_with_custom_querier(&[]);
 
         // Call the query
         let req: QueryRequest<QueryPerpMsg> =
-            QueryPerpMsg::OracleExchangeRates {}.into();
+            QueryPerpMsg::OraclePrices {}.into();
         let querier_wrapper = QuerierWrapper::new(&deps.querier);
-        let resp: OracleExchangeRateResponse =
-            querier_wrapper.query(&req).unwrap();
+        let resp: OraclePricesResponse = querier_wrapper.query(&req).unwrap();
 
         // Check the ETH:USD rate
-        assert_eq!(resp.rates.get("ETH:USD").unwrap(), dec_420());
+        assert_eq!(resp.get("ETH:USD").unwrap(), dec_420());
+        assert_eq!(resp.get("NIBI:USD").unwrap(), dec_69());
+
+        // Case: Some(vec) with length 0
+        let _req: QueryRequest<QueryPerpMsg> =
+            QueryPerpMsg::OraclePrices {}.into();
+
+        // Case: Some(vec) with length >= 1
+        let _req: QueryRequest<QueryPerpMsg> =
+            QueryPerpMsg::OraclePrices {}.into();
     }
 
     #[test]

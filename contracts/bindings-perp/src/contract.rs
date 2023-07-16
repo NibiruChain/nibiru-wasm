@@ -70,8 +70,8 @@ pub fn query(
             to_binary(&querier.premium_fraction(pair)?)
         }
         QueryMsg::Reserves { pair } => to_binary(&querier.reserves(pair)?),
-        QueryMsg::OracleExchangeRates {} => {
-            to_binary(&querier.oracle_exchange_rates(Some(vec![]))?)
+        QueryMsg::OraclePrices { pairs } => {
+            to_binary(&querier.oracle_prices(pairs)?)
         }
 
         // TODO test

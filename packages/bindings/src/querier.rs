@@ -2,7 +2,7 @@ use cosmwasm_std::{QuerierWrapper, StdResult, Uint256};
 
 use crate::query::{
     AllMarketsResponse, BasePriceResponse, MetricsResponse,
-    ModuleAccountsResponse, ModuleParamsResponse, OracleExchangeRateResponse,
+    ModuleAccountsResponse, ModuleParamsResponse, OraclePricesResponse,
     PositionResponse, PositionsResponse, PremiumFractionResponse, QueryPerpMsg,
     ReservesResponse,
 };
@@ -57,26 +57,29 @@ impl<'a> NibiruQuerier<'a> {
         self.querier.query(&request.into())
     }
 
-    pub fn oracle_exchange_rates(
+    pub fn oracle_prices(
         &self,
-        pair: Option<Vec<String>>,
-    ) -> StdResult<OracleExchangeRateResponse> {
-        let request = QueryPerpMsg::OracleExchangeRates {};
-        let res: OracleExchangeRateResponse =
+        pairs: Option<Vec<String>>,
+    ) -> StdResult<OraclePricesResponse> {
+        let request = QueryPerpMsg::OraclePrices {};
+        let price_map: OraclePricesResponse =
             self.querier.query(&request.into())?;
 
-        match pair {
-            Some(pair) => {
-                let mut rates = HashMap::new();
-                for p in pair {
-                    if let Some(rate) = res.rates.get(&p) {
-                        rates.insert(p.clone(), rate.clone());
-                    }
-                }
-                Ok(OracleExchangeRateResponse { rates })
+        let mut out_price_map: OraclePricesResponse;
+        if pairs.is_none() || pairs.as_ref().unwrap().is_empty() {
+            out_price_map = price_map;
+        } else {
+            let pair_vec: Vec<String> = pairs.unwrap();
+            out_price_map = HashMap::new();
+            for p in &pair_vec {
+                match price_map.get(p) {
+                    Some(rate) => out_price_map.insert(p.clone(), *rate),
+                    None => continue,
+                };
             }
-            None => Ok(res),
         }
+
+        Ok(out_price_map)
     }
 
     pub fn premium_fraction(
