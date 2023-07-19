@@ -138,7 +138,6 @@ pub fn metrics_response() -> MetricsResponse {
         },
     }
 }
-
 pub fn module_accounts_response() -> ModuleAccountsResponse {
     let name = "acc1";
     let mut accounts_map = HashMap::new();
@@ -160,6 +159,13 @@ pub fn module_accounts_response() -> ModuleAccountsResponse {
     }
 }
 
+pub fn oracle_prices_response() -> nibiru_bindings::query::OraclePricesResponse {
+    [("ETH:USD", dec_420()), ("NIBI:USD", dec_69())]
+        .iter()
+        .map(|&(k, v)| (k.to_string(), v))
+        .collect()
+}
+
 #[cw_serde]
 pub struct ExampleNibiruQueryResponseJson {
     all_markets: AllMarketsResponse,
@@ -171,6 +177,7 @@ pub struct ExampleNibiruQueryResponseJson {
     premium_fraction: PremiumFractionResponse,
     metrics: MetricsResponse,
     module_accounts: ModuleAccountsResponse,
+    oracle_prices: nibiru_bindings::query::OraclePricesResponse,
 }
 
 #[cfg(test)]
@@ -191,6 +198,7 @@ pub mod test {
             premium_fraction: premium_fraction_response(),
             metrics: metrics_response(),
             module_accounts: module_accounts_response(),
+            oracle_prices: oracle_prices_response(),
         };
         let json_str = serde_json::to_string_pretty(&example_queries).unwrap();
         let mut file = File::create("./query_resp.json").unwrap();

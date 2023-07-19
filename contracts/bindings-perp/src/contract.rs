@@ -70,6 +70,10 @@ pub fn query(
             to_binary(&querier.premium_fraction(pair)?)
         }
         QueryMsg::Reserves { pair } => to_binary(&querier.reserves(pair)?),
+        QueryMsg::OraclePrices { pairs } => {
+            to_binary(&querier.oracle_prices(pairs)?)
+        }
+
         // TODO test
         QueryMsg::Sudoers {} => {
             let sudoers = SUDOERS.load(deps.storage)?;
@@ -90,7 +94,7 @@ pub fn execute(
     let can_execute: CanExecute =
         check_can_execute(deps_for_check.as_ref(), info.sender.as_ref())?;
     match msg {
-        ExecuteMsg::OpenPosition {
+        ExecuteMsg::MarketOrder {
             pair,
             is_long,
             quote_amount,
@@ -98,7 +102,7 @@ pub fn execute(
             base_amount_limit,
         } => {
             can_execute.check_member()?;
-            nibiru_msg_to_cw_response(NibiruExecuteMsg::open_position(
+            nibiru_msg_to_cw_response(NibiruExecuteMsg::market_order(
                 pair,
                 is_long,
                 quote_amount,
@@ -346,7 +350,7 @@ pub mod tests {
         let dummy_coin = coin(dummy_u128.clone().u128(), "token");
         let exec_msgs: Vec<(ExecuteMsg, NibiruRoute)> = vec![
             (
-                ExecuteMsg::OpenPosition {
+                ExecuteMsg::MarketOrder {
                     pair: pair.clone(),
                     is_long: true,
                     quote_amount: dummy_u128,
@@ -419,7 +423,7 @@ pub mod tests {
         let dummy_coin = coin(dummy_u128.clone().u128(), "token");
         let exec_msgs: Vec<(ExecuteMsg, NibiruRoute)> = vec![
             (
-                ExecuteMsg::OpenPosition {
+                ExecuteMsg::MarketOrder {
                     pair: pair.clone(),
                     is_long: true,
                     quote_amount: dummy_u128,

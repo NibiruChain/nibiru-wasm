@@ -47,6 +47,11 @@ pub enum QueryPerpMsg {
     },
 
     ModuleAccounts {},
+
+    // -----------------------------------------------------------------
+    // From x/oracle
+    // -----------------------------------------------------------------
+    OraclePrices {},
 }
 
 impl CustomQuery for QueryPerpMsg {}
@@ -62,6 +67,9 @@ pub struct ReservesResponse {
     pub base_reserve: Decimal,
     pub quote_reserve: Decimal,
 }
+
+// #[cw_serde]
+pub type OraclePricesResponse = HashMap<String, Decimal>;
 
 #[cw_serde]
 pub struct BasePriceResponse {

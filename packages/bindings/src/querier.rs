@@ -2,9 +2,11 @@ use cosmwasm_std::{QuerierWrapper, StdResult, Uint256};
 
 use crate::query::{
     AllMarketsResponse, BasePriceResponse, MetricsResponse,
-    ModuleAccountsResponse, ModuleParamsResponse, PositionResponse,
-    PositionsResponse, PremiumFractionResponse, QueryPerpMsg, ReservesResponse,
+    ModuleAccountsResponse, ModuleParamsResponse, OraclePricesResponse,
+    PositionResponse, PositionsResponse, PremiumFractionResponse, QueryPerpMsg,
+    ReservesResponse,
 };
+use std::collections::HashMap;
 
 /// NibiruQuerier makes it easy to export the functions that correspond to each
 /// request without needing to know as much about the underlying types.
@@ -53,6 +55,31 @@ impl<'a> NibiruQuerier<'a> {
     pub fn reserves(&self, pair: String) -> StdResult<ReservesResponse> {
         let request = QueryPerpMsg::Reserves { pair };
         self.querier.query(&request.into())
+    }
+
+    pub fn oracle_prices(
+        &self,
+        pairs: Option<Vec<String>>,
+    ) -> StdResult<OraclePricesResponse> {
+        let request = QueryPerpMsg::OraclePrices {};
+        let price_map: OraclePricesResponse =
+            self.querier.query(&request.into())?;
+
+        let mut out_price_map: OraclePricesResponse;
+        if pairs.is_none() || pairs.as_ref().unwrap().is_empty() {
+            out_price_map = price_map;
+        } else {
+            let pair_vec: Vec<String> = pairs.unwrap();
+            out_price_map = HashMap::new();
+            for p in &pair_vec {
+                match price_map.get(p) {
+                    Some(rate) => out_price_map.insert(p.clone(), *rate),
+                    None => continue,
+                };
+            }
+        }
+
+        Ok(out_price_map)
     }
 
     pub fn premium_fraction(
