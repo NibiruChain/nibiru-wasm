@@ -168,26 +168,11 @@ fn deregister_vesting_account(
     if !claimable_amount.is_zero() {
         let recipient =
             vested_token_recipient.unwrap_or_else(|| address.to_string());
-        let message: CosmosMsg = match account.vesting_denom.clone() {
-            Denom::Native(denom) => BankMsg::Send {
-                to_address: recipient,
-                amount: vec![Coin {
-                    denom,
-                    amount: claimable_amount,
-                }],
-            }
-            .into(),
-            Denom::Cw20(contract_addr) => WasmMsg::Execute {
-                contract_addr: contract_addr.to_string(),
-                msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                    recipient,
-                    amount: claimable_amount,
-                })?,
-                funds: vec![],
-            }
-            .into(),
-        };
-
+        let message: CosmosMsg = build_send_msg(
+            account.vesting_denom.clone(),
+            claimable_amount,
+            recipient.clone(),
+        )?;
         messages.push(message);
     }
 
@@ -198,26 +183,11 @@ fn deregister_vesting_account(
     if !left_vesting_amount.is_zero() {
         let recipient =
             left_vesting_token_recipient.unwrap_or_else(|| sender.to_string());
-        let message: CosmosMsg = match account.vesting_denom.clone() {
-            Denom::Native(denom) => BankMsg::Send {
-                to_address: recipient,
-                amount: vec![Coin {
-                    denom,
-                    amount: left_vesting_amount,
-                }],
-            }
-            .into(),
-            Denom::Cw20(contract_addr) => WasmMsg::Execute {
-                contract_addr: contract_addr.to_string(),
-                msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                    recipient,
-                    amount: left_vesting_amount,
-                })?,
-                funds: vec![],
-            }
-            .into(),
-        };
-
+        let message: CosmosMsg = build_send_msg(
+            account.vesting_denom.clone(),
+            left_vesting_amount,
+            recipient.clone(),
+        )?;
         messages.push(message);
     }
 
@@ -301,18 +271,13 @@ fn claim(
         messages.push(message);
         attrs.extend(
             vec![
-                Attribute::new(
-                    "vesting_denom",
-                    &to_string(&account.vesting_denom).unwrap(),
-                ),
-                Attribute::new(
-                    "vesting_amount",
-                    &account.vesting_amount.to_string(),
-                ),
-                Attribute::new("vested_amount", &vested_amount.to_string()),
-                Attribute::new("claim_amount", &claimable_amount.to_string()),
+                ("vesting_denom", &to_string(&account.vesting_denom).unwrap()),
+                ("vesting_amount", &account.vesting_amount.to_string()),
+                ("vested_amount", &vested_amount.to_string()),
+                ("claim_amount", &claimable_amount.to_string()),
             ]
-            .into_iter(),
+            .into_iter()
+            .map(|(key, val)| Attribute::new(key, val)),
         );
     }
 
@@ -320,6 +285,29 @@ fn claim(
         .add_messages(messages)
         .add_attributes(vec![("action", "claim"), ("address", sender.as_str())])
         .add_attributes(attrs))
+}
+
+fn build_send_msg(
+    denom: Denom,
+    amount: Uint128,
+    to: String,
+) -> StdResult<CosmosMsg> {
+    Ok(match denom.clone() {
+        Denom::Native(denom) => BankMsg::Send {
+            to_address: to,
+            amount: vec![Coin { denom, amount }],
+        }
+        .into(),
+        Denom::Cw20(contract_addr) => WasmMsg::Execute {
+            contract_addr: contract_addr.to_string(),
+            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                recipient: to,
+                amount,
+            })?,
+            funds: vec![],
+        }
+        .into(),
+    })
 }
 
 pub fn receive_cw20(
@@ -366,9 +354,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 const MAX_LIMIT: u32 = 30;
 const DEFAULT_LIMIT: u32 = 10;
 
-/// address: Bech 32 address for the owner of the vesting accounts. This will be the prefix we
-///   filter by in state.
-/// limit: Maximum number of vesting accounts to retrieve
+/// address: Bech 32 address for the owner of the vesting accounts. This will be
+///   the prefix we filter by in state.
+/// limit: Maximum number of vesting accounts to retrieve when reading the
+///   VESTING_ACCOUNTs store.
 fn vesting_account(
     deps: Deps,
     env: Env,

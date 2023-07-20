@@ -1,33 +1,32 @@
 ## Token Vesting
 
-This contract is to provide vesting account feature for the both cw20 and native tokens.
+This contract implements vesting accounts for the CW20 and native tokens.
 
 ### Master Operations
 
+```rust
+  RegisterVestingAccount {
+      master_address: Option<String>, // if given, the vesting account can be unregistered
+      address: String,
+      vesting_schedule: VestingSchedule,
+  },
+```
 * RegisterVestingAccount   - register vesting account
   * When creating vesting account, the one can specify the `master_address` to enable deregister feature.
-* DeregisterVestingAccount  - deregister vesting account
-  * This interface only executable from the `master_address` of a vesting account.
-  * It will compute `claimable_amount` and `left_vesting_amount`. Each amount respectively sent to (`vested_token_recipient` or `vesting_account`) and (`left_vesting_token_recipient` or `master_address`).
 
 ```rust
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum ExecuteMsg {
-    RegisterVestingAccount {
-        master_address: Option<String>, // if given, the vesting account can be unregistered
-        address: String,
-        vesting_schedule: VestingSchedule,
-    },
-    /// only available when master_address was set
     DeregisterVestingAccount {
         address: String,
         denom: Denom,
         vested_token_recipient: Option<String>,
         left_vesting_token_recipient: Option<String>,
     },
-}
+```
+* DeregisterVestingAccount  - deregister vesting account
+  * This interface only executable from the `master_address` of a vesting account.
+  * It will compute `claimable_amount` and `left_vesting_amount`. Each amount respectively sent to (`vested_token_recipient` or `vesting_account`) and (`left_vesting_token_recipient` or `master_address`).
 
+```rust
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum Cw20HookMsg {
@@ -59,7 +58,13 @@ pub enum ExecuteMsg {
 ```
 
 ### Deployed Contract Info
-| data          | bombay-12                                    | columbus-5 |
-| ------------- | -------------------------------------------- | ---------- |
-| code_id       | 35340                                        | N/A        |
-| contract_addr | terra15uc49grd8h0xxj3jvmcx9yswvw8v0ypy32pe8m | N/A        |
+
+TODO for mainnet/testnet
+
+
+| Field         | Value  |
+| ------------- | ------ |
+| code_id       | ...  |
+| contract_addr | ... |
+| rpc_url       | ... |
+| chain_id      | ... |
