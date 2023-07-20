@@ -76,7 +76,7 @@ pub enum VestingSchedule {
     LinearVesting {
         start_time: Uint64,      // vesting start time in second unit
         end_time: Uint64,        // vesting end time in second unit
-        vesting_amount: Uint128,  // total vesting amount
+        vesting_amount: Uint128, // total vesting amount
     },
     LinearVestingWithCliff {
         start_time: Uint64,      // vesting start time in second unit
@@ -84,7 +84,7 @@ pub enum VestingSchedule {
         vesting_amount: Uint128, // total vesting amount
         cliff_amount: Uint128,   // amount that will be unvested at cliff_time
         cliff_time: Uint64,      // cliff time in second unit
-    }
+    },
 }
 
 impl VestingSchedule {
@@ -128,12 +128,13 @@ impl VestingSchedule {
                     return Ok(*vesting_amount);
                 }
 
-                let remaining_token = vesting_amount.checked_sub(*cliff_amount)?;
+                let remaining_token =
+                    vesting_amount.checked_sub(*cliff_amount)?;
                 let vested_token = remaining_token
                     .checked_mul(Uint128::from(block_time - cliff_time.u64()))?
                     .checked_div(Uint128::from(end_time - cliff_time))?;
 
-                Ok(vested_token+cliff_amount)
+                Ok(vested_token + cliff_amount)
             }
         }
     }
@@ -178,8 +179,12 @@ fn linear_vesting_with_cliff_vested_amount() {
     };
 
     assert_eq!(schedule.vested_amount(100).unwrap(), Uint128::zero());
-    assert_eq!(schedule.vested_amount(105).unwrap(), Uint128::new(100000u128)); // cliff time then the cliff amount
-    assert_eq!( // complete vesting
+    assert_eq!(
+        schedule.vested_amount(105).unwrap(),
+        Uint128::new(100000u128)
+    ); // cliff time then the cliff amount
+    assert_eq!(
+        // complete vesting
         schedule.vested_amount(120).unwrap(),
         Uint128::new(1000000u128)
     );

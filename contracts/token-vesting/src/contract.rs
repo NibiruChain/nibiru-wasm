@@ -1,6 +1,10 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{from_binary, to_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult, Uint128, WasmMsg, Storage, Timestamp};
+use cosmwasm_std::{
+    from_binary, to_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps,
+    DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult, Storage,
+    Timestamp, Uint128, WasmMsg,
+};
 
 use serde_json::to_string;
 
@@ -8,11 +12,10 @@ use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, Denom};
 use cw_storage_plus::Bound;
 
 use crate::msg::{
-    Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, VestingAccountResponse, VestingData,
-    VestingSchedule,
+    Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, VestingAccountResponse,
+    VestingData, VestingSchedule,
 };
 use crate::state::{denom_to_key, VestingAccount, VESTING_ACCOUNTS};
-
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -25,7 +28,12 @@ pub fn instantiate(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
+pub fn execute(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
     match msg {
         ExecuteMsg::Receive(msg) => receive_cw20(deps, env, info, msg),
         ExecuteMsg::RegisterVestingAccount {
@@ -35,7 +43,9 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
         } => {
             // deposit validation
             if info.funds.len() != 1 {
-                return Err(StdError::generic_err("must deposit only one type of token"));
+                return Err(StdError::generic_err(
+                    "must deposit only one type of token",
+                ));
             }
 
             let deposit_coin = info.funds[0].clone();
@@ -63,7 +73,9 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             vested_token_recipient,
             left_vesting_token_recipient,
         ),
-        ExecuteMsg::Claim { denoms, recipient } => claim(deps, env, info, denoms, recipient),
+        ExecuteMsg::Claim { denoms, recipient } => {
+            claim(deps, env, info, denoms, recipient)
+        }
     }
 }
 
@@ -95,11 +107,15 @@ fn register_vesting_account(
             }
 
             if start_time.u64() < block_time.seconds() {
-                return Err(StdError::generic_err("assert(start_time < block_time)"));
+                return Err(StdError::generic_err(
+                    "assert(start_time < block_time)",
+                ));
             }
 
             if end_time <= start_time {
-                return Err(StdError::generic_err("assert(end_time <= start_time)"));
+                return Err(StdError::generic_err(
+                    "assert(end_time <= start_time)",
+                ));
             }
 
             if vesting_amount != deposit_amount {
@@ -124,15 +140,21 @@ fn register_vesting_account(
             }
 
             if cliff_time.u64() < block_time.seconds() {
-                return Err(StdError::generic_err("assert(cliff_time > block_time)"));
+                return Err(StdError::generic_err(
+                    "assert(cliff_time > block_time)",
+                ));
             }
 
             if end_time <= start_time {
-                return Err(StdError::generic_err("assert(end_time > start_time)"));
+                return Err(StdError::generic_err(
+                    "assert(end_time > start_time)",
+                ));
             }
 
             if start_time.u64() < block_time.seconds() {
-                return Err(StdError::generic_err("assert(start_time > block_time)"));
+                return Err(StdError::generic_err(
+                    "assert(start_time > block_time)",
+                ));
             }
 
             if cliff_amount.u128() > vesting_amount.u128() {
@@ -183,7 +205,8 @@ fn deregister_vesting_account(
     let mut messages: Vec<CosmosMsg> = vec![];
 
     // vesting_account existence check
-    let account = VESTING_ACCOUNTS.may_load(deps.storage, (address.as_str(), &denom_key))?;
+    let account = VESTING_ACCOUNTS
+        .may_load(deps.storage, (address.as_str(), &denom_key))?;
     if account.is_none() {
         return Err(StdError::generic_err(format!(
             "vesting entry is not found for denom {:?}",
@@ -192,7 +215,9 @@ fn deregister_vesting_account(
     }
 
     let account = account.unwrap();
-    if account.master_address.is_none() || account.master_address.unwrap() != sender {
+    if account.master_address.is_none()
+        || account.master_address.unwrap() != sender
+    {
         return Err(StdError::generic_err("unauthorized"));
     }
 
@@ -208,7 +233,8 @@ fn deregister_vesting_account(
     // a account address or the given `vested_token_recipient` address
     let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
     if !claimable_amount.is_zero() {
-        let recipient = vested_token_recipient.unwrap_or_else(|| address.to_string());
+        let recipient =
+            vested_token_recipient.unwrap_or_else(|| address.to_string());
         let message: CosmosMsg = match account.vesting_denom.clone() {
             Denom::Native(denom) => BankMsg::Send {
                 to_address: recipient,
@@ -234,9 +260,11 @@ fn deregister_vesting_account(
 
     // transfer left vesting amount to owner or
     // the given `left_vesting_token_recipient` address
-    let left_vesting_amount = account.vesting_amount.checked_sub(vested_amount)?;
+    let left_vesting_amount =
+        account.vesting_amount.checked_sub(vested_amount)?;
     if !left_vesting_amount.is_zero() {
-        let recipient = left_vesting_token_recipient.unwrap_or_else(|| sender.to_string());
+        let recipient =
+            left_vesting_token_recipient.unwrap_or_else(|| sender.to_string());
         let message: CosmosMsg = match account.vesting_denom.clone() {
             Denom::Native(denom) => BankMsg::Send {
                 to_address: recipient,
@@ -286,7 +314,8 @@ fn claim(
         let denom_key = denom_to_key(denom.clone());
 
         // vesting_account existence check
-        let account = VESTING_ACCOUNTS.may_load(deps.storage, (sender.as_str(), &denom_key))?;
+        let account = VESTING_ACCOUNTS
+            .may_load(deps.storage, (sender.as_str(), &denom_key))?;
         if account.is_none() {
             return Err(StdError::generic_err(format!(
                 "vesting entry is not found for denom {}",
@@ -309,7 +338,11 @@ fn claim(
         if account.claimed_amount == account.vesting_amount {
             VESTING_ACCOUNTS.remove(deps.storage, (sender.as_str(), &denom_key));
         } else {
-            VESTING_ACCOUNTS.save(deps.storage, (sender.as_str(), &denom_key), &account)?;
+            VESTING_ACCOUNTS.save(
+                deps.storage,
+                (sender.as_str(), &denom_key),
+                &account,
+            )?;
         }
 
         let message: CosmosMsg = match account.vesting_denom.clone() {
@@ -335,8 +368,14 @@ fn claim(
         messages.push(message);
         attrs.extend(
             vec![
-                Attribute::new("vesting_denom", &to_string(&account.vesting_denom).unwrap()),
-                Attribute::new("vesting_amount", &account.vesting_amount.to_string()),
+                Attribute::new(
+                    "vesting_denom",
+                    &to_string(&account.vesting_denom).unwrap(),
+                ),
+                Attribute::new(
+                    "vesting_amount",
+                    &account.vesting_amount.to_string(),
+                ),
                 Attribute::new("vested_amount", &vested_amount.to_string()),
                 Attribute::new("claim_amount", &claimable_amount.to_string()),
             ]
@@ -385,34 +424,41 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             address,
             start_after,
             limit,
-        } => to_binary(&vesting_account(deps, env, address, start_after, limit)?),
+        } => {
+            to_binary(&vesting_account(deps, env, address, start_after, limit)?)
+        }
     }
 }
 
 const MAX_LIMIT: u32 = 30;
 const DEFAULT_LIMIT: u32 = 10;
 
+/// address: Bech 32 address for the owner of the vesting accounts. This will be the prefix we
+///   filter by in state.
+/// limit: Maximum number of vesting accounts to retrieve
 fn vesting_account(
     deps: Deps,
     env: Env,
     address: String,
-    start_after: Option<Denom>,
+    min_denom: Option<Denom>,
     limit: Option<u32>,
 ) -> StdResult<VestingAccountResponse> {
     let mut vestings: Vec<VestingData> = vec![];
+    // Ensure the value of 'limit' does not exceed MAX_LIMIT
     let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
 
     for item in VESTING_ACCOUNTS
         .prefix(address.as_str())
         .range(
             deps.storage,
-            start_after
+            min_denom
                 .map(denom_to_key)
-                .map(|v| v.as_bytes().to_vec())
+                .map(|s| s.as_bytes().to_vec())
                 .map(Bound::ExclusiveRaw),
             None,
             Order::Ascending,
         )
+        // limits the number of vesting accounts retrieved
         .take(limit)
     {
         let (_, account) = item?;
@@ -426,7 +472,8 @@ fn vesting_account(
             vesting_amount: account.vesting_amount,
             vested_amount,
             vesting_schedule: account.vesting_schedule,
-            claimable_amount: vested_amount.checked_sub(account.claimed_amount)?,
+            claimable_amount: vested_amount
+                .checked_sub(account.claimed_amount)?,
         })
     }
 

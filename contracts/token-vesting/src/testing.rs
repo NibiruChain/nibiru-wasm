@@ -1,11 +1,16 @@
 use crate::contract::{execute, instantiate, query};
 use crate::msg::{
-    Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, VestingAccountResponse, VestingData,
-    VestingSchedule,
+    Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, VestingAccountResponse,
+    VestingData, VestingSchedule,
 };
 
-use cosmwasm_std::{from_binary, testing::{mock_dependencies, mock_env, mock_info}, to_binary, Addr, Attribute, BankMsg, Coin, Response, StdError, SubMsg, Timestamp, Uint128, WasmMsg, Uint64, Env, OwnedDeps};
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
+use cosmwasm_std::{
+    from_binary,
+    testing::{mock_dependencies, mock_env, mock_info},
+    to_binary, Addr, Attribute, BankMsg, Coin, Env, OwnedDeps, Response,
+    StdError, SubMsg, Timestamp, Uint128, Uint64, WasmMsg,
+};
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, Denom};
 
 #[test]
@@ -28,12 +33,18 @@ fn register_cliff_vesting_account_with_native_token() {
         mock_env(),
         mock_info("addr0000", &[]),
         InstantiateMsg {},
-    ).unwrap();
+    )
+    .unwrap();
 
     let mut env = mock_env();
     env.block.time = Timestamp::from_seconds(100);
 
-    let create_msg = |start_time:u64, end_time:u64, vesting_amount:u128, cliff_amount:u128, cliff_time:u64| -> ExecuteMsg {
+    let create_msg = |start_time: u64,
+                      end_time: u64,
+                      vesting_amount: u128,
+                      cliff_amount: u128,
+                      cliff_time: u64|
+     -> ExecuteMsg {
         ExecuteMsg::RegisterVestingAccount {
             master_address: None,
             address: "addr0001".to_string(),
@@ -69,10 +80,20 @@ fn register_cliff_vesting_account_with_native_token() {
 
     // cliff amount greater than vesting amount
     let msg = create_msg(100, 110, 1000, 1001, 105);
-    require_error(&mut deps, &env, msg, "assert(cliff_amount <= vesting_amount)");
+    require_error(
+        &mut deps,
+        &env,
+        msg,
+        "assert(cliff_amount <= vesting_amount)",
+    );
 }
 
-fn require_error(deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>, env: &Env, msg: ExecuteMsg, error_message:&str) {
+fn require_error(
+    deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>,
+    env: &Env,
+    msg: ExecuteMsg,
+    error_message: &str,
+) {
     let info = mock_info("addr0000", &[Coin::new(0u128, "uusd")]);
     let res = execute(deps.as_mut(), env.clone(), info, msg);
     match res.unwrap_err() {
@@ -124,7 +145,9 @@ fn register_vesting_account_with_native_token() {
     let info = mock_info("addr0000", &[]);
     let res = execute(deps.as_mut(), env.clone(), info, msg.clone());
     match res.unwrap_err() {
-        StdError::GenericErr { msg, .. } => assert_eq!(msg, "must deposit only one type of token"),
+        StdError::GenericErr { msg, .. } => {
+            assert_eq!(msg, "must deposit only one type of token")
+        }
         _ => panic!("should not enter"),
     }
 
@@ -135,7 +158,9 @@ fn register_vesting_account_with_native_token() {
     );
     let res = execute(deps.as_mut(), env.clone(), info, msg.clone());
     match res.unwrap_err() {
-        StdError::GenericErr { msg, .. } => assert_eq!(msg, "must deposit only one type of token"),
+        StdError::GenericErr { msg, .. } => {
+            assert_eq!(msg, "must deposit only one type of token")
+        }
         _ => panic!("should not enter"),
     }
 
@@ -379,7 +404,8 @@ fn claim_native() {
         recipient: None,
     };
 
-    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
+    let res =
+        execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
     assert_eq!(
         res.messages,
         vec![SubMsg::new(BankMsg::Send {
@@ -545,7 +571,8 @@ fn claim_cw20() {
         recipient: None,
     };
 
-    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
+    let res =
+        execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
     assert_eq!(
         res.messages,
         vec![SubMsg::new(WasmMsg::Execute {

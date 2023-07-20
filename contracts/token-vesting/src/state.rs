@@ -1,11 +1,12 @@
 use cosmwasm_schema::cw_serde;
 
 use crate::msg::VestingSchedule;
-use cosmwasm_std::{Uint128};
+use cosmwasm_std::Uint128;
 use cw20::Denom;
 use cw_storage_plus::Map;
 
-pub const VESTING_ACCOUNTS: Map<(&str, &str), VestingAccount> = Map::new("vesting_accounts");
+pub const VESTING_ACCOUNTS: Map<(&str, &str), VestingAccount> =
+    Map::new("vesting_accounts");
 
 #[cw_serde]
 pub struct VestingAccount {
@@ -26,7 +27,7 @@ pub fn denom_to_key(denom: Denom) -> String {
 
 #[test]
 fn test_denom_to_key() {
-    use cosmwasm_std::{Uint64};
+    use cosmwasm_std::Uint64;
 
     let schedule = VestingSchedule::LinearVesting {
         start_time: Uint64::new(100),
