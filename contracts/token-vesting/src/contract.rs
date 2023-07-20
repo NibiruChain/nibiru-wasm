@@ -96,74 +96,7 @@ fn register_vesting_account(
     }
 
     // validate vesting schedule
-    match &vesting_schedule {
-        VestingSchedule::LinearVesting {
-            start_time,
-            end_time,
-            vesting_amount,
-        } => {
-            if vesting_amount.is_zero() {
-                return Err(StdError::generic_err("assert(vesting_amount > 0)"));
-            }
-
-            if start_time.u64() < block_time.seconds() {
-                return Err(StdError::generic_err(
-                    "assert(start_time < block_time)",
-                ));
-            }
-
-            if end_time <= start_time {
-                return Err(StdError::generic_err(
-                    "assert(end_time <= start_time)",
-                ));
-            }
-
-            if vesting_amount != deposit_amount {
-                return Err(StdError::generic_err(
-                    "assert(deposit_amount == vesting_amount)",
-                ));
-            }
-        }
-        VestingSchedule::LinearVestingWithCliff {
-            start_time,
-            end_time,
-            vesting_amount,
-            cliff_time,
-            cliff_amount,
-        } => {
-            if vesting_amount.is_zero() {
-                return Err(StdError::generic_err("assert(vesting_amount > 0)"));
-            }
-
-            if cliff_amount.is_zero() {
-                return Err(StdError::generic_err("assert(cliff_amount > 0)"));
-            }
-
-            if cliff_time.u64() < block_time.seconds() {
-                return Err(StdError::generic_err(
-                    "assert(cliff_time > block_time)",
-                ));
-            }
-
-            if end_time <= start_time {
-                return Err(StdError::generic_err(
-                    "assert(end_time > start_time)",
-                ));
-            }
-
-            if start_time.u64() < block_time.seconds() {
-                return Err(StdError::generic_err(
-                    "assert(start_time > block_time)",
-                ));
-            }
-
-            if cliff_amount.u128() > vesting_amount.u128() {
-                return Err(StdError::generic_err(
-                    "assert(cliff_amount <= vesting_amount)",
-                ));
-            }
-        }
-    }
+    vesting_schedule.validate(block_time, deposit_amount)?;
 
     VESTING_ACCOUNTS.save(
         storage,
