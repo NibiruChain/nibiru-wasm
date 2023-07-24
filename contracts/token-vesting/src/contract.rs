@@ -168,12 +168,12 @@ fn deregister_vesting_account(
     if !claimable_amount.is_zero() {
         let recipient =
             vested_token_recipient.unwrap_or_else(|| address.to_string());
-        let message: CosmosMsg = build_send_msg(
+        let msg_send: CosmosMsg = build_send_msg(
             account.vesting_denom.clone(),
             claimable_amount,
-            recipient.clone(),
+            recipient,
         )?;
-        messages.push(message);
+        messages.push(msg_send);
     }
 
     // transfer left vesting amount to owner or
@@ -183,12 +183,12 @@ fn deregister_vesting_account(
     if !left_vesting_amount.is_zero() {
         let recipient =
             left_vesting_token_recipient.unwrap_or_else(|| sender.to_string());
-        let message: CosmosMsg = build_send_msg(
+        let msg_send: CosmosMsg = build_send_msg(
             account.vesting_denom.clone(),
             left_vesting_amount,
-            recipient.clone(),
+            recipient,
         )?;
-        messages.push(message);
+        messages.push(msg_send);
     }
 
     Ok(Response::new().add_messages(messages).add_attributes(vec![
@@ -248,27 +248,13 @@ fn claim(
             )?;
         }
 
-        let message: CosmosMsg = match account.vesting_denom.clone() {
-            Denom::Native(denom) => BankMsg::Send {
-                to_address: recipient.clone(),
-                amount: vec![Coin {
-                    denom,
-                    amount: claimable_amount,
-                }],
-            }
-            .into(),
-            Denom::Cw20(contract_addr) => WasmMsg::Execute {
-                contract_addr: contract_addr.to_string(),
-                msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                    recipient: recipient.clone(),
-                    amount: claimable_amount,
-                })?,
-                funds: vec![],
-            }
-            .into(),
-        };
+        let msg_send: CosmosMsg = build_send_msg(
+            account.vesting_denom.clone(),
+            claimable_amount,
+            recipient.clone(),
+        )?;
 
-        messages.push(message);
+        messages.push(msg_send);
         attrs.extend(
             vec![
                 ("vesting_denom", &to_string(&account.vesting_denom).unwrap()),
@@ -292,7 +278,7 @@ fn build_send_msg(
     amount: Uint128,
     to: String,
 ) -> StdResult<CosmosMsg> {
-    Ok(match denom.clone() {
+    Ok(match denom {
         Denom::Native(denom) => BankMsg::Send {
             to_address: to,
             amount: vec![Coin { denom, amount }],
