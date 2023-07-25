@@ -25,6 +25,7 @@ pub mod test {
 
         peg_shift: ShifterExecuteMsg,
         depth_shift: ShifterExecuteMsg,
+        no_op: ShifterExecuteMsg,
 
         insurance_fund_withdraw: ControllerExecuteMsg,
         set_market_enabled: ControllerExecuteMsg,
@@ -43,6 +44,8 @@ pub mod test {
             donate_to_insurance_fund: execute_donate_to_insurance_fund(),
             peg_shift: execute_peg_shift(),
             depth_shift: execute_depth_shift(),
+            no_op: execute_no_op(),
+
             insurance_fund_withdraw: execute_insurance_fund_withdraw(),
             set_market_enabled: execute_set_market_enabled(),
             edit_oracle_params: execute_edit_oracle_params(),
@@ -126,6 +129,10 @@ pub mod test {
             pair: DUMMY_PAIR.to_string(),
             depth_mult: dec_420(),
         }
+    }
+
+    pub fn execute_no_op() -> ShifterExecuteMsg {
+        ShifterExecuteMsg::NoOp {}
     }
 
     pub fn execute_insurance_fund_withdraw() -> ControllerExecuteMsg {

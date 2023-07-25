@@ -114,7 +114,7 @@
     }
   },
   "oracle_prices": {
-    "ETH:USD": "420",
-    "NIBI:USD": "69"
+    "NIBI:USD": "69",
+    "ETH:USD": "420"
   }
 }
