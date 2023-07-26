@@ -17,6 +17,7 @@ pub enum ExecuteMsg {
     AddMember { address: String },
     RemoveMember { address: String },
     ChangeAdmin { address: String },
+    NoOp {},
 }
 
 /// QueryMsg specifies the args for the query entry point of the contract.
