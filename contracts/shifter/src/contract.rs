@@ -58,8 +58,8 @@ fn check_member(can: CanExecute) -> Result<(), cosmwasm_std::StdError> {
 #[cw_serde]
 #[cw_custom]
 pub struct ContractExecMsg {
-    pub route: Option<NibiruRoute>,
-    pub msg: Option<ExecuteMsg>,
+    pub route: NibiruRoute,
+    pub msg: ExecuteMsg,
 }
 
 #[entry_point]
@@ -78,8 +78,8 @@ pub fn execute(
         ExecuteMsg::DepthShift { pair, depth_mult } => {
             check_member(check)?;
             let cw_msg = ContractExecMsg {
-                route: Some(NibiruRoute::Perp),
-                msg: Some(ExecuteMsg::DepthShift { pair, depth_mult }),
+                route: NibiruRoute::Perp,
+                msg: ExecuteMsg::DepthShift { pair, depth_mult },
             };
             let res = Response::new()
                 .add_message(cw_msg)
@@ -90,8 +90,8 @@ pub fn execute(
         ExecuteMsg::PegShift { pair, peg_mult } => {
             check_member(check)?;
             let cw_msg = ContractExecMsg {
-                route: Some(NibiruRoute::Perp),
-                msg: Some(ExecuteMsg::PegShift { pair, peg_mult }),
+                route: NibiruRoute::Perp,
+                msg: ExecuteMsg::PegShift { pair, peg_mult },
             };
             let res = Response::new()
                 .add_message(cw_msg)
@@ -107,8 +107,8 @@ pub fn execute(
             WHITELIST.save(deps.storage, &whitelist)?;
 
             let cw_msg = ContractExecMsg {
-                route: Some(NibiruRoute::NoOp),
-                msg: None,
+                route: NibiruRoute::NoOp,
+                msg: ExecuteMsg::NoOp {},
             };
             let res = Response::new().add_message(cw_msg).add_attributes(vec![
                 attr("action", "add_member"),
@@ -123,8 +123,8 @@ pub fn execute(
             WHITELIST.save(deps.storage, &whitelist)?;
 
             let cw_msg = ContractExecMsg {
-                route: Some(NibiruRoute::NoOp),
-                msg: None,
+                route: NibiruRoute::NoOp,
+                msg: ExecuteMsg::NoOp {},
             };
             let res = Response::new().add_message(cw_msg).add_attributes(vec![
                 attr("action", "remove_member"),
@@ -142,13 +142,23 @@ pub fn execute(
             WHITELIST.save(deps.storage, &whitelist)?;
 
             let cw_msg = ContractExecMsg {
-                route: Some(NibiruRoute::NoOp),
-                msg: None,
+                route: NibiruRoute::NoOp,
+                msg: ExecuteMsg::NoOp {},
             };
             let res = Response::new().add_message(cw_msg).add_attributes(vec![
                 attr("action", "change_admin"),
                 attr("address", address),
             ]);
+            Ok(res)
+        }
+
+        // Purely here to satisfy the enum.
+        ExecuteMsg::NoOp {} => {
+            let cw_msg = ContractExecMsg {
+                route: NibiruRoute::NoOp,
+                msg: ExecuteMsg::NoOp {},
+            };
+            let res = Response::new().add_message(cw_msg);
             Ok(res)
         }
     }
