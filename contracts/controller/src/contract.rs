@@ -58,7 +58,7 @@ fn check_member(can: CanExecute) -> Result<(), cosmwasm_std::StdError> {
 #[cw_serde]
 #[cw_custom]
 pub struct ContractExecMsg {
-    pub route: Option<NibiruRoute>,
+    pub route: NibiruRoute,
     pub msg: Option<ExecuteMsg>,
 }
 
@@ -78,7 +78,7 @@ pub fn execute(
         ExecuteMsg::InsuranceFundWithdraw { amount, to } => {
             check_member(check)?;
             let cw_msg = ContractExecMsg {
-                route: Some(NibiruRoute::Perp),
+                route: NibiruRoute::Perp,
                 msg: Some(ExecuteMsg::InsuranceFundWithdraw { amount, to }),
             };
             let res = Response::new()
@@ -90,7 +90,7 @@ pub fn execute(
         ExecuteMsg::SetMarketEnabled { pair, enabled } => {
             check_member(check)?;
             let cw_msg = ContractExecMsg {
-                route: Some(NibiruRoute::Perp),
+                route: NibiruRoute::Perp,
                 msg: Some(ExecuteMsg::SetMarketEnabled { pair, enabled }),
             };
             let res = Response::new()
@@ -107,7 +107,7 @@ pub fn execute(
         } => {
             check_member(check)?;
             let cw_msg = ContractExecMsg {
-                route: Some(NibiruRoute::Perp),
+                route: NibiruRoute::Perp,
                 msg: Some(ExecuteMsg::CreateMarket {
                     pair,
                     peg_mult,
@@ -135,7 +135,7 @@ pub fn execute(
         } => {
             check_member(check)?;
             let cw_msg = ContractExecMsg {
-                route: Some(NibiruRoute::Oracle),
+                route: NibiruRoute::Oracle,
                 msg: Some(ExecuteMsg::EditOracleParams {
                     vote_period,
                     vote_threshold,
@@ -163,7 +163,7 @@ pub fn execute(
             WHITELIST.save(deps.storage, &whitelist)?;
 
             let cw_msg = ContractExecMsg {
-                route: Some(NibiruRoute::NoOp),
+                route: NibiruRoute::NoOp,
                 msg: None,
             };
             let res = Response::new().add_message(cw_msg).add_attributes(vec![
@@ -179,7 +179,7 @@ pub fn execute(
             WHITELIST.save(deps.storage, &whitelist)?;
 
             let cw_msg = ContractExecMsg {
-                route: Some(NibiruRoute::NoOp),
+                route: NibiruRoute::NoOp,
                 msg: None,
             };
             let res = Response::new().add_message(cw_msg).add_attributes(vec![
@@ -198,7 +198,7 @@ pub fn execute(
             WHITELIST.save(deps.storage, &whitelist)?;
 
             let cw_msg = ContractExecMsg {
-                route: Some(NibiruRoute::NoOp),
+                route: NibiruRoute::NoOp,
                 msg: None,
             };
             let res = Response::new().add_message(cw_msg).add_attributes(vec![
