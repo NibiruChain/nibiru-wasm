@@ -79,6 +79,10 @@ pub struct MarketParams {
     pub maintenance_margin_ratio: Decimal,
     /// the maximum leverage a user is able to be taken on this market
     pub max_leverage: Decimal,
+    /// Maximum daily funding rate, where funding_payed = size * index_price *
+    /// (max_funding_rate / num_payments) In our case, payments occur every 30
+    /// minutes, so num_payments is 48.
+    pub max_funding_rate: Decimal,
     // Latest cumulative premium fraction for a given pair.
     // Calculated once per funding rate interval.
     // A premium fraction is the difference between mark and index, divided by the
