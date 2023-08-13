@@ -138,16 +138,21 @@ fn deregister_vesting_account(
     let mut messages: Vec<CosmosMsg> = vec![];
 
     // vesting_account existence check
-    let account = VESTING_ACCOUNTS
-        .may_load(deps.storage, (address.as_str(), &denom_key))?;
-    if account.is_none() {
-        return Err(StdError::generic_err(format!(
-            "vesting entry is not found for denom {:?}",
-            to_string(&denom).unwrap(),
-        )));
-    }
+    let account: VestingAccount;
+    match VESTING_ACCOUNTS
+        .may_load(deps.storage, (address.as_str(), &denom_key))?
+    {
+        Some(acc) => {
+            account = acc;
+        }
+        None => {
+            return Err(StdError::generic_err(format!(
+                "vesting entry is not found for denom {:?}",
+                to_string(&denom).unwrap(),
+            )));
+        }
+    };
 
-    let account = account.unwrap();
     if account.master_address.is_none()
         || account.master_address.unwrap() != sender
     {
