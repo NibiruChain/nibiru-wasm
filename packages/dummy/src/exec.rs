@@ -174,7 +174,21 @@ pub mod test {
             pair: DUMMY_PAIR.to_string(),
             peg_mult: dec_420(),
             sqrt_depth: dec_420(),
-            market_params: None,
+            market_params: Some(controller::msgs::MarketParams {
+                pair: DUMMY_PAIR.to_string(),
+                enabled: true,
+                price_fluctuation_limit_ratio: dec_420(),
+                maintenance_margin_ratio: dec_420(),
+                max_leverage: dec_420(),
+                max_funding_rate: dec_420(),
+                latest_cpf: dec_420(),
+                exchange_fee_ratio: dec_420(),
+                ecosystem_fund_fee_ratio: dec_420(),
+                liquidation_fee_ratio: dec_420(),
+                partial_liquidation_ratio: dec_420(),
+                funding_rate_epoch_id: "30 min".to_string(),
+                twap_lookback_window: Uint256::from(15u128),
+            }),
         }
     }
 

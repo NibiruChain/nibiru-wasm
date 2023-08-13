@@ -103,7 +103,21 @@
       "pair": "ETH:USD",
       "peg_mult": "420",
       "sqrt_depth": "420",
-      "market_params": null
+      "market_params": {
+        "pair": "ETH:USD",
+        "enabled": true,
+        "price_fluctuation_limit_ratio": "420",
+        "maintenance_margin_ratio": "420",
+        "max_leverage": "420",
+        "max_funding_rate": "420",
+        "latest_cpf": "420",
+        "exchange_fee_ratio": "420",
+        "ecosystem_fund_fee_ratio": "420",
+        "liquidation_fee_ratio": "420",
+        "partial_liquidation_ratio": "420",
+        "funding_rate_epoch_id": "30 min",
+        "twap_lookback_window": "15"
+      }
     }
   }
 }
