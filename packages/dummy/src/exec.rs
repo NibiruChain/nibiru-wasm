@@ -127,7 +127,7 @@ pub mod test {
     pub fn execute_depth_shift() -> ShifterExecuteMsg {
         ShifterExecuteMsg::DepthShift {
             pair: DUMMY_PAIR.to_string(),
-            depth_mult: dec_420(),
+            depth_mult: Uint256::from(420u128),
         }
     }
 
