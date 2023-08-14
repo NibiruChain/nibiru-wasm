@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Decimal;
+use cosmwasm_std::{Decimal, Uint256};
 
 use crate::state::Whitelist;
 
@@ -12,7 +12,7 @@ pub struct InitMsg {
 /// ExecuteMsg specifies the args for the execute entry point of the contract.
 #[cw_serde]
 pub enum ExecuteMsg {
-    DepthShift { pair: String, depth_mult: Decimal },
+    DepthShift { pair: String, depth_mult: Uint256 },
     PegShift { pair: String, peg_mult: Decimal },
     AddMember { address: String },
     RemoveMember { address: String },
