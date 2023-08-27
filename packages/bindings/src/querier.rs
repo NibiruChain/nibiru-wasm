@@ -65,21 +65,18 @@ impl<'a> NibiruQuerier<'a> {
         let price_map: OraclePricesResponse =
             self.querier.query(&request.into())?;
 
-        let mut out_price_map: OraclePricesResponse;
-        if pairs.is_none() || pairs.as_ref().unwrap().is_empty() {
-            out_price_map = price_map;
-        } else {
-            let pair_vec: Vec<String> = pairs.unwrap();
-            out_price_map = HashMap::new();
-            for p in &pair_vec {
-                match price_map.get(p) {
-                    Some(rate) => out_price_map.insert(p.clone(), *rate),
-                    None => continue,
-                };
+        match pairs {
+            Some(pair_vec) if !pair_vec.is_empty() => {
+                let mut out_price_map: OraclePricesResponse = HashMap::new();
+                for p in pair_vec.iter() {
+                    if let Some(rate) = price_map.get(p) {
+                        out_price_map.insert(p.clone(), *rate);
+                    }
+                }
+                Ok(out_price_map)
             }
+            _ => Ok(price_map),
         }
-
-        Ok(out_price_map)
     }
 
     pub fn premium_fraction(
