@@ -3,6 +3,7 @@
     "market_map": {
       "ETH:USD": {
         "pair": "ETH:USD",
+        "version": "42",
         "base_reserve": "69",
         "quote_reserve": "69",
         "sqrt_depth": "69",

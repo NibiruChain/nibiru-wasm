@@ -17,6 +17,7 @@ pub struct Position {
 #[cw_serde]
 pub struct Market {
     pub pair: String,
+    pub version: Uint64,
     pub base_reserve: Decimal,
     pub quote_reserve: Decimal,
     pub sqrt_depth: Decimal,

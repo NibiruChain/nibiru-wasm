@@ -22,6 +22,7 @@ pub fn all_markets_response() -> AllMarketsResponse {
         String::from("ETH:USD"),
         Market {
             pair: String::from("ETH:USD"),
+            version: Uint64::from(42u64),
             base_reserve: dec_69(),
             quote_reserve: dec_69(),
             sqrt_depth: dec_69(),
