@@ -1,5 +1,3 @@
-// use std::fs;
-
 /// scripts/proto_clean.rs:
 ///
 /// ## Procedure
@@ -15,6 +13,40 @@
 pub fn main() {
     println!("Running proto_clean.rs...");
     println!("ran proto_clean.rs successfully");
+}
+
+pub fn clean_file_imports(
+    rust_proto_path: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    // Define a regular expression to match `super::` imports
+    let re = regex::Regex::new(r"super::(?:super::)+[\w:]+")?;
+    let content = std::fs::read_to_string(rust_proto_path)?;
+    // Replace all matches in the file content using the provided function
+    let updated_content = re.replace_all(&content, |caps: &regex::Captures| {
+        let matched = &caps[0]; // Get the entire matched string
+        match super_import_to_clean(matched) {
+            Ok(cleaned) => cleaned,
+            Err(err) => {
+                eprintln!("Error cleaning import '{}': {:?}", matched, err);
+                matched.to_string() // If there's an error, leave the import unchanged
+            }
+        }
+    });
+
+    Ok(updated_content.to_string())
+}
+
+/// Runs clean_file_imports and writes new contents back to the input file.
+pub fn clean_file_imports_inplace(
+    rust_proto_path: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    match clean_file_imports(rust_proto_path) {
+        Ok(content) => {
+            std::fs::write(rust_proto_path, content)?;
+            Ok(())
+        }
+        Err(err) => Err(err),
+    }
 }
 
 #[derive(Debug)]
