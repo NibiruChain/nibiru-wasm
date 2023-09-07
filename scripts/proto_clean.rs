@@ -147,4 +147,71 @@ mod proto_submodules {
     pub static TENDERMINT: [&str; 1] = ["tendermint"];
 }
 
+pub static PROTO_PATH: &str = "../nibiru-std/src/proto";
 
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    #[derive(Debug, PartialEq)]
+    pub struct TestCase {
+        input: &'static str,
+        want_err: bool,
+        want_out: Option<&'static str>,
+    }
+
+    #[test]
+    fn test_super_import_to_clean() {
+        let test_cases: Vec<TestCase> = vec![
+            TestCase {
+                input: "::super::super::super::bank::foo",
+                want_err: false,
+                want_out: Some("crate::proto::cosmos::bank::foo"),
+            },
+            TestCase {
+                input: "::super::tendermint::xyz",
+                want_err: false,
+                want_out: Some("crate::proto::tendermint::xyz"),
+            },
+            TestCase {
+                input: "abcxyz",
+                want_err: true,
+                want_out: None,
+            },
+        ];
+
+        for (i, test_case) in test_cases.iter().enumerate() {
+            let result = super::super_import_to_clean(test_case.input);
+
+            // Check if the result is an error as expected
+            if test_case.want_err {
+                assert!(result.is_err(), "Test case {} failed", i);
+            } else {
+                assert!(result.is_ok(), "Test case {} failed", i);
+                // Check the expected output
+                if let Ok(cleaned) = result {
+                    assert_eq!(
+                        cleaned,
+                        test_case.want_out.unwrap(),
+                        "Test case {} failed",
+                        i
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn fixture_proto_clean() {
+        let dirty_path = "test/fixture_proto_dirty.rs";
+        let result = super::clean_file_imports(dirty_path);
+        assert!(result.is_ok());
+
+        // let _ = fs::write(clean_path, result.as_ref().unwrap());
+        let clean_path = "test/fixture_proto_clean.rs";
+        let want_result = fs::read_to_string(clean_path);
+        assert!(want_result.is_ok());
+
+        assert_eq!(result.unwrap(), want_result.unwrap());
+    }
+}
