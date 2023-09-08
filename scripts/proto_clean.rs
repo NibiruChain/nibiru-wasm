@@ -1,5 +1,7 @@
 /// scripts/proto_clean.rs:
 ///
+/// Run with: `cargo run --bin proto_clean`
+///
 /// ## Procedure
 ///
 /// 1. Walk through all the files in the nibiru-std/src/proto directory.
@@ -12,6 +14,25 @@
 
 pub fn main() {
     println!("Running proto_clean.rs...");
+
+    // Walk through each file in the directory
+    for entry in walkdir::WalkDir::new(PROTO_PATH)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        // filter out directories
+        .filter(|e| !e.file_type().is_dir())
+        .filter(|e| e.file_name().to_string_lossy().starts_with("cosmos"))
+    {
+        // Get the path of the file we're going to clean.
+        let path_to_clean = entry.path().to_string_lossy();
+        println!("cleaning {}", path_to_clean);
+
+        // Read the file content and replace contents
+        clean_file_imports_inplace(&path_to_clean).unwrap_or_else(|_| {
+            panic!("failed to clean proto file: {}", path_to_clean.to_string())
+        })
+    }
+
     println!("ran proto_clean.rs successfully");
 }
 
