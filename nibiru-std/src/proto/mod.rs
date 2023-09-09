@@ -154,10 +154,10 @@ pub mod tendermint {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
+    
 
     use super::{
-        cosmos::{self, auth, base::v1beta1::Coin},
+        cosmos::{self, base::v1beta1::Coin},
         nibiru::perp,
     };
 
