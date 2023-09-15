@@ -154,7 +154,6 @@ pub mod tendermint {
 
 #[cfg(test)]
 mod tests {
-    
 
     use super::{
         cosmos::{self, base::v1beta1::Coin},

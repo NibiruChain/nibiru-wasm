@@ -115,8 +115,8 @@ dependencies = [
  "cw2",
  "cw20",
  "dummy",
- "nibiru-bindings",
  "nibiru-macro",
+ "nibiru-std",
  "schemars",
  "serde",
  "serde_json",
@@ -241,8 +241,8 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",
- "nibiru-bindings",
  "nibiru-macro",
+ "nibiru-std",
  "schemars",
  "serde",
  "thiserror",
@@ -679,7 +679,7 @@ dependencies = [
  "controller",
  "cosmwasm-schema",
  "cosmwasm-std",
- "nibiru-bindings",
+ "nibiru-std",
  "serde_json",
  "shifter",
 ]
@@ -1203,14 +1203,6 @@ name = "more-asserts"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7843ec2de400bcbc6a6328c958dc38e5359da6e93e72e37bc5246bf1ae776389"
-
-[[package]]
-name = "nibiru-bindings"
-version = "0.2.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
-]
 
 [[package]]
 name = "nibiru-macro"
@@ -1831,8 +1823,8 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",
- "nibiru-bindings",
  "nibiru-macro",
+ "nibiru-std",
  "schemars",
  "serde",
  "thiserror",
