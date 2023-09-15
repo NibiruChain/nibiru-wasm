@@ -4,7 +4,7 @@ mod tests {
         common::{dec_420, dec_69},
         query as dq,
     };
-    use nibiru_bindings::query::{
+    use nibiru_std::bindings::query::{
         AllMarketsResponse, BasePriceResponse, MetricsResponse,
         ModuleAccountsResponse, ModuleParamsResponse, OraclePricesResponse,
         PremiumFractionResponse, QueryPerpMsg, ReservesResponse,

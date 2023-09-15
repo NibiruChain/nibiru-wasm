@@ -3,8 +3,8 @@ use cosmwasm_std::{
     attr, entry_point, Binary, CosmosMsg, CustomMsg, Deps, DepsMut, Env,
     MessageInfo, Response, StdResult,
 };
-use nibiru_bindings::route::NibiruRoute;
 use nibiru_macro::cw_custom;
+use nibiru_std::bindings::route::NibiruRoute;
 
 use crate::{
     msgs::{ExecuteMsg, InitMsg, IsMemberResponse, QueryMsg, WhitelistResponse},
