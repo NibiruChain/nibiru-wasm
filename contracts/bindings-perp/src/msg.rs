@@ -4,9 +4,9 @@ use cosmwasm_std::{
     Uint128, Uint256,
 };
 
-use nibiru_bindings::query as bindings_query;
-use nibiru_bindings::route::NibiruRoute;
 use nibiru_macro::cw_custom;
+use nibiru_std::bindings::query as bindings_query;
+use nibiru_std::bindings::route::NibiruRoute;
 
 use crate::state::Sudoers;
 
