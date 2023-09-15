@@ -58,8 +58,10 @@ test-all:
   cargo test
 
 # Format, lint, and test
-tidy: fmt clippy test
-  just
+tidy:
+  just fmt
+  just clippy
+  just test
 
 # Format, lint, update dependencies, and test
 tidy-update: build-update

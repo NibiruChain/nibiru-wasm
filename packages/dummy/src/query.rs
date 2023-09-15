@@ -6,12 +6,12 @@ use cosmwasm_std::Uint256;
 use cosmwasm_std::{Addr, Coin, Decimal, Uint128, Uint64};
 
 use crate::common::DUMMY_ADDR;
-use nibiru_bindings::query::{
+use nibiru_std::bindings::query::{
     AllMarketsResponse, BasePriceResponse, MetricsResponse,
     ModuleAccountsResponse, ModuleParamsResponse, PositionResponse,
     PositionsResponse, PremiumFractionResponse, ReservesResponse,
 };
-use nibiru_bindings::state::{
+use nibiru_std::bindings::state::{
     Market, MarketConfig, Metrics, ModuleAccountWithBalance, ModuleParams,
     Position,
 };
@@ -160,7 +160,8 @@ pub fn module_accounts_response() -> ModuleAccountsResponse {
     }
 }
 
-pub fn oracle_prices_response() -> nibiru_bindings::query::OraclePricesResponse {
+pub fn oracle_prices_response(
+) -> nibiru_std::bindings::query::OraclePricesResponse {
     [("ETH:USD", dec_420()), ("NIBI:USD", dec_69())]
         .iter()
         .map(|&(k, v)| (k.to_string(), v))
@@ -178,7 +179,7 @@ pub struct ExampleNibiruQueryResponseJson {
     premium_fraction: PremiumFractionResponse,
     metrics: MetricsResponse,
     module_accounts: ModuleAccountsResponse,
-    oracle_prices: nibiru_bindings::query::OraclePricesResponse,
+    oracle_prices: nibiru_std::bindings::query::OraclePricesResponse,
 }
 
 #[cfg(test)]
