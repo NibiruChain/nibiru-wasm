@@ -15,19 +15,19 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cosmwasm-schema = { version = "1.2.3" }
-cosmwasm-std = { version = "1.2.3" }
-cw2 = { version = "1.0.1" }
-cw20 = { version = "1.0.1" }
-cw-storage-plus = { version = "1.0.1" }
-cw-utils = { version = "1.0.1" }
-schemars = "0.8.1"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0.23" }
+cosmwasm-schema = { version = "1.4.0" }
+cosmwasm-std = { version = "1.4.0" }
+cw2 = { version = "1.1.1" }
+cw20 = { version = "1.1.1" }
+cw-storage-plus = { version = "1.1.0" }
+cw-utils = { version = "1.0.2" }
+schemars = "0.8.15"
+serde = { version = "1.0.188", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0.49" }
 nibiru-std = { path = "../../nibiru-std" }
 nibiru-macro = { path = "../../packages/macro" }
 
 [dev-dependencies]
-cosmwasm-vm = "1.2.3"
-serde_json = "1.0.95"
+cosmwasm-vm = "1.4.0"
+serde_json = "1.0.107"
 dummy = { path = "../../packages/dummy" }
