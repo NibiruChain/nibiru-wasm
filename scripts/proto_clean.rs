@@ -29,7 +29,7 @@ pub fn main() {
 
         // Read the file content and replace contents
         clean_file_imports_inplace(&path_to_clean).unwrap_or_else(|_| {
-            panic!("failed to clean proto file: {}", path_to_clean.to_string())
+            panic!("failed to clean proto file: {}", path_to_clean)
         })
     }
 

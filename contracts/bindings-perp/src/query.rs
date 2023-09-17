@@ -178,7 +178,7 @@ mod tests {
         assert_eq!(
             resp.module_params.whitelisted_liquidators,
             HashSet::from_iter(
-                vec![
+                [
                     "nibi1ah8gqrtjllhc5ld4rxgl4uglvwl93ag0sh6e6v",
                     "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl"
                 ]

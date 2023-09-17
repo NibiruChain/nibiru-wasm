@@ -45,7 +45,7 @@ impl AssetPair {
 
     pub fn to_string(&self) -> String {
         // not clean but whatever... speeding
-        return vec![self.token0.clone(), self.token1.clone()]
+        return [self.token0.clone(), self.token1.clone()]
             .join(PAIR_SEPARATOR.to_string().as_str());
     }
 }

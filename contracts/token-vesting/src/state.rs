@@ -20,7 +20,7 @@ pub struct VestingAccount {
 
 pub fn denom_to_key(denom: Denom) -> String {
     match denom {
-        Denom::Cw20(addr) => format!("cw20-{}", addr.to_string()),
+        Denom::Cw20(addr) => format!("cw20-{}", addr),
         Denom::Native(denom) => format!("native-{}", denom),
     }
 }
