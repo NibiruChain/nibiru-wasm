@@ -35,7 +35,7 @@ pub mod tests {
     use super::*;
 
     pub fn init_mock_whitelist() -> Whitelist {
-        let member_names = vec!["alice", "brock", "david"];
+        let member_names = ["alice", "brock", "david"];
         let members: HashSet<String> =
             member_names.iter().map(|&s| s.to_string()).collect();
         let admin: String = "cait".to_string();

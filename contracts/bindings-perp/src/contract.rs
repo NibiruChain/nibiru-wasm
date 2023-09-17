@@ -342,7 +342,7 @@ pub mod tests {
 
         // Instantiate contract
         let admin = "admin";
-        let sender = admin.clone();
+        let sender = admin;
         let (_sudoers, mut deps, info) = do_init(admin, sender, deps);
 
         let pair = "ETH:USD".to_string();

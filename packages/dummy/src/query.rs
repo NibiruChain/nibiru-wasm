@@ -85,7 +85,7 @@ pub fn position_response() -> PositionResponse {
 
 pub fn positions_response() -> PositionsResponse {
     let mut positions_map: HashMap<String, Position> = HashMap::new();
-    let pairs: Vec<String> = vec!["ETH:USD", "BTC:USD"]
+    let pairs: Vec<String> = ["ETH:USD", "BTC:USD"]
         .iter()
         .map(|&s| s.to_string())
         .collect();
@@ -109,7 +109,7 @@ pub fn module_params_response() -> ModuleParamsResponse {
             funding_rate_interval: "1h".to_string(),
             twap_lookback_window: Uint64::from(60u64 * 60u64), // 1 hour
             whitelisted_liquidators: HashSet::from_iter(
-                vec![
+                [
                     "nibi1ah8gqrtjllhc5ld4rxgl4uglvwl93ag0sh6e6v",
                     "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl",
                 ]

@@ -155,7 +155,7 @@ pub mod test {
             vote_threshold: Some(dec_420()),
             reward_band: Some(dec_420()),
             whitelist: Some(
-                vec![DUMMY_ADDR, DUMMY_ADDR_2]
+                [DUMMY_ADDR, DUMMY_ADDR_2]
                     .iter()
                     .map(|&s| s.to_string())
                     .collect(),
