@@ -51,7 +51,11 @@ clippy-check:
 test *pkg:
   #!/usr/bin/env bash
   set -e;
-  RUST_BACKGTRACE="1" cargo test --package "{{pkg}}"
+  if [ -z "{{pkg}}" ]; then
+    just test-all
+  else
+    RUST_BACKGTRACE="1" cargo test --package "{{pkg}}"
+  fi
 
 # Test everything in the workspace.
 test-all:

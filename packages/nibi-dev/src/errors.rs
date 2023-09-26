@@ -58,5 +58,3 @@ pub enum LocalError {
     #[error("inner local error: {}", err)]
     InnerError { err: anyhow::Error },
 }
-
-
