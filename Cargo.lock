@@ -1486,10 +1486,12 @@ dependencies = [
 name = "nibiru-std"
 version = "0.0.2"
 dependencies = [
+ "anyhow",
  "cosmwasm-schema",
  "cosmwasm-std",
  "prost",
  "prost-types",
+ "serde",
 ]
 
 [[package]]
