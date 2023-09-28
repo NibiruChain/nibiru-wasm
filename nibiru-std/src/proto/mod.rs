@@ -1,3 +1,35 @@
+use cosmwasm_std::{to_binary, Binary, CosmosMsg, StdResult};
+
+pub trait NibiruProstMsg: prost::Message {
+    /// Serialize this protobuf message as a byte vector
+    fn to_bytes(&self) -> Vec<u8>;
+
+    fn to_binary(&self) -> StdResult<Binary>;
+
+    fn as_stargate_msg(&self, type_url: String) -> StdResult<CosmosMsg>;
+}
+
+impl<M> NibiruProstMsg for M
+where
+    M: prost::Message,
+{
+    fn to_bytes(&self) -> Vec<u8> {
+        self.encode_to_vec()
+    }
+
+    fn to_binary(&self) -> StdResult<Binary> {
+        to_binary(&self.encode_to_vec())
+    }
+
+    fn as_stargate_msg(&self, type_url: String) -> StdResult<CosmosMsg> {
+        // TODO Should we filter only for known messages?
+        Ok(CosmosMsg::Stargate {
+            type_url,
+            value: self.to_binary()?,
+        })
+    }
+}
+
 pub mod cosmos {
     /// Authentication of accounts and transactions.
     pub mod auth {
