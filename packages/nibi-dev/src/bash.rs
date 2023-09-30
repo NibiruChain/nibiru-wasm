@@ -5,7 +5,7 @@ use serde::Serialize;
 use crate::errors::BashError;
 
 /// Runs a shell command
-pub fn run_cmd(cmd: String) -> Result<process::Output, BashError> {
+pub fn run_bash(cmd: String) -> Result<BashCommandOutput, BashError> {
     let output = std::process::Command::new("bash")
         .arg("-c")
         .arg(cmd.clone())
@@ -13,7 +13,7 @@ pub fn run_cmd(cmd: String) -> Result<process::Output, BashError> {
         .expect("Failed to execute command");
 
     match output.status.success() {
-        true => Ok(output),
+        true => Ok(BashCommandOutput::new(cmd, output)),
         false => {
             let error_json = serde_json::to_string_pretty(&BashCommandOutput {
                 status: output
@@ -31,19 +31,15 @@ pub fn run_cmd(cmd: String) -> Result<process::Output, BashError> {
 }
 
 /// run_cmd_print: Runs a command and prints its output.
-pub fn run_cmd_print(cmd: String) -> Result<process::Output, BashError> {
-    match run_cmd(cmd.clone()) {
-        Ok(cmd_out) => {
-            if !cmd_out.stdout.is_empty() {
-                println!("{}", String::from_utf8_lossy(&cmd_out.stdout));
-            }
-            if !cmd_out.stderr.is_empty() {
-                println!("{}", String::from_utf8_lossy(&cmd_out.stderr));
-            }
-            Ok(cmd_out)
-        }
-        Err(err) => Err(BashError::BashCmdFailed(cmd, err.to_string())),
+pub fn run_bash_and_print(cmd: String) -> Result<BashCommandOutput, BashError> {
+    let out = run_bash(cmd)?;
+    if !out.stdout.is_empty() {
+        println!("{}", out.stdout);
     }
+    if !out.stderr.is_empty() {
+        println!("{}", out.stderr);
+    }
+    Ok(out)
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -77,7 +73,7 @@ impl From<process::Output> for BashCommandOutput {
 pub fn which_ok(bin: &str) -> bool {
     let err_msg_string = format!("failed to run 'which {}'", bin);
     let err_msg = err_msg_string.as_str();
-    let out = run_cmd(
+    let out = run_bash(
         [
             format!("if which {} >/dev/null; then", bin),
             format!("    echo '{} is present'", bin),
@@ -88,18 +84,18 @@ pub fn which_ok(bin: &str) -> bool {
         .join("\n"),
     )
     .expect(err_msg);
-    return String::from_utf8_lossy(&out.stdout).contains("is present");
+    out.stdout.contains("is present")
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{run_cmd, which_ok};
+    use super::{run_bash, which_ok};
 
     #[test]
     fn test_run_cmd() {
         let cmds: Vec<&str> = vec!["ls -l", "jq"];
         cmds.iter().for_each(|cmd| {
-            let out = run_cmd(cmd.to_string());
+            let out = run_bash(cmd.to_string());
             assert!(out.is_ok())
         });
     }
@@ -107,7 +103,7 @@ mod tests {
     #[test]
     fn test_bad_command() {
         let cmd = "somecmd that doesn't exist";
-        let out = run_cmd(cmd.into());
+        let out = run_bash(cmd.into());
         assert!(out.is_err());
     }
 
@@ -115,13 +111,13 @@ mod tests {
     fn test_redirection() {
         let content_str = "hello";
         let cmd = format!("echo {} > temp-test.txt", content_str);
-        let mut out = run_cmd(cmd);
+        let mut out = run_bash(cmd);
         assert!(out.is_ok());
         let output = std::fs::read_to_string("temp-test.txt").unwrap();
         assert_eq!(output, format!("{}\n", content_str));
 
         // cleanup
-        out = run_cmd("rm temp-test.txt".into());
+        out = run_bash("rm temp-test.txt".into());
         assert!(out.is_ok())
     }
 

@@ -54,26 +54,24 @@ impl SystemInfo {
     }
 
     pub fn get_os_and_arch() -> Result<(OS, Arch), crate::errors::BashError> {
-        let os = bash::run_cmd("uname -s".to_string())?;
-        let os_str = String::from_utf8_lossy(&os.stdout).trim().to_string();
-        let os = match os_str.as_str() {
+        let os = bash::run_bash("uname -s".to_string())?.stdout;
+        let os = match os.trim() {
             "Darwin" => OS::Darwin,
             "Linux" => OS::Linux,
-            _ => OS::Unknown(os_str),
+            _ => OS::Unknown(os),
         };
 
-        let arch = bash::run_cmd("uname -m".to_string())?;
-        let arch_str = String::from_utf8_lossy(&arch.stdout).trim().to_string();
-        let arch = if arch_str.contains("arm64") {
+        let arch = bash::run_bash("uname -m".to_string())?.stdout;
+        let arch = if arch.trim().contains("arm64") {
             Arch::Arm64
-        } else if arch_str.contains("64") {
+        } else if arch.contains("64") {
             Arch::Amd64
-        } else if arch_str.contains("arm") {
+        } else if arch.contains("arm") {
             Arch::Arm
-        } else if arch_str.contains("386") {
+        } else if arch.contains("386") {
             Arch::X86
         } else {
-            Arch::Unknown(arch_str)
+            Arch::Unknown(arch.to_string())
         };
 
         Ok((os, arch))
