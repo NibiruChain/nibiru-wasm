@@ -5,7 +5,7 @@ use serde::Serialize;
 use crate::errors::BashError;
 
 /// Runs a shell command
-pub fn run_bash(cmd: String) -> Result<BashCommandOutput, BashError> {
+pub fn run_bash(cmd: String) -> Result<BashOutput, BashError> {
     let output = std::process::Command::new("bash")
         .arg("-c")
         .arg(cmd.clone())
@@ -13,9 +13,9 @@ pub fn run_bash(cmd: String) -> Result<BashCommandOutput, BashError> {
         .expect("Failed to execute command");
 
     match output.status.success() {
-        true => Ok(BashCommandOutput::new(cmd, output)),
+        true => Ok(BashOutput::new(cmd, output)),
         false => {
-            let error_json = serde_json::to_string_pretty(&BashCommandOutput {
+            let error_json = serde_json::to_string_pretty(&BashOutput {
                 status: output
                     .status
                     .code()
@@ -31,7 +31,7 @@ pub fn run_bash(cmd: String) -> Result<BashCommandOutput, BashError> {
 }
 
 /// run_cmd_print: Runs a command and prints its output.
-pub fn run_bash_and_print(cmd: String) -> Result<BashCommandOutput, BashError> {
+pub fn run_bash_and_print(cmd: String) -> Result<BashOutput, BashError> {
     let out = run_bash(cmd)?;
     if !out.stdout.is_empty() {
         println!("{}", out.stdout);
@@ -43,24 +43,24 @@ pub fn run_bash_and_print(cmd: String) -> Result<BashCommandOutput, BashError> {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct BashCommandOutput {
+pub struct BashOutput {
     pub status: i32,
     pub stdout: String,
     pub stderr: String,
     pub cmd: String,
 }
 
-impl BashCommandOutput {
+impl BashOutput {
     pub fn new(cmd: String, output: process::Output) -> Self {
-        let mut bash_cmd_out: BashCommandOutput = output.into();
+        let mut bash_cmd_out: BashOutput = output.into();
         bash_cmd_out.cmd = cmd;
         bash_cmd_out
     }
 }
 
-impl From<process::Output> for BashCommandOutput {
+impl From<process::Output> for BashOutput {
     fn from(output: process::Output) -> Self {
-        BashCommandOutput {
+        BashOutput {
             status: output.status.code().unwrap_or(-1),
             stdout: String::from_utf8_lossy(&output.stdout).to_string(),
             stderr: String::from_utf8_lossy(&output.stderr).to_string(),
