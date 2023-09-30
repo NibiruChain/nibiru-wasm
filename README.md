@@ -21,8 +21,6 @@ Smart contract sandbox for Nibiru Chain.
 ├── README.md
 ```
 
-<!-- 🚧 Work in progress 🚧 -->
-
 ## Hacking
 
 Install `just` to run project-specific commands.
