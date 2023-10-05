@@ -1,0 +1,27 @@
+[package]
+name = "nibiru-std"
+version = "0.2.0"
+edition = "2021"
+description = "Standard library for Nibiru Chain CosmWasm smart contracts"
+authors = [
+  "Unique Divine <realuniquedivine@gmail.com>"
+]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+backtraces = ["cosmwasm-std/backtraces"]
+library = []
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+cosmwasm-std = "1.2.3"
+cosmwasm-schema = "1.2.3"
+prost = "0.12"
+prost-types = "0.12"
+
+# cargo run --bin script-name
+# [[bin]]
+# name = "rust script name"
+# path = "bin/script_name.rs"

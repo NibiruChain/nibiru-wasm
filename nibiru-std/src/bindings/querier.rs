@@ -1,6 +1,6 @@
 use cosmwasm_std::{QuerierWrapper, StdResult, Uint256};
 
-use crate::query::{
+use crate::bindings::query::{
     AllMarketsResponse, BasePriceResponse, MetricsResponse,
     ModuleAccountsResponse, ModuleParamsResponse, OraclePricesResponse,
     PositionResponse, PositionsResponse, PremiumFractionResponse, QueryPerpMsg,
