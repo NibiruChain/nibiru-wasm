@@ -3,9 +3,7 @@ name = "nibiru-std"
 version = "0.2.0"
 edition = "2021"
 description = "Standard library for Nibiru Chain CosmWasm smart contracts"
-authors = [
-  "Unique Divine <realuniquedivine@gmail.com>"
-]
+authors = ["Unique Divine <realuniquedivine@gmail.com>"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -20,6 +18,7 @@ cosmwasm-std = "1.2.3"
 cosmwasm-schema = "1.2.3"
 prost = "0.12"
 prost-types = "0.12"
+nibiru-macro = { path = "../packages/macro" }
 
 # cargo run --bin script-name
 # [[bin]]

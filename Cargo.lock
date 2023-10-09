@@ -1157,6 +1157,7 @@ version = "0.2.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
+ "nibiru-macro",
  "prost 0.12.1",
  "prost-types",
 ]
