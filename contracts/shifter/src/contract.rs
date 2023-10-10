@@ -3,8 +3,8 @@ use cosmwasm_std::{
     attr, entry_point, Binary, CosmosMsg, CustomMsg, Deps, DepsMut, Env,
     MessageInfo, Response, StdResult,
 };
-use nibiru_bindings::route::NibiruRoute;
 use nibiru_macro::cw_custom;
+use nibiru_std::bindings::msg::NibiruRoute;
 
 use crate::{
     msgs::{ExecuteMsg, InitMsg, IsMemberResponse, QueryMsg, WhitelistResponse},
@@ -358,7 +358,7 @@ mod tests {
             .unwrap();
 
         // Set up initial whitelist
-        let members_start: Vec<String> = vec!["vitalik", "musk", "satoshi"]
+        let members_start: Vec<String> = ["vitalik", "musk", "satoshi"]
             .iter()
             .map(|&s| s.to_string())
             .collect();
@@ -404,7 +404,7 @@ mod tests {
             query(deps.as_ref(), testing::mock_env(), query_req).unwrap();
         let response: WhitelistResponse =
             cosmwasm_std::from_binary(&binary).unwrap();
-        let expected_members: HashSet<String> = vec!["vitalik", "musk", "admin"]
+        let expected_members: HashSet<String> = ["vitalik", "musk", "admin"]
             .iter()
             .map(|&s| s.to_string())
             .collect();

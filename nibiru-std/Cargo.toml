@@ -1,9 +1,15 @@
 [package]
 name = "nibiru-std"
-version = "0.2.0"
+version = "0.0.2"
 edition = "2021"
-description = "Standard library for Nibiru Chain CosmWasm smart contracts"
+description = "Nibiru Chain standard library for CosmWasm smart contracts"
 authors = ["Unique Divine <realuniquedivine@gmail.com>"]
+
+documentation = "https://docs.rs/nibiru-std"
+homepage = "https://github.com/NibiruChain/cw-nibiru"
+repository = "https://github.com/NibiruChain/cw-nibiru"
+license-file = "LICENSE"
+# license = "MIT" # only one of license, license-file is needed.
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -14,10 +20,12 @@ library = []
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-cosmwasm-std = "1.2.3"
-cosmwasm-schema = "1.2.3"
+cosmwasm-std = { version = "1.4.1", features = ["stargate"] }
+cosmwasm-schema = "1.4.0"
 prost = "0.12"
 prost-types = "0.12"
+serde = "1.0.188"
+anyhow = "1"
 nibiru-macro = { path = "../packages/macro" }
 
 # cargo run --bin script-name

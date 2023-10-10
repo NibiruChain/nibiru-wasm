@@ -1,25 +1,56 @@
+use cosmwasm_std::{to_binary, Binary, CosmosMsg, StdResult};
+
+pub trait NibiruProstMsg: prost::Message {
+    /// Serialize this protobuf message as a byte vector
+    fn to_bytes(&self) -> Vec<u8>;
+
+    fn to_binary(&self) -> StdResult<Binary>;
+
+    fn as_stargate_msg(&self, type_url: String) -> StdResult<CosmosMsg>;
+}
+
+impl<M> NibiruProstMsg for M
+where
+    M: prost::Message,
+{
+    fn to_bytes(&self) -> Vec<u8> {
+        self.encode_to_vec()
+    }
+
+    fn to_binary(&self) -> StdResult<Binary> {
+        to_binary(&self.encode_to_vec())
+    }
+
+    fn as_stargate_msg(&self, type_url: String) -> StdResult<CosmosMsg> {
+        // TODO Should we filter only for known messages?
+        Ok(CosmosMsg::Stargate {
+            type_url,
+            value: self.to_binary()?,
+        })
+    }
+}
+
 pub mod cosmos {
     /// Authentication of accounts and transactions.
     pub mod auth {
         pub mod v1beta1 {
-            include!("cosmos.auth.v1beta1.rs");
+            include!("buf/cosmos.auth.v1beta1.rs");
         }
     }
 
     pub mod authz {
         pub mod v1beta1 {
-            include!("cosmos.authz.v1beta1.rs");
+            include!("buf/cosmos.authz.v1beta1.rs");
         }
     }
-
-    // TODO cosmso autocli
-    // TODO cosmso bank
 
     pub mod bank {
         pub mod v1beta1 {
-            include!("cosmos.bank.v1beta1.rs");
+            include!("buf/cosmos.bank.v1beta1.rs");
         }
     }
+
+    // TODO cosmos autocli
 
     /// Base functionality.
     pub mod base {
@@ -29,56 +60,56 @@ pub mod cosmos {
         /// (the blockchain), and the state machine (the application).
         pub mod abci {
             pub mod v1beta1 {
-                include!("cosmos.base.abci.v1beta1.rs");
+                include!("buf/cosmos.base.abci.v1beta1.rs");
             }
         }
 
         /// Key-value pairs.
         pub mod kv {
             pub mod v1beta1 {
-                include!("cosmos.base.kv.v1beta1.rs");
+                include!("buf/cosmos.base.kv.v1beta1.rs");
             }
         }
 
         /// Query support.
         pub mod query {
             pub mod v1beta1 {
-                include!("cosmos.base.query.v1beta1.rs");
+                include!("buf/cosmos.base.query.v1beta1.rs");
             }
         }
 
         /// Reflection support.
         pub mod reflection {
             pub mod v1beta1 {
-                include!("cosmos.base.reflection.v1beta1.rs");
+                include!("buf/cosmos.base.reflection.v1beta1.rs");
             }
 
             pub mod v2alpha1 {
-                include!("cosmos.base.reflection.v2alpha1.rs");
+                include!("buf/cosmos.base.reflection.v2alpha1.rs");
             }
         }
 
         /// Snapshots containing Tendermint state sync info.
         pub mod snapshots {
             pub mod v1beta1 {
-                include!("cosmos.base.snapshots.v1beta1.rs");
+                include!("buf/cosmos.base.snapshots.v1beta1.rs");
             }
         }
 
         /// Data structure that holds the state of the application.
         pub mod store {
             pub mod v1beta1 {
-                include!("cosmos.base.store.v1beta1.rs");
+                include!("buf/cosmos.base.store.v1beta1.rs");
             }
         }
 
         pub mod v1beta1 {
-            include!("cosmos.base.v1beta1.rs");
+            include!("buf/cosmos.base.v1beta1.rs");
         }
 
         pub mod tendermint {
             pub mod v1beta1 {
-                include!("cosmos.base.tendermint.v1beta1.rs");
+                include!("buf/cosmos.base.tendermint.v1beta1.rs");
             }
         }
     }
@@ -106,58 +137,57 @@ pub mod cosmos {
 
 pub mod nibiru {
     pub mod devgas {
-        include!("nibiru.devgas.v1.rs");
+        include!("buf/nibiru.devgas.v1.rs");
     }
     pub mod epochs {
-        include!("nibiru.epochs.v1.rs");
+        include!("buf/nibiru.epochs.v1.rs");
     }
     pub mod genmsg {
-        include!("nibiru.genmsg.v1.rs");
+        include!("buf/nibiru.genmsg.v1.rs");
     }
     pub mod inflation {
-        include!("nibiru.inflation.v1.rs");
+        include!("buf/nibiru.inflation.v1.rs");
     }
     pub mod oracle {
-        include!("nibiru.oracle.v1.rs");
+        include!("buf/nibiru.oracle.v1.rs");
     }
     pub mod perp {
-        include!("nibiru.perp.v2.rs");
+        include!("buf/nibiru.perp.v2.rs");
     }
     pub mod spot {
-        include!("nibiru.spot.v1.rs");
+        include!("buf/nibiru.spot.v1.rs");
     }
     pub mod sudo {
-        include!("nibiru.sudo.v1.rs");
+        include!("buf/nibiru.sudo.v1.rs");
     }
     pub mod tokenfactory {
-        include!("nibiru.tokenfactory.v1.rs");
+        include!("buf/nibiru.tokenfactory.v1.rs");
     }
 }
 
 pub mod tendermint {
     pub mod abci {
-        include!("tendermint.abci.rs");
+        include!("buf/tendermint.abci.rs");
     }
     pub mod crypto {
-        include!("tendermint.crypto.rs");
+        include!("buf/tendermint.crypto.rs");
     }
     pub mod p2p {
-        include!("tendermint.p2p.rs");
+        include!("buf/tendermint.p2p.rs");
     }
     pub mod types {
-        include!("tendermint.types.rs");
+        include!("buf/tendermint.types.rs");
     }
     pub mod version {
-        include!("tendermint.version.rs");
+        include!("buf/tendermint.version.rs");
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
 
     use super::{
-        cosmos::{self, auth, base::v1beta1::Coin},
+        cosmos::{self, base::v1beta1::Coin},
         nibiru::perp,
     };
 

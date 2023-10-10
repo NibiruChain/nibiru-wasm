@@ -1,3 +1,4 @@
 [workspace]
-members = ["packages/*", "contracts/*", "nibiru-std"]
-exclude = ["scripts"]
+members = ["packages/*", "contracts/*", "nibiru-std", "scripts"]
+exclude = ["packages/msig-ez"]
+resolver = "2"

@@ -6,12 +6,12 @@ use cosmwasm_std::Uint256;
 use cosmwasm_std::{Addr, Coin, Decimal, Uint128, Uint64};
 
 use crate::common::DUMMY_ADDR;
-use nibiru_bindings::query::{
+use nibiru_std::bindings::query::{
     AllMarketsResponse, BasePriceResponse, MetricsResponse,
     ModuleAccountsResponse, ModuleParamsResponse, PositionResponse,
     PositionsResponse, PremiumFractionResponse, ReservesResponse,
 };
-use nibiru_bindings::state::{
+use nibiru_std::bindings::state::{
     Market, MarketConfig, Metrics, ModuleAccountWithBalance, ModuleParams,
     Position,
 };
@@ -85,7 +85,7 @@ pub fn position_response() -> PositionResponse {
 
 pub fn positions_response() -> PositionsResponse {
     let mut positions_map: HashMap<String, Position> = HashMap::new();
-    let pairs: Vec<String> = vec!["ETH:USD", "BTC:USD"]
+    let pairs: Vec<String> = ["ETH:USD", "BTC:USD"]
         .iter()
         .map(|&s| s.to_string())
         .collect();
@@ -109,7 +109,7 @@ pub fn module_params_response() -> ModuleParamsResponse {
             funding_rate_interval: "1h".to_string(),
             twap_lookback_window: Uint64::from(60u64 * 60u64), // 1 hour
             whitelisted_liquidators: HashSet::from_iter(
-                vec![
+                [
                     "nibi1ah8gqrtjllhc5ld4rxgl4uglvwl93ag0sh6e6v",
                     "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl",
                 ]
@@ -160,7 +160,8 @@ pub fn module_accounts_response() -> ModuleAccountsResponse {
     }
 }
 
-pub fn oracle_prices_response() -> nibiru_bindings::query::OraclePricesResponse {
+pub fn oracle_prices_response(
+) -> nibiru_std::bindings::query::OraclePricesResponse {
     [("ETH:USD", dec_420()), ("NIBI:USD", dec_69())]
         .iter()
         .map(|&(k, v)| (k.to_string(), v))
@@ -178,7 +179,7 @@ pub struct ExampleNibiruQueryResponseJson {
     premium_fraction: PremiumFractionResponse,
     metrics: MetricsResponse,
     module_accounts: ModuleAccountsResponse,
-    oracle_prices: nibiru_bindings::query::OraclePricesResponse,
+    oracle_prices: nibiru_std::bindings::query::OraclePricesResponse,
 }
 
 #[cfg(test)]

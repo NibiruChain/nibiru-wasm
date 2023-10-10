@@ -51,15 +51,21 @@ clippy-check:
 test *pkg:
   #!/usr/bin/env bash
   set -e;
-  RUST_BACKGTRACE="1" cargo test --package "{{pkg}}"
+  if [ -z "{{pkg}}" ]; then
+    just test-all
+  else
+    RUST_BACKGTRACE="1" cargo test --package "{{pkg}}"
+  fi
 
 # Test everything in the workspace.
 test-all:
   cargo test
 
 # Format, lint, and test
-tidy: fmt clippy test
-  just
+tidy:
+  just fmt
+  just clippy
+  just test
 
 # Format, lint, update dependencies, and test
 tidy-update: build-update

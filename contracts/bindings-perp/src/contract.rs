@@ -6,8 +6,8 @@ use cosmwasm_std::{
 
 use cw2::set_contract_version;
 
-use nibiru_bindings::querier::NibiruQuerier;
-use nibiru_bindings::query::QueryPerpMsg;
+use nibiru_std::bindings::querier::NibiruQuerier;
+use nibiru_std::bindings::query::QueryPerpMsg;
 
 use crate::{
     msg::{
@@ -267,7 +267,7 @@ pub mod tests {
         testing::{self, mock_env, MockApi, MockQuerier},
         Coin, CosmosMsg, Decimal, MemoryStorage, OwnedDeps, SubMsg, Uint128,
     };
-    use nibiru_bindings::route::NibiruRoute;
+    use nibiru_std::bindings::msg::NibiruRoute;
 
     use crate::msg;
     use crate::state;
@@ -342,7 +342,7 @@ pub mod tests {
 
         // Instantiate contract
         let admin = "admin";
-        let sender = admin.clone();
+        let sender = admin;
         let (_sudoers, mut deps, info) = do_init(admin, sender, deps);
 
         let pair = "ETH:USD".to_string();
