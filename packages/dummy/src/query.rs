@@ -186,10 +186,11 @@ pub struct ExampleNibiruQueryResponseJson {
 pub mod test {
 
     use super::*;
+    use serde_json::{Map, Value};
     use std::{fs::File, io::Write};
 
     #[test]
-    fn save_example_json() {
+    fn save_example_json() -> Result<(), Box<dyn std::error::Error>> {
         let example_queries = ExampleNibiruQueryResponseJson {
             all_markets: all_markets_response(),
             reserves: reserves_response(),
@@ -202,8 +203,34 @@ pub mod test {
             module_accounts: module_accounts_response(),
             oracle_prices: oracle_prices_response(),
         };
-        let json_str = serde_json::to_string_pretty(&example_queries).unwrap();
-        let mut file = File::create("./query_resp.json").unwrap();
-        assert!(file.write_all(json_str.as_bytes()).is_ok());
+        let raw_json: serde_json::Value = serde_json::to_value(example_queries)?;
+        let json_str = serde_json::to_string_pretty(&sort_json(&raw_json))?;
+        let mut file = File::create("./query_resp.json")?;
+        file.write_all(json_str.as_bytes())?;
+        Ok(())
+    }
+
+    /// Recursively sorts the fields of a JSON object. Useful for saving a
+    /// determinstic JSON payload from an unordered Rust data structure.
+    pub fn sort_json(json: &serde_json::Value) -> serde_json::Value {
+        match json {
+            Value::Object(map) => {
+                let mut sorted_map = Map::new();
+                let mut keys: Vec<String> = map.keys().cloned().collect();
+                keys.sort(); // Sorting keys
+                for key in keys {
+                    let val = map.get(&key).unwrap();
+                    sorted_map.insert(key, sort_json(val));
+                }
+                Value::Object(sorted_map)
+            }
+            Value::Array(arr) => {
+                // Optionally, you might want to sort arrays as well
+                // If not, remove the map and collect, returning Value::Array(arr.clone())
+                Value::Array(arr.iter().map(sort_json).collect())
+            }
+            // For other kinds of JSON values, do nothing
+            _ => json.clone(),
+        }
     }
 }

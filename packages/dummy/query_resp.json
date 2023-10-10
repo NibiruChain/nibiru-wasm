@@ -2,83 +2,63 @@
   "all_markets": {
     "market_map": {
       "ETH:USD": {
-        "pair": "ETH:USD",
-        "version": "42",
         "base_reserve": "69",
-        "quote_reserve": "69",
-        "sqrt_depth": "69",
-        "depth": "4761",
-        "total_long": "420",
-        "total_short": "69",
-        "peg_mult": "420",
+        "block_number": "42",
         "config": {
           "maintenance_margin_ratio": "420",
           "max_leverage": "420"
         },
-        "mark_price": "420",
+        "depth": "4761",
         "index_price": "123",
+        "mark_price": "420",
+        "pair": "ETH:USD",
+        "peg_mult": "420",
+        "quote_reserve": "69",
+        "sqrt_depth": "69",
+        "total_long": "420",
+        "total_short": "69",
         "twap_mark": "456",
-        "block_number": "42"
+        "version": "42"
       }
     }
   },
-  "reserves": {
-    "pair": "ETH:USD",
-    "base_reserve": "420",
-    "quote_reserve": "69"
-  },
   "base_price": {
-    "pair": "ETH:USD",
     "base_amount": "1",
-    "quote_amount": "420",
-    "is_long": false
+    "is_long": false,
+    "pair": "ETH:USD",
+    "quote_amount": "420"
   },
-  "position": {
-    "position": {
-      "trader_addr": "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl",
+  "metrics": {
+    "metrics": {
+      "block_number": "42",
+      "net_size": "420",
       "pair": "ETH:USD",
-      "size": "420",
-      "margin": "420",
-      "open_notional": "420",
-      "latest_cpf": "0",
-      "block_number": "1"
-    },
-    "notional": "420",
-    "upnl": "69",
-    "margin_ratio_mark": "0",
-    "margin_ratio_index": "0",
-    "block_number": "0"
+      "volume_base": "420",
+      "volume_quote": "1"
+    }
   },
-  "positions": {
-    "positions": {
-      "BTC:USD": {
-        "trader_addr": "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl",
-        "pair": "BTC:USD",
-        "size": "420",
-        "margin": "420",
-        "open_notional": "420",
-        "latest_cpf": "0",
-        "block_number": "1"
-      },
-      "ETH:USD": {
-        "trader_addr": "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl",
-        "pair": "ETH:USD",
-        "size": "420",
-        "margin": "420",
-        "open_notional": "420",
-        "latest_cpf": "0",
-        "block_number": "1"
+  "module_accounts": {
+    "module_accounts": {
+      "acc1": {
+        "addr": "nibi1x5zknk8va44th5vjpg0fagf0lxx0rvurpmp8gs",
+        "balance": [
+          {
+            "amount": "420",
+            "denom": "foocoin"
+          }
+        ],
+        "name": "acc1"
       }
     }
   },
   "module_params": {
     "module_params": {
-      "stopped": false,
-      "fee_pool_fee_ratio": "420",
       "ecosystem_fund_fee_ratio": "69",
+      "fee_pool_fee_ratio": "420",
+      "funding_rate_interval": "1h",
       "liquidation_fee_ratio": "69",
       "partial_liquidation_ratio": "0",
-      "funding_rate_interval": "1h",
+      "stopped": false,
       "twap_lookback_window": "3600",
       "whitelisted_liquidators": [
         "nibi1ah8gqrtjllhc5ld4rxgl4uglvwl93ag0sh6e6v",
@@ -86,36 +66,56 @@
       ]
     }
   },
-  "premium_fraction": {
-    "pair": "ETH:USD",
-    "cpf": "0",
-    "estimated_next_cpf": "69"
+  "oracle_prices": {
+    "ETH:USD": "420",
+    "NIBI:USD": "69"
   },
-  "metrics": {
-    "metrics": {
+  "position": {
+    "block_number": "0",
+    "margin_ratio_index": "0",
+    "margin_ratio_mark": "0",
+    "notional": "420",
+    "position": {
+      "block_number": "1",
+      "latest_cpf": "0",
+      "margin": "420",
+      "open_notional": "420",
       "pair": "ETH:USD",
-      "net_size": "420",
-      "volume_quote": "1",
-      "volume_base": "420",
-      "block_number": "42"
-    }
+      "size": "420",
+      "trader_addr": "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl"
+    },
+    "upnl": "69"
   },
-  "module_accounts": {
-    "module_accounts": {
-      "acc1": {
-        "name": "acc1",
-        "addr": "nibi1x5zknk8va44th5vjpg0fagf0lxx0rvurpmp8gs",
-        "balance": [
-          {
-            "denom": "foocoin",
-            "amount": "420"
-          }
-        ]
+  "positions": {
+    "positions": {
+      "BTC:USD": {
+        "block_number": "1",
+        "latest_cpf": "0",
+        "margin": "420",
+        "open_notional": "420",
+        "pair": "BTC:USD",
+        "size": "420",
+        "trader_addr": "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl"
+      },
+      "ETH:USD": {
+        "block_number": "1",
+        "latest_cpf": "0",
+        "margin": "420",
+        "open_notional": "420",
+        "pair": "ETH:USD",
+        "size": "420",
+        "trader_addr": "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl"
       }
     }
   },
-  "oracle_prices": {
-    "NIBI:USD": "69",
-    "ETH:USD": "420"
+  "premium_fraction": {
+    "cpf": "0",
+    "estimated_next_cpf": "69",
+    "pair": "ETH:USD"
+  },
+  "reserves": {
+    "base_reserve": "420",
+    "pair": "ETH:USD",
+    "quote_reserve": "69"
   }
 }
