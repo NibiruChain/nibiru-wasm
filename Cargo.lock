@@ -1460,14 +1460,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nibiru-bindings"
-version = "0.2.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
-]
-
-[[package]]
 name = "nibiru-macro"
 version = "0.1.0"
 dependencies = [
