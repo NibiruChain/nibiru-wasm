@@ -1,0 +1,44 @@
+[
+  {
+    "name": "agentsmith",
+    "type": "offline",
+    "address": "nibi15zcxvpyqtul3rzv0argrxk4nepwnmv5zwn5m3t",
+    "pubkey": "{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"A5FpaH7PvVhWkopoqMed+UZPoz5fp2qxgKJ+4G1XUpAl\"}"
+  },
+  {
+    "name": "heisenberg",
+    "type": "local",
+    "address": "nibi1gc6vpl9j0ty8tkt53787zps9ezc70kj88hluw4",
+    "pubkey": "{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"A2HwcKQtNjk0kLizyJ4RNgHtgkjSJYNSPhZ8LNfYFbdK\"}"
+  },
+  {
+    "name": "matthias",
+    "type": "offline",
+    "address": "nibi16ukkende7k3q4lf7myqwmy8cds3peg3n2w69pv",
+    "pubkey": "{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"AjpZcCXRNGbjFBZ8HXlVgiKCfbrdaJ2SvRcBviUTG4JD\"}"
+  },
+  {
+    "name": "nibimultisig",
+    "type": "multi",
+    "address": "nibi1qyqf35fkhn73hjr70442fctpq8prpqr9ysj9sn",
+    "pubkey": "{\"@type\":\"/cosmos.crypto.multisig.LegacyAminoPubKey\",\"threshold\":2,\"public_keys\":[{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"A2HwcKQtNjk0kLizyJ4RNgHtgkjSJYNSPhZ8LNfYFbdK\"},{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"AxeuTLY+UELY+SOXFFl/guOy51gSwD1jRhOezs3qCIla\"},{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"AzGEhB9KTSbYGv1x57LRZqGo8x9ny+9wprHNkAn04z79\"},{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"A5FpaH7PvVhWkopoqMed+UZPoz5fp2qxgKJ+4G1XUpAl\"},{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"AjpZcCXRNGbjFBZ8HXlVgiKCfbrdaJ2SvRcBviUTG4JD\"}]}"
+  },
+  {
+    "name": "oleg",
+    "type": "offline",
+    "address": "nibi1jle8khj3aennq24zx6g93aam9rt0fqhgyp4h52",
+    "pubkey": "{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"AzGEhB9KTSbYGv1x57LRZqGo8x9ny+9wprHNkAn04z79\"}"
+  },
+  {
+    "name": "unique",
+    "type": "offline",
+    "address": "nibi10gm4kys9yyrlqpvj05vqvjwvje87gln8nsm8wa",
+    "pubkey": "{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"AxeuTLY+UELY+SOXFFl/guOy51gSwD1jRhOezs3qCIla\"}"
+  },
+  {
+    "name": "validator",
+    "type": "local",
+    "address": "nibi1zaavvzxez0elundtn32qnk9lkm8kmcsz44g7xl",
+    "pubkey": "{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"AvzwBOriY8sVwEXrXf1gXanhT9imlfWeUWLQ8pMxrRsg\"}"
+  }
+]
