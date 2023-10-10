@@ -267,7 +267,7 @@ pub mod tests {
         testing::{self, mock_env, MockApi, MockQuerier},
         Coin, CosmosMsg, Decimal, MemoryStorage, OwnedDeps, SubMsg, Uint128,
     };
-    use nibiru_std::bindings::route::NibiruRoute;
+    use nibiru_std::bindings::msg::NibiruRoute;
 
     use crate::msg;
     use crate::state;

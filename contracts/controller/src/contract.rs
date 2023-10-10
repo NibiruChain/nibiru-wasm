@@ -4,7 +4,7 @@ use cosmwasm_std::{
     MessageInfo, Response, StdResult,
 };
 use nibiru_macro::cw_custom;
-use nibiru_std::bindings::route::NibiruRoute;
+use nibiru_std::bindings::msg::NibiruRoute;
 
 use crate::{
     msgs::{ExecuteMsg, InitMsg, IsMemberResponse, QueryMsg, WhitelistResponse},

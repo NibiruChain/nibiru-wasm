@@ -3,9 +3,7 @@ name = "nibiru-std"
 version = "0.0.2"
 edition = "2021"
 description = "Nibiru Chain standard library for CosmWasm smart contracts"
-authors = [
-  "Unique Divine <realuniquedivine@gmail.com>"
-]
+authors = ["Unique Divine <realuniquedivine@gmail.com>"]
 
 documentation = "https://docs.rs/nibiru-std"
 homepage = "https://github.com/NibiruChain/cw-nibiru"
@@ -22,12 +20,13 @@ library = []
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-cosmwasm-std = { version = "1.4.0", features = ["stargate"] }
+cosmwasm-std = { version = "1.4.1", features = ["stargate"] }
 cosmwasm-schema = "1.4.0"
 prost = "0.12"
 prost-types = "0.12"
 serde = "1.0.188"
 anyhow = "1"
+nibiru-macro = { path = "../packages/macro" }
 
 # cargo run --bin script-name
 # [[bin]]

@@ -5,8 +5,8 @@ use cosmwasm_std::{
 };
 
 use nibiru_macro::cw_custom;
+use nibiru_std::bindings::msg::NibiruRoute;
 use nibiru_std::bindings::query as bindings_query;
-use nibiru_std::bindings::route::NibiruRoute;
 
 use crate::state::Sudoers;
 
