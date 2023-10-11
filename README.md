@@ -13,8 +13,9 @@ Smart contract sandbox for Nibiru Chain.
     └── 📂 pricefeed     # CosmWasm version of the (now deprecated) x/pricefeed module.
     └── 📂 shifter       # Calls peg shift and depth shift in x/perp.
 ├── 📂 nibiru-std        # Nibiru Chain standard library for CosmsWasm smart contracts
-├── 📂 packages          # Other Rust packages
     └── 📦 bindings    # For sending custom messages via the x/wasm module of Nibiru.
+├── 📂 packages        # Other Rust packages
+    └── 📦 nibi-dev    # Dev tooling package for Nibiru. 
     └── 📦 macro       # Implements procedural macros for the "nibiru-macro" package. 
 ├── Cargo.toml
 ├── Cargo.lock
