@@ -12,5 +12,7 @@ pub mod proto;
 
 pub mod wasm;
 
+pub mod errors;
+
 pub const VERSION_COSMOS_SDK: &str = "v0.47.5";
 pub const VERSION_NIBIRU: &str = "240c7fba3ef38ac066c9a543a9028d6484d6374f";
