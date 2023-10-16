@@ -15,7 +15,7 @@ impl From<NibiruError> for cw::StdError {
     fn from(err: NibiruError) -> cw::StdError {
         match err {
             NibiruError::CwStd(e) => e,
-            e => cw::StdError::generic_err(e.to_string())
+            e => cw::StdError::generic_err(e.to_string()),
         }
     }
 }

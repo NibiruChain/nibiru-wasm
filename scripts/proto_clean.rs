@@ -168,7 +168,7 @@ mod proto_submodules {
     pub static TENDERMINT: [&str; 1] = ["tendermint"];
 }
 
-pub static PROTO_PATH: &str = "../nibiru-std/src/proto";
+pub static PROTO_PATH: &str = "../nibiru-std/src/proto/buf";
 
 #[cfg(test)]
 mod tests {
@@ -228,7 +228,6 @@ mod tests {
         let result = super::clean_file_imports(dirty_path);
         assert!(result.is_ok());
 
-        // let _ = fs::write(clean_path, result.as_ref().unwrap());
         let clean_path = "test/fixture_proto_clean.rs";
         let want_result = fs::read_to_string(clean_path);
         assert!(want_result.is_ok());

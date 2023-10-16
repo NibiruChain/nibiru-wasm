@@ -40,7 +40,6 @@ pub trait NibiruStargateMsg: prost::Message + prost::Name {
     fn type_url(&self) -> String;
 }
 
-
 impl<M> NibiruStargateMsg for M
 where
     M: prost::Message + prost::Name,
@@ -58,5 +57,4 @@ where
     fn type_url(&self) -> String {
         format!("/{}.{}", Self::PACKAGE, Self::NAME)
     }
-
 }

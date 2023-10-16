@@ -1460,6 +1460,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "nibi-stargate"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus",
+ "cw-utils",
+ "cw2",
+ "cw20",
+ "nibiru-std",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "nibiru-macro"
 version = "0.1.0"
 dependencies = [
@@ -1480,6 +1497,7 @@ dependencies = [
  "prost",
  "prost-types",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
