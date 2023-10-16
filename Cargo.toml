@@ -2,3 +2,13 @@
 members = ["packages/*", "contracts/*", "nibiru-std", "scripts"]
 exclude = ["packages/msig-ez"]
 resolver = "2"
+
+# Dependencies can be inherited from a workspace by specifying the dependency in
+# the `[workspace.dependencies]` table. To use workspace crates, add them to the
+# `[dependencies]` table with `workspace = true`.
+# ```
+# anyhow = { workspace = true }
+# ```
+[workspace.dependencies]
+anyhow = "1"
+thiserror = "1.0.49"

@@ -22,10 +22,11 @@ library = []
 [dependencies]
 cosmwasm-std = { version = "1.4.1", features = ["stargate"] }
 cosmwasm-schema = "1.4.0"
-prost = "0.12"
-prost-types = "0.12"
+prost = "0.12.1"
+prost-types = "0.12.1"
 serde = "1.0.188"
 anyhow = "1"
+thiserror = "1.0.49"
 nibiru-macro = { path = "../packages/macro" }
 
 # cargo run --bin script-name
