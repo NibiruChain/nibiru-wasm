@@ -4,6 +4,7 @@ use std::backtrace::Backtrace;
 
 use thiserror::Error;
 
+#[allow(dead_code)]
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
     #[error("{0}")]

@@ -385,6 +385,7 @@ fn calc_epoch_to_pay_from(funding_block: u64, program: &Program) -> u64 {
 mod tests {
     #[test]
     fn create_program() {}
+
     #[test]
     fn it_works() {
         let result = 2 + 2;
