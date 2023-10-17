@@ -32,7 +32,7 @@ pub fn execute(
                 sender: contract_addr,
                 subdenom,
             }
-            .into_stargate_msg()?;
+            .into_stargate_msg();
 
             Ok(Response::new()
                 // .add_event()
@@ -50,7 +50,7 @@ pub fn execute(
                 }),
                 mint_to,
             }
-            .into_stargate_msg()?;
+            .into_stargate_msg();
 
             let denom_parts: Vec<&str> = coin.denom.split('/').collect();
             if denom_parts.len() != 3 {
@@ -92,7 +92,7 @@ pub fn execute(
                 }),
                 burn_from,
             }
-            .into_stargate_msg()?;
+            .into_stargate_msg();
             Ok(Response::new()
                 // .add_event()
                 .add_message(cosmos_msg))
@@ -104,7 +104,7 @@ pub fn execute(
                 denom: denom.to_string(),
                 new_admin: new_admin.to_string(),
             }
-            .into_stargate_msg()?;
+            .into_stargate_msg();
             Ok(Response::new()
                 // .add_event()
                 .add_message(cosmos_msg))

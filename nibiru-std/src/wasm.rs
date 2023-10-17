@@ -1,16 +1,15 @@
 // crate::wasm.rs
 
-use cosmwasm_std::{to_binary, QueryRequest, StdResult, WasmQuery};
+use cosmwasm_std::{QueryRequest, StdResult, WasmQuery};
 
 /// Generic helper for constructing WasmQuery::Smart query requests.
 pub fn wasm_query_smart<CosmosMsg>(
     contract: impl Into<String>,
-    msg: &impl serde::Serialize,
+    msg: &impl crate::proto::NibiruProstMsg,
 ) -> StdResult<QueryRequest<CosmosMsg>> {
-    let smart_query_msg = to_binary(msg)?;
     Ok(QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: contract.into(),
-        msg: smart_query_msg,
+        msg: msg.to_binary(),
     }))
 }
 
@@ -39,20 +38,17 @@ mod tests {
     #[test]
     fn test_wasm_query_smart() -> anyhow::Result<()> {
         let proto_msg = nibiru::perp::QueryMarketsRequest { versioned: false };
-        println!("proto_msg: {:?}", proto_msg.encode_to_vec());
         let contract: &str = "mock_contract_addr";
-        let query_req = wasm_query_smart::<cosmwasm_std::Empty>(
-            contract,
-            &proto_msg.to_bytes(),
-        )?;
+        let query_req =
+            wasm_query_smart::<cosmwasm_std::Empty>(contract, &proto_msg)?;
 
         match query_req {
             QueryRequest::Wasm(WasmQuery::Smart {
                 contract_addr,
                 msg: msg_bz,
             }) => {
-                assert_eq!(contract_addr, contract);
-                assert_eq!(msg_bz, proto_msg.to_binary()?,);
+                assert_eq!(contract_addr, contract, "{msg_bz:?}");
+                assert_eq!(msg_bz, proto_msg.to_binary(), "{msg_bz:?}");
             }
             _ => return Err(anyhow::anyhow!("failed to parse wasm query")),
         }

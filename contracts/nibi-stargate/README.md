@@ -1,7 +1,8 @@
 # cw-nibiru/contracts/nibi-stargate
 
-This contract showcases usage examples for certain Nibiru-specific and
+This smart contract showcases usage examples for certain Nibiru-specific and
 Cosmos-SDK-specific: 
+
 1.  **Stargate messages**: Instances of the [`CosmosMsg::Stargate` variant in
     cosmwasm-std](https://docs.rs/cosmwasm-std/1.4.1/cosmwasm_std/enum.CosmosMsg.html). These correspond to
     [StargateMsg in CosmWasm/wasmvm](https://pkg.go.dev/github.com/CosmWasm/wasmvm@v1.4.1/types#StargateMsg) 
@@ -9,6 +10,59 @@ Cosmos-SDK-specific:
     cosmwasm-std](https://docs.rs/cosmwasm-std/1.4.1/cosmwasm_std/enum.QueryRequest.html). These correspond to
     [StargateQuery from CosmWasm/wasmvm](https://pkg.go.dev/github.com/CosmWasm/wasmvm@v1.4.1/types#StargateMsg)
 
+Table of Contents
+
+- [Examples](#examples)
+- [Stargate Types](#stargate-types)
+  - [cosmwasm-std: CosmosMsg::Stargate](#cosmwasm-std-cosmosmsgstargate)
+  - [wasmvm: StargateMsg](#wasmvm-stargatemsg)
+  - [cosmwasm-std: QueryRequest::Stargate](#cosmwasm-std-queryrequeststargate)
+  - [wasmvm: StargateQuery](#wasmvm-stargatequery)
+
+## Examples
+
+`ExecuteMsg::CreateDenom`
+
+```json
+{
+  "create_denom": { "subdenom": "zzz" }
+}
+```
+
+`ExecuteMsg::Mint`
+
+```json
+{ 
+  "mint": { 
+    "coin": { "amount": "[amount]", "denom": "tc/[contract-addr]/[subdenom]" }, 
+    "mint_to": "[mint-to-addr]" 
+  } 
+}
+```
+
+`ExecuteMsg::Burn`
+
+```json
+{ 
+  "burn": { 
+    "coin": { "amount": "[amount]", "denom": "tc/[contract-addr]/[subdenom]" }, 
+    "burn_from": "[burn-from-addr]" 
+  } 
+}
+```
+
+`ExecuteMsg::ChangeAdmin`
+
+```json
+{ 
+  "change_admin": { 
+    "denom": "tf/[contract-addr]/[subdenom]", 
+    "new_admin": "[ADDR]" 
+  } 
+}
+```
+
+## Stargate Types
 
 ### cosmwasm-std: CosmosMsg::Stargate
 
