@@ -37,19 +37,34 @@ impl Name for nibiru::tokenfactory::MsgSetDenomMetadata {
     const PACKAGE: &'static str = PACKAGE_TOKENFACTORY;
 }
 
-#[cfg(test)]
-mod tests {
+const PACKAGE_EPOCHS: &str = "nibiru.epochs.v1";
 
-    use crate::proto::{
-        cosmos,
-        nibiru::{self, tokenfactory::MsgMint},
-        NibiruProstMsg, NibiruStargateMsg,
+impl Name for nibiru::epochs::QueryEpochsInfoRequest {
+    const NAME: &'static str = "QueryEpochsInfoRequest";
+    const PACKAGE: &'static str = PACKAGE_EPOCHS;
+}
+
+impl Name for nibiru::epochs::QueryCurrentEpochRequest {
+    const NAME: &'static str = "QueryCurrentEpochRequest";
+    const PACKAGE: &'static str = PACKAGE_EPOCHS;
+}
+
+#[cfg(test)]
+pub mod tests {
+
+    use crate::{
+        errors::TestResult,
+        proto::{
+            cosmos,
+            nibiru::{self, tokenfactory::MsgMint},
+            NibiruProstMsg, NibiruStargateMsg,
+        },
     };
 
     use cosmwasm_std as cw;
 
     #[test]
-    fn stargate_tokenfactory() -> anyhow::Result<()> {
+    fn stargate_tokenfactory() -> TestResult {
         let mut _pb: cw::CosmosMsg;
         let pb_msg: MsgMint = nibiru::tokenfactory::MsgMint::default();
         _pb = pb_msg.into_stargate_msg();
@@ -84,7 +99,7 @@ mod tests {
     /// // which outputs "[10 6 115 101 110 100 101 114 18 8 115 117 98 100 101 110 111 109]"
     /// ```
     #[test]
-    fn stargate_encoding() -> anyhow::Result<()> {
+    fn stargate_encoding() -> TestResult {
         let test_cases: Vec<(Box<dyn NibiruProstMsg>, Vec<u8>)> = vec![
             (
                 Box::new(nibiru::tokenfactory::MsgCreateDenom {
