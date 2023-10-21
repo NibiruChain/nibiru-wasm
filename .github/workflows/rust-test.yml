@@ -17,11 +17,11 @@ jobs:
   rust-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout branch
+      - name: "Checkout branch"
         uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Set up Rust caches
+      - name: "Set up Rust caches"
         uses: actions/cache@v3
         id: rust-cache
         with:
@@ -32,7 +32,7 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
-      - name: Run tests
+      - name: "Run tests"
         # Test all packages
         run: cargo test --all --verbose
         # Test single package (e.g. contracts/whitelist)
@@ -41,11 +41,11 @@ jobs:
   rust-build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout branch
+      - name: "Checkout branch"
         uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Set up Rust caches
+      - name: "Set up Rust caches"
         uses: actions/cache@v3
         id: rust-cache
         with:
@@ -56,7 +56,7 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
-      - name: Compile all Rust code in workspace
+      - name: "Compile all Rust code in workspace"
         run: cargo build
 
   coverage:
@@ -67,7 +67,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Set up Rust caches
+      - name: "Set up Rust caches"
         uses: actions/cache@v3
         id: rust-cache
         with:
@@ -78,18 +78,23 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
-      - name: Install stable
+      - name: "Install stable rust-toolchain"
         uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
-      - name: cargo install cargo-llvm-cov
+      - name: "cargo install cargo-llvm-cov"
         uses: taiki-e/install-action@cargo-llvm-cov
-      - name: cargo generate-lockfile
+      - name: "cargo generate-lockfile"
         if: hashFiles('Cargo.lock') == ''
         run: cargo generate-lockfile
-      - name: cargo llvm-cov
+
+      - name: "Install just"
+        # casey/just: https://just.systems/man/en/chapter_6.html
+        # taiki-e/install-action: https://github.com/taiki-e/install-action
+        uses: taiki-e/install-action@just
+      - name: "cargo llvm-cov"
         # Outputs the code coverage in a format that codecov.io can understand
-        run: cargo llvm-cov --lcov --output-path lcov.info
+        run: just test-coverage
         # run: cargo llvm-cov --locked --all-features --lcov --output-path lcov.info
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v3
