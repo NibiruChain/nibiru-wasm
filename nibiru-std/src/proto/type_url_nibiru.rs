@@ -56,33 +56,65 @@ pub mod tests {
         errors::TestResult,
         proto::{
             cosmos,
-            nibiru::{self, tokenfactory::MsgMint},
-            NibiruProstMsg, NibiruStargateMsg,
+            nibiru::{self},
+            NibiruProstMsg, NibiruStargateMsg, NibiruStargateQuery,
         },
     };
 
     use cosmwasm_std as cw;
 
     #[test]
-    fn stargate_tokenfactory() -> TestResult {
-        let mut _pb: cw::CosmosMsg;
-        let pb_msg: MsgMint = nibiru::tokenfactory::MsgMint::default();
-        _pb = pb_msg.into_stargate_msg();
-        if let cw::CosmosMsg::Stargate {
-            type_url,
-            value: _value,
-        } = _pb
-        {
-            println!("full_name: {}", pb_msg.type_url());
-            assert_eq!(type_url, "/nibiru.tokenfactory.v1.MsgMint")
+    fn stargate_tokenfactory_msgs() -> TestResult {
+        let test_cases: Vec<(&str, cw::CosmosMsg)> = vec![
+            (
+                "/nibiru.tokenfactory.v1.MsgMint",
+                nibiru::tokenfactory::MsgMint::default().into_stargate_msg(),
+            ),
+            (
+                "/nibiru.tokenfactory.v1.MsgBurn",
+                nibiru::tokenfactory::MsgBurn::default().into_stargate_msg(),
+            ),
+            (
+                "/nibiru.tokenfactory.v1.MsgChangeAdmin",
+                nibiru::tokenfactory::MsgChangeAdmin::default()
+                    .into_stargate_msg(),
+            ),
+            (
+                "/nibiru.tokenfactory.v1.MsgSetDenomMetadata",
+                nibiru::tokenfactory::MsgSetDenomMetadata::default()
+                    .into_stargate_msg(),
+            ),
+            (
+                "/nibiru.tokenfactory.v1.MsgUpdateModuleParams",
+                nibiru::tokenfactory::MsgUpdateModuleParams::default()
+                    .into_stargate_msg(),
+            ),
+        ];
+
+        for test_case in test_cases {
+            let (tc_type_url, stargate_msg) = test_case;
+            if let cw::CosmosMsg::Stargate {
+                type_url,
+                value: _value,
+            } = stargate_msg.clone()
+            {
+                assert_eq!(tc_type_url, type_url)
+            } else {
+                panic!(
+                    "Expected CosmosMsg::Stargate from CosmosMsg: {:#?}",
+                    stargate_msg
+                )
+            }
         }
-        _pb = nibiru::tokenfactory::MsgBurn::default().into_stargate_msg();
-        _pb =
-            nibiru::tokenfactory::MsgChangeAdmin::default().into_stargate_msg();
-        _pb = nibiru::tokenfactory::MsgUpdateModuleParams::default()
-            .into_stargate_msg();
-        _pb = nibiru::tokenfactory::MsgSetDenomMetadata::default()
-            .into_stargate_msg();
+
+        println!(
+            "prost::Name corresponding to a CosmosMsg should error if we \
+            try converting it to QueryRequest::Stargate"
+        );
+        let pb_msg = nibiru::tokenfactory::MsgSetDenomMetadata::default();
+        pb_msg
+            .into_stargate_query()
+            .expect_err("query is not a Msg");
 
         Ok(())
     }
