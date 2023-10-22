@@ -37,37 +37,84 @@ impl Name for nibiru::tokenfactory::MsgSetDenomMetadata {
     const PACKAGE: &'static str = PACKAGE_TOKENFACTORY;
 }
 
-#[cfg(test)]
-mod tests {
+const PACKAGE_EPOCHS: &str = "nibiru.epochs.v1";
 
-    use crate::proto::{
-        cosmos,
-        nibiru::{self, tokenfactory::MsgMint},
-        NibiruProstMsg, NibiruStargateMsg,
+impl Name for nibiru::epochs::QueryEpochsInfoRequest {
+    const NAME: &'static str = "QueryEpochsInfoRequest";
+    const PACKAGE: &'static str = PACKAGE_EPOCHS;
+}
+
+impl Name for nibiru::epochs::QueryCurrentEpochRequest {
+    const NAME: &'static str = "QueryCurrentEpochRequest";
+    const PACKAGE: &'static str = PACKAGE_EPOCHS;
+}
+
+#[cfg(test)]
+pub mod tests {
+
+    use crate::{
+        errors::TestResult,
+        proto::{
+            cosmos,
+            nibiru::{self},
+            NibiruProstMsg, NibiruStargateMsg, NibiruStargateQuery,
+        },
     };
 
     use cosmwasm_std as cw;
 
     #[test]
-    fn stargate_tokenfactory() -> anyhow::Result<()> {
-        let mut _pb: cw::CosmosMsg;
-        let pb_msg: MsgMint = nibiru::tokenfactory::MsgMint::default();
-        _pb = pb_msg.into_stargate_msg();
-        if let cw::CosmosMsg::Stargate {
-            type_url,
-            value: _value,
-        } = _pb
-        {
-            println!("full_name: {}", pb_msg.type_url());
-            assert_eq!(type_url, "/nibiru.tokenfactory.v1.MsgMint")
+    fn stargate_tokenfactory_msgs() -> TestResult {
+        let test_cases: Vec<(&str, cw::CosmosMsg)> = vec![
+            (
+                "/nibiru.tokenfactory.v1.MsgMint",
+                nibiru::tokenfactory::MsgMint::default().into_stargate_msg(),
+            ),
+            (
+                "/nibiru.tokenfactory.v1.MsgBurn",
+                nibiru::tokenfactory::MsgBurn::default().into_stargate_msg(),
+            ),
+            (
+                "/nibiru.tokenfactory.v1.MsgChangeAdmin",
+                nibiru::tokenfactory::MsgChangeAdmin::default()
+                    .into_stargate_msg(),
+            ),
+            (
+                "/nibiru.tokenfactory.v1.MsgSetDenomMetadata",
+                nibiru::tokenfactory::MsgSetDenomMetadata::default()
+                    .into_stargate_msg(),
+            ),
+            (
+                "/nibiru.tokenfactory.v1.MsgUpdateModuleParams",
+                nibiru::tokenfactory::MsgUpdateModuleParams::default()
+                    .into_stargate_msg(),
+            ),
+        ];
+
+        for test_case in test_cases {
+            let (tc_type_url, stargate_msg) = test_case;
+            if let cw::CosmosMsg::Stargate {
+                type_url,
+                value: _value,
+            } = stargate_msg.clone()
+            {
+                assert_eq!(tc_type_url, type_url)
+            } else {
+                panic!(
+                    "Expected CosmosMsg::Stargate from CosmosMsg: {:#?}",
+                    stargate_msg
+                )
+            }
         }
-        _pb = nibiru::tokenfactory::MsgBurn::default().into_stargate_msg();
-        _pb =
-            nibiru::tokenfactory::MsgChangeAdmin::default().into_stargate_msg();
-        _pb = nibiru::tokenfactory::MsgUpdateModuleParams::default()
-            .into_stargate_msg();
-        _pb = nibiru::tokenfactory::MsgSetDenomMetadata::default()
-            .into_stargate_msg();
+
+        println!(
+            "prost::Name corresponding to a CosmosMsg should error if we \
+            try converting it to QueryRequest::Stargate"
+        );
+        let pb_msg = nibiru::tokenfactory::MsgSetDenomMetadata::default();
+        pb_msg
+            .into_stargate_query()
+            .expect_err("query is not a Msg");
 
         Ok(())
     }
@@ -84,7 +131,7 @@ mod tests {
     /// // which outputs "[10 6 115 101 110 100 101 114 18 8 115 117 98 100 101 110 111 109]"
     /// ```
     #[test]
-    fn stargate_encoding() -> anyhow::Result<()> {
+    fn stargate_encoding() -> TestResult {
         let test_cases: Vec<(Box<dyn NibiruProstMsg>, Vec<u8>)> = vec![
             (
                 Box::new(nibiru::tokenfactory::MsgCreateDenom {

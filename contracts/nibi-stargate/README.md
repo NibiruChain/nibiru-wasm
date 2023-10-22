@@ -34,7 +34,7 @@ Table of Contents
 ```json
 { 
   "mint": { 
-    "coin": { "amount": "[amount]", "denom": "tc/[contract-addr]/[subdenom]" }, 
+    "coin": { "amount": "[amount]", "denom": "tf/[contract-addr]/[subdenom]" }, 
     "mint_to": "[mint-to-addr]" 
   } 
 }
@@ -45,7 +45,7 @@ Table of Contents
 ```json
 { 
   "burn": { 
-    "coin": { "amount": "[amount]", "denom": "tc/[contract-addr]/[subdenom]" }, 
+    "coin": { "amount": "[amount]", "denom": "tf/[contract-addr]/[subdenom]" }, 
     "burn_from": "[burn-from-addr]" 
   } 
 }

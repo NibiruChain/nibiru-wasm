@@ -6,7 +6,10 @@ setup:
   just -l
 
 install:
+  # https://crates.io/crates/clippy
   rustup component add clippy
+  # https://crates.io/crates/cargo-llvm-cov
+  cargo install cargo-llvm-cov
 
 wasm-all:
   bash scripts/wasm-out.sh
@@ -60,6 +63,11 @@ test *pkg:
 # Test everything in the workspace.
 test-all:
   cargo test
+
+# Test everything and output coverage report.
+test-coverage:
+  cargo llvm-cov --lcov --output-path lcov.info \
+    --ignore-filename-regex .*buf\/[^\/]+\.rs$
 
 # Format, lint, and test
 tidy:
