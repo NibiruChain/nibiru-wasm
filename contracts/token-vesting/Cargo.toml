@@ -30,3 +30,6 @@ cw-storage-plus = "1.1.0"
 schemars = "0.8.15"
 serde = { version = "1.0.188", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+
+[dev-dependencies]
+anyhow = { workspace = true }

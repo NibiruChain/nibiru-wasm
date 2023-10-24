@@ -387,3 +387,158 @@ fn vesting_account(
 
     Ok(VestingAccountResponse { address, vestings })
 }
+
+#[cfg(test)]
+pub mod tests {
+
+    use super::*;
+    use anyhow::anyhow;
+    use cosmwasm_std::{coin, testing, Uint64};
+
+    pub type TestResult = Result<(), anyhow::Error>;
+
+    pub fn mock_env_with_time(block_time: u64) -> Env {
+        let mut env = testing::mock_env();
+        env.block.time = Timestamp::from_seconds(block_time);
+        env
+    }
+
+    #[test]
+    fn deregister_err_nonexistent_vesting_account() -> TestResult {
+        let mut deps = testing::mock_dependencies();
+        instantiate(
+            deps.as_mut(),
+            testing::mock_env(),
+            testing::mock_info("admin-sender", &[]),
+            InstantiateMsg {},
+        )?;
+
+        let msg = ExecuteMsg::DeregisterVestingAccount {
+            address: "nonexistent".to_string(),
+            denom: Denom::Native("token".to_string()),
+            vested_token_recipient: None,
+            left_vesting_token_recipient: None,
+        };
+
+        let res = execute(
+            deps.as_mut(),
+            testing::mock_env(),
+            testing::mock_info("admin-sender", &[]),
+            msg,
+        );
+
+        match res {
+            Ok(_) => Err(anyhow!("Unexpected result: {:#?}", res)),
+            Err(StdError::GenericErr { msg, .. }) => {
+                assert!(msg.contains("vesting entry is not found for denom"));
+                Ok(())
+            }
+            Err(err) => Err(anyhow!("Unexpected error: {:#?}", err)),
+        }
+    }
+
+    #[test]
+    fn deregister_err_unauthorized_vesting_account() -> TestResult {
+        let mut deps = testing::mock_dependencies();
+
+        // Set up the environment with a block time before the vesting start time
+        let env = mock_env_with_time(50);
+
+        instantiate(
+            deps.as_mut(),
+            env.clone(), // Use the custom environment with the adjusted block time
+            testing::mock_info("admin-sender", &[]),
+            InstantiateMsg {},
+        )?;
+
+        let register_msg = ExecuteMsg::RegisterVestingAccount {
+            master_address: Some("addr0002".to_string()),
+            address: "addr0001".to_string(),
+            vesting_schedule: VestingSchedule::LinearVesting {
+                start_time: Uint64::new(100),
+                end_time: Uint64::new(110),
+                vesting_amount: Uint128::new(1000000u128),
+            },
+        };
+
+        execute(
+            deps.as_mut(),
+            env.clone(), // Use the custom environment with the adjusted block time
+            testing::mock_info("admin-sender", &[coin(1000000, "token")]),
+            register_msg,
+        )?;
+
+        // Try to deregister with unauthorized sender
+        let msg = ExecuteMsg::DeregisterVestingAccount {
+            address: "addr0001".to_string(),
+            denom: Denom::Native("token".to_string()),
+            vested_token_recipient: None,
+            left_vesting_token_recipient: None,
+        };
+
+        let res = execute(
+            deps.as_mut(),
+            env, // Use the custom environment with the adjusted block time
+            testing::mock_info("addr0003", &[]),
+            msg,
+        );
+        match res {
+            Err(StdError::GenericErr { msg, .. }) if msg == "unauthorized" => (),
+            _ => return Err(anyhow!("Unexpected result: {:?}", res)),
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn deregister_successful() -> TestResult {
+        let mut deps = testing::mock_dependencies();
+
+        // Set up the environment with a block time before the vesting start time
+        let env = mock_env_with_time(50);
+
+        instantiate(
+            deps.as_mut(),
+            env.clone(), // Use the custom environment with the adjusted block time
+            testing::mock_info("admin-sender", &[]),
+            InstantiateMsg {},
+        )?;
+
+        let register_msg = ExecuteMsg::RegisterVestingAccount {
+            master_address: Some("addr0002".to_string()),
+            address: "addr0001".to_string(),
+            vesting_schedule: VestingSchedule::LinearVesting {
+                start_time: Uint64::new(100),
+                end_time: Uint64::new(110),
+                vesting_amount: Uint128::new(1000000u128),
+            },
+        };
+
+        execute(
+            deps.as_mut(),
+            env.clone(), // Use the custom environment with the adjusted block time
+            testing::mock_info("admin-sender", &[coin(1000000, "token")]),
+            register_msg,
+        )?;
+
+        // Deregister with the master address
+        let msg = ExecuteMsg::DeregisterVestingAccount {
+            address: "addr0001".to_string(),
+            denom: Denom::Native("token".to_string()),
+            vested_token_recipient: None,
+            left_vesting_token_recipient: None,
+        };
+
+        let res = execute(
+            deps.as_mut(),
+            env, // Use the custom environment with the adjusted block time
+            testing::mock_info("addr0002", &[]),
+            msg,
+        );
+        if res.is_err() {
+            return Err(anyhow!("Unexpected error: {:?}", res));
+        }
+
+        Ok(())
+    }
+}
