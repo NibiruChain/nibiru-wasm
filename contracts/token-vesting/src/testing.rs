@@ -1,4 +1,6 @@
+use crate::contract::tests::TestResult;
 use crate::contract::{execute, instantiate, query};
+use crate::errors::{CliffError, ContractError, VestingError};
 use crate::msg::{
     Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, VestingAccountResponse,
     VestingData, VestingSchedule,
@@ -14,27 +16,26 @@ use cosmwasm_std::{
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, Denom};
 
 #[test]
-fn proper_initialization() {
+fn proper_initialization() -> TestResult {
     let mut deps = mock_dependencies();
 
     let msg = InstantiateMsg {};
 
     let info = mock_info("addr0000", &[]);
 
-    // we can just call .unwrap() to assert this was a success
-    let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+    let _res = instantiate(deps.as_mut(), mock_env(), info, msg)?;
+    Ok(())
 }
 
 #[test]
-fn register_cliff_vesting_account_with_native_token() {
+fn register_cliff_vesting_account_with_native_token() -> TestResult {
     let mut deps = mock_dependencies();
     let _res = instantiate(
         deps.as_mut(),
         mock_env(),
         mock_info("addr0000", &[]),
         InstantiateMsg {},
-    )
-    .unwrap();
+    )?;
 
     let mut env = mock_env();
     env.block.time = Timestamp::from_seconds(100);
@@ -60,60 +61,101 @@ fn register_cliff_vesting_account_with_native_token() {
 
     // zero amount vesting token
     let msg = create_msg(100, 110, 0, 1000, 105);
-    require_error(&mut deps, &env, msg, "assert(vesting_amount > 0)");
-
-    // zero amount cliff token
-    let msg = create_msg(100, 110, 1000, 0, 105);
-    require_error(&mut deps, &env, msg, "assert(cliff_amount > 0)");
-
-    // cliff time less than block time
-    let msg = create_msg(100, 110, 1000, 1000, 99);
-    require_error(&mut deps, &env, msg, "assert(cliff_time > block_time)");
-
-    // end time less than start time
-    let msg = create_msg(110, 100, 1000, 1000, 105);
-    require_error(&mut deps, &env, msg, "assert(end_time > start_time)");
-
-    // start time less than block time
-    let msg = create_msg(99, 110, 1000, 1000, 105);
-    require_error(&mut deps, &env, msg, "assert(start_time > block_time)");
-
-    // cliff amount greater than vesting amount
-    let msg = create_msg(100, 110, 1000, 1001, 105);
     require_error(
         &mut deps,
         &env,
         msg,
-        "assert(cliff_amount <= vesting_amount)",
+        ContractError::Vesting(VestingError::ZeroVestingAmount),
     );
+
+    // zero amount cliff token
+    let msg = create_msg(100, 110, 1000, 0, 105);
+    require_error(
+        &mut deps,
+        &env,
+        msg,
+        ContractError::Vesting(VestingError::Cliff(CliffError::ZeroAmount)),
+    );
+
+    // cliff time less than block time
+    let msg = create_msg(100, 110, 1000, 1000, 99);
+    require_error(
+        &mut deps,
+        &env,
+        msg,
+        ContractError::Vesting(VestingError::Cliff(CliffError::InvalidTime {
+            cliff_time: 99,
+            block_time: 100,
+        })),
+    );
+
+    // end time less than start time
+    let msg = create_msg(110, 100, 1000, 1000, 105);
+    require_error(
+        &mut deps,
+        &env,
+        msg,
+        ContractError::Vesting(VestingError::InvalidTimeRange {
+            start_time: 110,
+            end_time: 100,
+        }),
+    );
+
+    // start time less than block time
+    let msg = create_msg(99, 110, 1000, 1000, 105);
+    require_error(
+        &mut deps,
+        &env,
+        msg,
+        ContractError::Vesting(VestingError::StartBeforeBlockTime {
+            start_time: 99,
+            block_time: 100,
+        }),
+    );
+
+    // cliff amount greater than vesting amount
+    let (vesting_amount, cliff_amount, cliff_time) = (1000, 1001, 105);
+    let msg = create_msg(100, 110, vesting_amount, cliff_amount, cliff_time);
+    require_error(
+        &mut deps,
+        &env,
+        msg,
+        ContractError::Vesting(
+            CliffError::ExcessiveAmount {
+                cliff_amount,
+                vesting_amount,
+            }
+            .into(),
+        ),
+    );
+    Ok(())
 }
 
 fn require_error(
     deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>,
     env: &Env,
     msg: ExecuteMsg,
-    error_message: &str,
+    expected_error: ContractError,
 ) {
     let info = mock_info("addr0000", &[Coin::new(0u128, "uusd")]);
     let res = execute(deps.as_mut(), env.clone(), info, msg);
-    match res.unwrap_err() {
-        StdError::GenericErr { msg, .. } => {
-            assert_eq!(msg, error_message)
+    match res {
+        Err(err) => {
+            assert_eq!(err, expected_error)
         }
-        _ => panic!("should not enter"),
+        Ok(_) => panic!("Expected error but got success: {res:?}"),
     }
 }
 
 #[test]
-fn register_vesting_account_with_native_token() {
+fn register_vesting_account_with_native_token() -> TestResult {
     let mut deps = mock_dependencies();
     let _res = instantiate(
         deps.as_mut(),
         mock_env(),
         mock_info("addr0000", &[]),
         InstantiateMsg {},
-    )
-    .unwrap();
+    )?;
 
     let mut env = mock_env();
     env.block.time = Timestamp::from_seconds(100);
@@ -128,7 +170,12 @@ fn register_vesting_account_with_native_token() {
             vesting_amount: Uint128::zero(),
         },
     };
-    require_error(&mut deps, &env, msg, "assert(vesting_amount > 0)");
+    require_error(
+        &mut deps,
+        &env,
+        msg,
+        ContractError::Vesting(VestingError::ZeroVestingAmount),
+    );
 
     // normal amount vesting token
     let msg = ExecuteMsg::RegisterVestingAccount {
@@ -144,11 +191,11 @@ fn register_vesting_account_with_native_token() {
     // invalid amount
     let info = mock_info("addr0000", &[]);
     let res = execute(deps.as_mut(), env.clone(), info, msg.clone());
-    match res.unwrap_err() {
-        StdError::GenericErr { msg, .. } => {
+    match res {
+        Err(ContractError::Std(StdError::GenericErr { msg, .. })) => {
             assert_eq!(msg, "must deposit only one type of token")
         }
-        _ => panic!("should not enter"),
+        _ => panic!("should not enter. got result: {res:?}"),
     }
 
     // invalid amount
@@ -157,26 +204,33 @@ fn register_vesting_account_with_native_token() {
         &[Coin::new(100u128, "uusd"), Coin::new(10u128, "ukrw")],
     );
     let res = execute(deps.as_mut(), env.clone(), info, msg.clone());
-    match res.unwrap_err() {
-        StdError::GenericErr { msg, .. } => {
+    match res {
+        Err(ContractError::Std(StdError::GenericErr { msg, .. })) => {
             assert_eq!(msg, "must deposit only one type of token")
         }
-        _ => panic!("should not enter"),
+        _ => panic!("should not enter. got result: {res:?}"),
     }
 
     // invalid amount
     let info = mock_info("addr0000", &[Coin::new(10u128, "uusd")]);
     let res = execute(deps.as_mut(), env.clone(), info, msg.clone());
-    match res.unwrap_err() {
-        StdError::GenericErr { msg, .. } => {
-            assert_eq!(msg, "assert(deposit_amount == vesting_amount)")
+    match res {
+        Err(err) => {
+            assert_eq!(
+                err,
+                VestingError::MismatchedVestingAndDepositAmount {
+                    vesting_amount: 1_000_000,
+                    deposit_amount: 10
+                }
+                .into()
+            )
         }
-        _ => panic!("should not enter"),
+        _ => panic!("should not enter. got result: {res:?}"),
     }
 
     // valid amount
     let info = mock_info("addr0000", &[Coin::new(1000000u128, "uusd")]);
-    let res: Response = execute(deps.as_mut(), env.clone(), info, msg).unwrap();
+    let res: Response = execute(deps.as_mut(), env.clone(), info, msg)?;
     assert_eq!(
         res.attributes,
         vec![
@@ -190,19 +244,15 @@ fn register_vesting_account_with_native_token() {
 
     // query vesting account
     assert_eq!(
-        from_binary::<VestingAccountResponse>(
-            &query(
-                deps.as_ref(),
-                env,
-                QueryMsg::VestingAccount {
-                    address: "addr0001".to_string(),
-                    start_after: None,
-                    limit: None,
-                },
-            )
-            .unwrap()
-        )
-        .unwrap(),
+        from_binary::<VestingAccountResponse>(&query(
+            deps.as_ref(),
+            env,
+            QueryMsg::VestingAccount {
+                address: "addr0001".to_string(),
+                start_after: None,
+                limit: None,
+            },
+        )?)?,
         VestingAccountResponse {
             address: "addr0001".to_string(),
             vestings: vec![VestingData {
@@ -219,18 +269,18 @@ fn register_vesting_account_with_native_token() {
             }],
         }
     );
+    Ok(())
 }
 
 #[test]
-fn register_vesting_account_with_cw20_token() {
+fn register_vesting_account_with_cw20_token() -> TestResult {
     let mut deps = mock_dependencies();
     let _res = instantiate(
         deps.as_mut(),
         mock_env(),
         mock_info("addr0000", &[]),
         InstantiateMsg {},
-    )
-    .unwrap();
+    )?;
     let info = mock_info("token0000", &[]);
     let mut env = mock_env();
     env.block.time = Timestamp::from_seconds(100);
@@ -247,17 +297,19 @@ fn register_vesting_account_with_cw20_token() {
                 end_time: Uint64::new(110),
                 vesting_amount: Uint128::zero(),
             },
-        })
-        .unwrap(),
+        })?,
     });
 
     // invalid zero amount
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
-    match res.unwrap_err() {
-        StdError::GenericErr { msg, .. } => {
-            assert_eq!(msg, "assert(vesting_amount > 0)")
+    match res {
+        Err(err) => {
+            assert_eq!(
+                err,
+                ContractError::Vesting(VestingError::ZeroVestingAmount)
+            )
         }
-        _ => panic!("should not enter"),
+        _ => panic!("should not enter. got result: {res:?}"),
     }
 
     // invariant amount
@@ -272,17 +324,22 @@ fn register_vesting_account_with_cw20_token() {
                 end_time: Uint64::new(110),
                 vesting_amount: Uint128::new(999000u128),
             },
-        })
-        .unwrap(),
+        })?,
     });
 
     // invalid amount
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
-    match res.unwrap_err() {
-        StdError::GenericErr { msg, .. } => {
-            assert_eq!(msg, "assert(deposit_amount == vesting_amount)")
+    match res {
+        Err(ContractError::Vesting(
+            VestingError::MismatchedVestingAndDepositAmount {
+                vesting_amount,
+                deposit_amount,
+            },
+        )) => {
+            assert_eq!(vesting_amount, 999000u128);
+            assert_eq!(deposit_amount, 1000000u128);
         }
-        _ => panic!("should not enter"),
+        _ => panic!("should not enter. got result: {res:?}"),
     }
 
     // valid amount
@@ -297,12 +354,11 @@ fn register_vesting_account_with_cw20_token() {
                 end_time: Uint64::new(110),
                 vesting_amount: Uint128::new(1000000u128),
             },
-        })
-        .unwrap(),
+        })?,
     });
 
     // valid amount
-    let res: Response = execute(deps.as_mut(), env.clone(), info, msg).unwrap();
+    let res: Response = execute(deps.as_mut(), env.clone(), info, msg)?;
     assert_eq!(
         res.attributes,
         vec![
@@ -316,19 +372,15 @@ fn register_vesting_account_with_cw20_token() {
 
     // query vesting account
     assert_eq!(
-        from_binary::<VestingAccountResponse>(
-            &query(
-                deps.as_ref(),
-                env,
-                QueryMsg::VestingAccount {
-                    address: "addr0001".to_string(),
-                    start_after: None,
-                    limit: None,
-                },
-            )
-            .unwrap()
-        )
-        .unwrap(),
+        from_binary::<VestingAccountResponse>(&query(
+            deps.as_ref(),
+            env,
+            QueryMsg::VestingAccount {
+                address: "addr0001".to_string(),
+                start_after: None,
+                limit: None,
+            },
+        )?)?,
         VestingAccountResponse {
             address: "addr0001".to_string(),
             vestings: vec![VestingData {
@@ -345,18 +397,18 @@ fn register_vesting_account_with_cw20_token() {
             }],
         }
     );
+    Ok(())
 }
 
 #[test]
-fn claim_native() {
+fn claim_native() -> TestResult {
     let mut deps = mock_dependencies();
     let _res = instantiate(
         deps.as_mut(),
         mock_env(),
         mock_info("addr0000", &[]),
         InstantiateMsg {},
-    )
-    .unwrap();
+    )?;
 
     // init env to time 100
     let mut env = mock_env();
@@ -374,7 +426,7 @@ fn claim_native() {
     };
 
     let info = mock_info("addr0000", &[Coin::new(1000000u128, "uusd")]);
-    let _ = execute(deps.as_mut(), env.clone(), info, msg).unwrap();
+    let _ = execute(deps.as_mut(), env.clone(), info, msg)?;
 
     // make time to half claimable
     env.block.time = Timestamp::from_seconds(105);
@@ -390,12 +442,12 @@ fn claim_native() {
 
     let info = mock_info("addr0001", &[]);
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
-    match res.unwrap_err() {
-        StdError::GenericErr { msg, .. } => assert_eq!(
+    match res {
+        Err(ContractError::Std(StdError::GenericErr { msg, .. })) => assert_eq!(
             msg,
             "vesting entry is not found for denom {\"native\":\"ukrw\"}"
         ),
-        _ => panic!("should not enter"),
+        _ => panic!("should not enter. got result: {res:?}"),
     }
 
     // valid claim
@@ -404,8 +456,7 @@ fn claim_native() {
         recipient: None,
     };
 
-    let res =
-        execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
     assert_eq!(
         res.messages,
         vec![SubMsg::new(BankMsg::Send {
@@ -430,19 +481,15 @@ fn claim_native() {
 
     // query vesting account
     assert_eq!(
-        from_binary::<VestingAccountResponse>(
-            &query(
-                deps.as_ref(),
-                env.clone(),
-                QueryMsg::VestingAccount {
-                    address: "addr0001".to_string(),
-                    start_after: None,
-                    limit: None,
-                },
-            )
-            .unwrap()
-        )
-        .unwrap(),
+        from_binary::<VestingAccountResponse>(&query(
+            deps.as_ref(),
+            env.clone(),
+            QueryMsg::VestingAccount {
+                address: "addr0001".to_string(),
+                start_after: None,
+                limit: None,
+            },
+        )?)?,
         VestingAccountResponse {
             address: "addr0001".to_string(),
             vestings: vec![VestingData {
@@ -463,7 +510,7 @@ fn claim_native() {
     // make time to half claimable
     env.block.time = Timestamp::from_seconds(110);
 
-    let res = execute(deps.as_mut(), env.clone(), info, msg).unwrap();
+    let res = execute(deps.as_mut(), env.clone(), info, msg)?;
     assert_eq!(
         res.messages,
         vec![SubMsg::new(BankMsg::Send {
@@ -488,36 +535,32 @@ fn claim_native() {
 
     // query vesting account
     assert_eq!(
-        from_binary::<VestingAccountResponse>(
-            &query(
-                deps.as_ref(),
-                env,
-                QueryMsg::VestingAccount {
-                    address: "addr0001".to_string(),
-                    start_after: None,
-                    limit: None,
-                },
-            )
-            .unwrap()
-        )
-        .unwrap(),
+        from_binary::<VestingAccountResponse>(&query(
+            deps.as_ref(),
+            env,
+            QueryMsg::VestingAccount {
+                address: "addr0001".to_string(),
+                start_after: None,
+                limit: None,
+            },
+        )?)?,
         VestingAccountResponse {
             address: "addr0001".to_string(),
             vestings: vec![],
         }
     );
+    Ok(())
 }
 
 #[test]
-fn claim_cw20() {
+fn claim_cw20() -> TestResult {
     let mut deps = mock_dependencies();
-    let _res = instantiate(
+    instantiate(
         deps.as_mut(),
         mock_env(),
         mock_info("addr0000", &[]),
         InstantiateMsg {},
-    )
-    .unwrap();
+    )?;
 
     // init env to time 100
     let mut env = mock_env();
@@ -535,13 +578,12 @@ fn claim_cw20() {
                 end_time: Uint64::new(110),
                 vesting_amount: Uint128::new(1000000u128),
             },
-        })
-        .unwrap(),
+        })?,
     });
 
     // valid amount
     let info = mock_info("token0001", &[]);
-    let _ = execute(deps.as_mut(), env.clone(), info, msg).unwrap();
+    execute(deps.as_mut(), env.clone(), info, msg)?;
 
     // make time to half claimable
     env.block.time = Timestamp::from_seconds(105);
@@ -557,12 +599,12 @@ fn claim_cw20() {
 
     let info = mock_info("addr0001", &[]);
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
-    match res.unwrap_err() {
-        StdError::GenericErr { msg, .. } => assert_eq!(
+    match res {
+        Err(ContractError::Std(StdError::GenericErr { msg, .. })) => assert_eq!(
             msg,
             "vesting entry is not found for denom {\"cw20\":\"token0002\"}"
         ),
-        _ => panic!("should not enter"),
+        _ => panic!("should not enter. got result: {res:?}"),
     }
 
     // valid claim
@@ -571,8 +613,7 @@ fn claim_cw20() {
         recipient: None,
     };
 
-    let res =
-        execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
     assert_eq!(
         res.messages,
         vec![SubMsg::new(WasmMsg::Execute {
@@ -581,10 +622,10 @@ fn claim_cw20() {
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: "addr0001".to_string(),
                 amount: Uint128::new(500000u128),
-            })
-            .unwrap(),
+            })?,
         }),]
     );
+
     assert_eq!(
         res.attributes,
         vec![
@@ -599,19 +640,15 @@ fn claim_cw20() {
 
     // query vesting account
     assert_eq!(
-        from_binary::<VestingAccountResponse>(
-            &query(
-                deps.as_ref(),
-                env.clone(),
-                QueryMsg::VestingAccount {
-                    address: "addr0001".to_string(),
-                    start_after: None,
-                    limit: None,
-                },
-            )
-            .unwrap()
-        )
-        .unwrap(),
+        from_binary::<VestingAccountResponse>(&query(
+            deps.as_ref(),
+            env.clone(),
+            QueryMsg::VestingAccount {
+                address: "addr0001".to_string(),
+                start_after: None,
+                limit: None,
+            },
+        )?)?,
         VestingAccountResponse {
             address: "addr0001".to_string(),
             vestings: vec![VestingData {
@@ -632,7 +669,7 @@ fn claim_cw20() {
     // make time to half claimable
     env.block.time = Timestamp::from_seconds(110);
 
-    let res = execute(deps.as_mut(), env.clone(), info, msg).unwrap();
+    let res = execute(deps.as_mut(), env.clone(), info, msg)?;
     assert_eq!(
         res.messages,
         vec![SubMsg::new(WasmMsg::Execute {
@@ -641,8 +678,7 @@ fn claim_cw20() {
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: "addr0001".to_string(),
                 amount: Uint128::new(500000u128),
-            })
-            .unwrap(),
+            })?,
         }),]
     );
     assert_eq!(
@@ -659,36 +695,33 @@ fn claim_cw20() {
 
     // query vesting account
     assert_eq!(
-        from_binary::<VestingAccountResponse>(
-            &query(
-                deps.as_ref(),
-                env,
-                QueryMsg::VestingAccount {
-                    address: "addr0001".to_string(),
-                    start_after: None,
-                    limit: None,
-                },
-            )
-            .unwrap()
-        )
-        .unwrap(),
+        from_binary::<VestingAccountResponse>(&query(
+            deps.as_ref(),
+            env,
+            QueryMsg::VestingAccount {
+                address: "addr0001".to_string(),
+                start_after: None,
+                limit: None,
+            },
+        )?)?,
         VestingAccountResponse {
             address: "addr0001".to_string(),
             vestings: vec![],
         }
     );
+
+    Ok(())
 }
 
 #[test]
-fn query_vesting_account() {
+fn query_vesting_account() -> TestResult {
     let mut deps = mock_dependencies();
     let _res = instantiate(
         deps.as_mut(),
         mock_env(),
         mock_info("addr0000", &[]),
         InstantiateMsg {},
-    )
-    .unwrap();
+    )?;
 
     // init env to time 100
     let mut env = mock_env();
@@ -706,7 +739,7 @@ fn query_vesting_account() {
     };
 
     let info = mock_info("addr0000", &[Coin::new(1000000u128, "uusd")]);
-    let _ = execute(deps.as_mut(), env.clone(), info, msg).unwrap();
+    let _ = execute(deps.as_mut(), env.clone(), info, msg)?;
 
     let msg = ExecuteMsg::Receive(Cw20ReceiveMsg {
         sender: "addr0000".to_string(),
@@ -719,32 +752,27 @@ fn query_vesting_account() {
                 end_time: Uint64::new(110),
                 vesting_amount: Uint128::new(1000000u128),
             },
-        })
-        .unwrap(),
+        })?,
     });
 
     // valid amount
     let info = mock_info("token0001", &[]);
-    let _ = execute(deps.as_mut(), env.clone(), info, msg).unwrap();
+    let _ = execute(deps.as_mut(), env.clone(), info, msg)?;
 
     // half claimable
     env.block.time = Timestamp::from_seconds(105);
 
     // query all entry
     assert_eq!(
-        from_binary::<VestingAccountResponse>(
-            &query(
-                deps.as_ref(),
-                env.clone(),
-                QueryMsg::VestingAccount {
-                    address: "addr0001".to_string(),
-                    start_after: None,
-                    limit: None,
-                },
-            )
-            .unwrap()
-        )
-        .unwrap(),
+        from_binary::<VestingAccountResponse>(&query(
+            deps.as_ref(),
+            env.clone(),
+            QueryMsg::VestingAccount {
+                address: "addr0001".to_string(),
+                start_after: None,
+                limit: None,
+            },
+        )?)?,
         VestingAccountResponse {
             address: "addr0001".to_string(),
             vestings: vec![
@@ -778,19 +806,15 @@ fn query_vesting_account() {
 
     // query one entry
     assert_eq!(
-        from_binary::<VestingAccountResponse>(
-            &query(
-                deps.as_ref(),
-                env.clone(),
-                QueryMsg::VestingAccount {
-                    address: "addr0001".to_string(),
-                    start_after: None,
-                    limit: Some(1),
-                },
-            )
-            .unwrap()
-        )
-        .unwrap(),
+        from_binary::<VestingAccountResponse>(&query(
+            deps.as_ref(),
+            env.clone(),
+            QueryMsg::VestingAccount {
+                address: "addr0001".to_string(),
+                start_after: None,
+                limit: Some(1),
+            },
+        )?)?,
         VestingAccountResponse {
             address: "addr0001".to_string(),
             vestings: vec![VestingData {
@@ -810,19 +834,15 @@ fn query_vesting_account() {
 
     // query one entry after first one
     assert_eq!(
-        from_binary::<VestingAccountResponse>(
-            &query(
-                deps.as_ref(),
-                env,
-                QueryMsg::VestingAccount {
-                    address: "addr0001".to_string(),
-                    start_after: Some(Denom::Cw20(Addr::unchecked("token0001"))),
-                    limit: Some(1),
-                },
-            )
-            .unwrap()
-        )
-        .unwrap(),
+        from_binary::<VestingAccountResponse>(&query(
+            deps.as_ref(),
+            env,
+            QueryMsg::VestingAccount {
+                address: "addr0001".to_string(),
+                start_after: Some(Denom::Cw20(Addr::unchecked("token0001"))),
+                limit: Some(1),
+            },
+        )?)?,
         VestingAccountResponse {
             address: "addr0001".to_string(),
             vestings: vec![VestingData {
@@ -839,4 +859,5 @@ fn query_vesting_account() {
             }],
         }
     );
+    Ok(())
 }
