@@ -1,6 +1,8 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{StdError, StdResult, Timestamp, Uint128, Uint64};
+use cosmwasm_std::{StdResult, Timestamp, Uint128, Uint64};
 use cw20::{Cw20ReceiveMsg, Denom};
+
+use crate::errors::{CliffError, VestingError};
 
 /// Structure for the message that instantiates the smart contract.
 #[cw_serde]
@@ -110,21 +112,25 @@ impl Cliff {
         &self,
         block_time: Timestamp,
         vesting_amount: Uint128,
-    ) -> StdResult<()> {
+    ) -> Result<(), CliffError> {
         if self.amount.is_zero() {
-            return Err(StdError::generic_err("assert(cliff_amount > 0)"));
+            return Err(CliffError::ZeroAmount);
         }
 
-        if self.time.u64() < block_time.seconds() {
-            return Err(StdError::generic_err(
-                "assert(cliff_time > block_time)",
-            ));
+        let cliff_time_seconds = self.time.u64();
+        if cliff_time_seconds < block_time.seconds() {
+            return Err(CliffError::InvalidTime {
+                cliff_time: cliff_time_seconds,
+                block_time: block_time.seconds(),
+            });
         }
 
-        if self.amount.u128() > vesting_amount.u128() {
-            return Err(StdError::generic_err(
-                "assert(cliff_amount <= vesting_amount)",
-            ));
+        let cliff_amount = self.amount.u128();
+        if cliff_amount > vesting_amount.u128() {
+            return Err(CliffError::ExcessiveAmount {
+                cliff_amount,
+                vesting_amount: vesting_amount.u128(),
+            });
         }
         Ok(())
     }
@@ -186,7 +192,7 @@ impl VestingSchedule {
         &self,
         block_time: Timestamp,
         deposit_amount: Uint128,
-    ) -> StdResult<()> {
+    ) -> Result<(), VestingError> {
         match &self {
             VestingSchedule::LinearVesting {
                 start_time,
@@ -194,27 +200,30 @@ impl VestingSchedule {
                 vesting_amount,
             } => {
                 if vesting_amount.is_zero() {
-                    return Err(StdError::generic_err(
-                        "assert(vesting_amount > 0)",
-                    ));
+                    return Err(VestingError::ZeroVestingAmount);
                 }
 
                 if start_time.u64() < block_time.seconds() {
-                    return Err(StdError::generic_err(
-                        "assert(start_time < block_time)",
-                    ));
+                    return Err(VestingError::StartBeforeBlockTime {
+                        start_time: start_time.u64(),
+                        block_time: block_time.seconds(),
+                    });
                 }
 
                 if end_time <= start_time {
-                    return Err(StdError::generic_err(
-                        "assert(end_time <= start_time)",
-                    ));
+                    return Err(VestingError::InvalidTimeRange {
+                        start_time: start_time.u64(),
+                        end_time: end_time.u64(),
+                    });
                 }
 
                 if vesting_amount != deposit_amount {
-                    return Err(StdError::generic_err(
-                        "assert(deposit_amount == vesting_amount)",
-                    ));
+                    return Err(
+                        VestingError::MismatchedVestingAndDepositAmount {
+                            vesting_amount: vesting_amount.u128(),
+                            deposit_amount: deposit_amount.u128(),
+                        },
+                    );
                 }
                 Ok(())
             }
@@ -227,21 +236,21 @@ impl VestingSchedule {
                 cliff_amount,
             } => {
                 if vesting_amount.is_zero() {
-                    return Err(StdError::generic_err(
-                        "assert(vesting_amount > 0)",
-                    ));
+                    return Err(VestingError::ZeroVestingAmount);
                 }
 
                 if end_time <= start_time {
-                    return Err(StdError::generic_err(
-                        "assert(end_time > start_time)",
-                    ));
+                    return Err(VestingError::InvalidTimeRange {
+                        start_time: start_time.u64(),
+                        end_time: end_time.u64(),
+                    });
                 }
 
                 if start_time.u64() < block_time.seconds() {
-                    return Err(StdError::generic_err(
-                        "assert(start_time > block_time)",
-                    ));
+                    return Err(VestingError::StartBeforeBlockTime {
+                        start_time: start_time.u64(),
+                        block_time: block_time.seconds(),
+                    });
                 }
 
                 let cliff = Cliff {
