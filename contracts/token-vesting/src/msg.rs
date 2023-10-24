@@ -1,6 +1,8 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{StdError, StdResult, Timestamp, Uint128, Uint64};
+use cosmwasm_std::{StdResult, Timestamp, Uint128, Uint64};
 use cw20::{Cw20ReceiveMsg, Denom};
+
+use crate::errors::{CliffError, VestingError};
 
 /// Structure for the message that instantiates the smart contract.
 #[cw_serde]
@@ -110,21 +112,25 @@ impl Cliff {
         &self,
         block_time: Timestamp,
         vesting_amount: Uint128,
-    ) -> StdResult<()> {
+    ) -> Result<(), CliffError> {
         if self.amount.is_zero() {
-            return Err(StdError::generic_err("assert(cliff_amount > 0)"));
+            return Err(CliffError::ZeroAmount);
         }
 
-        if self.time.u64() < block_time.seconds() {
-            return Err(StdError::generic_err(
-                "assert(cliff_time > block_time)",
-            ));
+        let cliff_time_seconds = self.time.u64();
+        if cliff_time_seconds < block_time.seconds() {
+            return Err(CliffError::InvalidTime {
+                cliff_time: cliff_time_seconds,
+                block_time: block_time.seconds(),
+            });
         }
 
-        if self.amount.u128() > vesting_amount.u128() {
-            return Err(StdError::generic_err(
-                "assert(cliff_amount <= vesting_amount)",
-            ));
+        let cliff_amount = self.amount.u128();
+        if cliff_amount > vesting_amount.u128() {
+            return Err(CliffError::ExcessiveAmount {
+                cliff_amount,
+                vesting_amount: vesting_amount.u128(),
+            });
         }
         Ok(())
     }
@@ -186,7 +192,7 @@ impl VestingSchedule {
         &self,
         block_time: Timestamp,
         deposit_amount: Uint128,
-    ) -> StdResult<()> {
+    ) -> Result<(), VestingError> {
         match &self {
             VestingSchedule::LinearVesting {
                 start_time,
@@ -194,27 +200,30 @@ impl VestingSchedule {
                 vesting_amount,
             } => {
                 if vesting_amount.is_zero() {
-                    return Err(StdError::generic_err(
-                        "assert(vesting_amount > 0)",
-                    ));
+                    return Err(VestingError::ZeroVestingAmount);
                 }
 
                 if start_time.u64() < block_time.seconds() {
-                    return Err(StdError::generic_err(
-                        "assert(start_time < block_time)",
-                    ));
+                    return Err(VestingError::StartBeforeBlockTime {
+                        start_time: start_time.u64(),
+                        block_time: block_time.seconds(),
+                    });
                 }
 
                 if end_time <= start_time {
-                    return Err(StdError::generic_err(
-                        "assert(end_time <= start_time)",
-                    ));
+                    return Err(VestingError::InvalidTimeRange {
+                        start_time: start_time.u64(),
+                        end_time: end_time.u64(),
+                    });
                 }
 
                 if vesting_amount != deposit_amount {
-                    return Err(StdError::generic_err(
-                        "assert(deposit_amount == vesting_amount)",
-                    ));
+                    return Err(
+                        VestingError::MismatchedVestingAndDepositAmount {
+                            vesting_amount: vesting_amount.u128(),
+                            deposit_amount: deposit_amount.u128(),
+                        },
+                    );
                 }
                 Ok(())
             }
@@ -227,21 +236,21 @@ impl VestingSchedule {
                 cliff_amount,
             } => {
                 if vesting_amount.is_zero() {
-                    return Err(StdError::generic_err(
-                        "assert(vesting_amount > 0)",
-                    ));
+                    return Err(VestingError::ZeroVestingAmount);
                 }
 
                 if end_time <= start_time {
-                    return Err(StdError::generic_err(
-                        "assert(end_time > start_time)",
-                    ));
+                    return Err(VestingError::InvalidTimeRange {
+                        start_time: start_time.u64(),
+                        end_time: end_time.u64(),
+                    });
                 }
 
                 if start_time.u64() < block_time.seconds() {
-                    return Err(StdError::generic_err(
-                        "assert(start_time > block_time)",
-                    ));
+                    return Err(VestingError::StartBeforeBlockTime {
+                        start_time: start_time.u64(),
+                        block_time: block_time.seconds(),
+                    });
                 }
 
                 let cliff = Cliff {
@@ -255,51 +264,43 @@ impl VestingSchedule {
     }
 }
 
-#[test]
-fn linear_vesting_vested_amount() {
-    let schedule = VestingSchedule::LinearVesting {
-        start_time: Uint64::new(100),
-        end_time: Uint64::new(110),
-        vesting_amount: Uint128::new(1000000u128),
-    };
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use crate::contract::tests::TestResult;
 
-    assert_eq!(schedule.vested_amount(100).unwrap(), Uint128::zero());
-    assert_eq!(
-        schedule.vested_amount(105).unwrap(),
-        Uint128::new(500000u128)
-    );
-    assert_eq!(
-        schedule.vested_amount(110).unwrap(),
-        Uint128::new(1000000u128)
-    );
-    assert_eq!(
-        schedule.vested_amount(115).unwrap(),
-        Uint128::new(1000000u128)
-    );
-}
+    #[test]
+    fn linear_vesting_vested_amount() -> TestResult {
+        let schedule = VestingSchedule::LinearVesting {
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(110),
+            vesting_amount: Uint128::new(1000000u128),
+        };
 
-#[test]
-fn linear_vesting_with_cliff_vested_amount() {
-    let schedule = VestingSchedule::LinearVestingWithCliff {
-        start_time: Uint64::new(100),
-        end_time: Uint64::new(110),
-        vesting_amount: Uint128::new(1_000_000_u128),
-        cliff_amount: Uint128::new(100_000_u128),
-        cliff_time: Uint64::new(105),
-    };
+        assert_eq!(schedule.vested_amount(100)?, Uint128::zero());
+        assert_eq!(schedule.vested_amount(105)?, Uint128::new(500000u128));
+        assert_eq!(schedule.vested_amount(110)?, Uint128::new(1000000u128));
+        assert_eq!(schedule.vested_amount(115)?, Uint128::new(1000000u128));
 
-    assert_eq!(schedule.vested_amount(100).unwrap(), Uint128::zero());
-    assert_eq!(
-        schedule.vested_amount(105).unwrap(),
-        Uint128::new(100000u128)
-    ); // cliff time then the cliff amount
-    assert_eq!(
-        // complete vesting
-        schedule.vested_amount(120).unwrap(),
-        Uint128::new(1000000u128)
-    );
+        Ok(())
+    }
 
-    // other permutations
-    assert_eq!(schedule.vested_amount(104).unwrap(), Uint128::zero()); // before cliff time
-    assert_eq!(schedule.vested_amount(109).unwrap(), Uint128::new(820_000)); // after cliff time but before end time
+    #[test]
+    fn linear_vesting_with_cliff_vested_amount() -> TestResult {
+        let schedule = VestingSchedule::LinearVestingWithCliff {
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(110),
+            vesting_amount: Uint128::new(1_000_000_u128),
+            cliff_amount: Uint128::new(100_000_u128),
+            cliff_time: Uint64::new(105),
+        };
+
+        assert_eq!(schedule.vested_amount(100)?, Uint128::zero());
+        assert_eq!(schedule.vested_amount(105)?, Uint128::new(100000u128)); // cliff time then the cliff amount
+        assert_eq!(schedule.vested_amount(120)?, Uint128::new(1000000u128)); // complete vesting
+        assert_eq!(schedule.vested_amount(104)?, Uint128::zero()); // before cliff time
+        assert_eq!(schedule.vested_amount(109)?, Uint128::new(820_000)); // after cliff time but before end time
+
+        Ok(())
+    }
 }
