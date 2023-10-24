@@ -11,6 +11,7 @@ use serde_json::to_string;
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, Denom};
 use cw_storage_plus::Bound;
 
+use crate::errors::ContractError;
 use crate::msg::{
     Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, VestingAccountResponse,
     VestingData, VestingSchedule,
@@ -33,9 +34,11 @@ pub fn execute(
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> StdResult<Response> {
+) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Receive(msg) => receive_cw20(deps, env, info, msg),
+        ExecuteMsg::Receive(msg) => {
+            receive_cw20(deps, env, info, msg).map_err(ContractError::from)
+        }
         ExecuteMsg::RegisterVestingAccount {
             master_address,
             address,
@@ -45,7 +48,8 @@ pub fn execute(
             if info.funds.len() != 1 {
                 return Err(StdError::generic_err(
                     "must deposit only one type of token",
-                ));
+                )
+                .into());
             }
 
             let deposit_coin = info.funds[0].clone();
@@ -87,12 +91,12 @@ fn register_vesting_account(
     deposit_denom: Denom,
     deposit_amount: Uint128,
     vesting_schedule: VestingSchedule,
-) -> StdResult<Response> {
+) -> Result<Response, ContractError> {
     let denom_key = denom_to_key(deposit_denom.clone());
 
     // vesting_account existence check
     if VESTING_ACCOUNTS.has(storage, (address.as_str(), &denom_key)) {
-        return Err(StdError::generic_err("already exists"));
+        return Err(StdError::generic_err("already exists").into());
     }
 
     // validate vesting schedule
@@ -131,7 +135,7 @@ fn deregister_vesting_account(
     denom: Denom,
     vested_token_recipient: Option<String>,
     left_vesting_token_recipient: Option<String>,
-) -> StdResult<Response> {
+) -> Result<Response, ContractError> {
     let denom_key = denom_to_key(denom.clone());
     let sender = info.sender;
 
@@ -141,17 +145,17 @@ fn deregister_vesting_account(
     let account = VESTING_ACCOUNTS
         .may_load(deps.storage, (address.as_str(), &denom_key))?;
     if account.is_none() {
-        return Err(StdError::generic_err(format!(
+        return Err(ContractError::Std(StdError::generic_err(format!(
             "vesting entry is not found for denom {:?}",
             to_string(&denom).unwrap(),
-        )));
+        ))));
     }
 
     let account = account.unwrap();
     if account.master_address.is_none()
         || account.master_address.unwrap() != sender
     {
-        return Err(StdError::generic_err("unauthorized"));
+        return Err(StdError::generic_err("unauthorized").into());
     }
 
     // remove vesting account
@@ -207,7 +211,7 @@ fn claim(
     info: MessageInfo,
     denoms: Vec<Denom>,
     recipient: Option<String>,
-) -> StdResult<Response> {
+) -> Result<Response, ContractError> {
     let sender = info.sender;
     let recipient = recipient.unwrap_or_else(|| sender.to_string());
 
@@ -223,7 +227,8 @@ fn claim(
             return Err(StdError::generic_err(format!(
                 "vesting entry is not found for denom {}",
                 to_string(&denom).unwrap(),
-            )));
+            ))
+            .into());
         }
 
         let mut account = account.unwrap();
@@ -301,7 +306,7 @@ pub fn receive_cw20(
     env: Env,
     info: MessageInfo,
     cw20_msg: Cw20ReceiveMsg,
-) -> StdResult<Response> {
+) -> Result<Response, ContractError> {
     let amount = cw20_msg.amount;
     let _sender = cw20_msg.sender;
     let contract = info.sender;
@@ -320,7 +325,7 @@ pub fn receive_cw20(
             amount,
             vesting_schedule,
         ),
-        Err(_) => Err(StdError::generic_err("invalid cw20 hook message")),
+        Err(_) => Err(StdError::generic_err("invalid cw20 hook message").into()),
     }
 }
 
@@ -393,7 +398,11 @@ pub mod tests {
 
     use super::*;
     use anyhow::anyhow;
-    use cosmwasm_std::{coin, testing, Uint64};
+    use cosmwasm_std::{
+        coin,
+        testing::{self, MockApi, MockQuerier, MockStorage},
+        Empty, OwnedDeps, Uint64,
+    };
 
     pub type TestResult = Result<(), anyhow::Error>;
 
@@ -403,15 +412,26 @@ pub mod tests {
         env
     }
 
-    #[test]
-    fn deregister_err_nonexistent_vesting_account() -> TestResult {
+    /// Convenience function for instantiating the contract at and setting up
+    /// the env to have the given block time.
+    pub fn setup_with_block_time(
+        block_time: u64,
+    ) -> anyhow::Result<(OwnedDeps<MockStorage, MockApi, MockQuerier, Empty>, Env)>
+    {
         let mut deps = testing::mock_dependencies();
+        let env = mock_env_with_time(block_time);
         instantiate(
             deps.as_mut(),
-            testing::mock_env(),
+            env.clone(),
             testing::mock_info("admin-sender", &[]),
             InstantiateMsg {},
         )?;
+        Ok((deps, env))
+    }
+
+    #[test]
+    fn deregister_err_nonexistent_vesting_account() -> TestResult {
+        let (mut deps, _env) = setup_with_block_time(0)?;
 
         let msg = ExecuteMsg::DeregisterVestingAccount {
             address: "nonexistent".to_string(),
@@ -429,7 +449,7 @@ pub mod tests {
 
         match res {
             Ok(_) => Err(anyhow!("Unexpected result: {:#?}", res)),
-            Err(StdError::GenericErr { msg, .. }) => {
+            Err(ContractError::Std(StdError::GenericErr { msg, .. })) => {
                 assert!(msg.contains("vesting entry is not found for denom"));
                 Ok(())
             }
@@ -439,17 +459,8 @@ pub mod tests {
 
     #[test]
     fn deregister_err_unauthorized_vesting_account() -> TestResult {
-        let mut deps = testing::mock_dependencies();
-
         // Set up the environment with a block time before the vesting start time
-        let env = mock_env_with_time(50);
-
-        instantiate(
-            deps.as_mut(),
-            env.clone(), // Use the custom environment with the adjusted block time
-            testing::mock_info("admin-sender", &[]),
-            InstantiateMsg {},
-        )?;
+        let (mut deps, env) = setup_with_block_time(50)?;
 
         let register_msg = ExecuteMsg::RegisterVestingAccount {
             master_address: Some("addr0002".to_string()),
@@ -483,7 +494,8 @@ pub mod tests {
             msg,
         );
         match res {
-            Err(StdError::GenericErr { msg, .. }) if msg == "unauthorized" => (),
+            Err(ContractError::Std(StdError::GenericErr { msg, .. }))
+                if msg == "unauthorized" => {}
             _ => return Err(anyhow!("Unexpected result: {:?}", res)),
         }
 
@@ -492,17 +504,8 @@ pub mod tests {
 
     #[test]
     fn deregister_successful() -> TestResult {
-        let mut deps = testing::mock_dependencies();
-
         // Set up the environment with a block time before the vesting start time
-        let env = mock_env_with_time(50);
-
-        instantiate(
-            deps.as_mut(),
-            env.clone(), // Use the custom environment with the adjusted block time
-            testing::mock_info("admin-sender", &[]),
-            InstantiateMsg {},
-        )?;
+        let (mut deps, env) = setup_with_block_time(50)?;
 
         let register_msg = ExecuteMsg::RegisterVestingAccount {
             master_address: Some("addr0002".to_string()),
@@ -529,15 +532,12 @@ pub mod tests {
             left_vesting_token_recipient: None,
         };
 
-        let res = execute(
+        let _res = execute(
             deps.as_mut(),
             env, // Use the custom environment with the adjusted block time
             testing::mock_info("addr0002", &[]),
             msg,
-        );
-        if res.is_err() {
-            return Err(anyhow!("Unexpected error: {:?}", res));
-        }
+        )?;
 
         Ok(())
     }
