@@ -148,8 +148,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
             VestingError::MismatchedVestingAndDepositAmount {
                 vesting_amount: 1000u128,
                 deposit_amount: 999u128,
-            }
-            .into(),
+            },
         ),
     );
 

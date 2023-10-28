@@ -23,6 +23,6 @@ schemars = "0.8.15"
 serde = { version = "1.0.188", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.49" }
 anyhow = { workspace = true }
-nibiru-std = { path = "../../nibiru-std" }
+nibiru-std = { workspace = true }
 
 [dev-dependencies]
