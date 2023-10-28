@@ -1,37 +1,30 @@
 # Contracts               <!-- omit in toc -->
-- [shifter](#shifter)
-    - [Contained Functionality](#contained-functionality)
-    - [Entry Points](#entry-points)
+
+- [Core Contracts](#core-contracts)
+- [Example Contracts](#example-contracts)
+- [Utility Contracts](#utility-contracts)
 
 ---
 
-# shifter 
+## Core Contracts
 
-"Shifter" is a simple contract that can be used to execute peg shift and
-depth shifts in the x/perp module of Nibiru. The contract stores a whitelist
-of addresses, managed by an admin. This whitelist design takes inspiration
-from cw-plus/contracts/cw1-whitelist.
+- [**core-token-vesting**](./core-token-vesting/README.md)
+- [**core-shifter**](./core-shifter/README.md): Simple contract to execute peg shift
+  and depth shift admin calls in x/perp module. This contract is meant to be used
+  to run a bot.
+- [**core-controller**](./core-controller): Admin calls for things like creating
+  perp markets or changing oracle parameters.
 
-The contract initializes with an admin address and allows the admin to add
-or remove addresses from the whitelist. Users can query whether an address
-is whitelisted or not.
+## Example Contracts 
 
-### Contained Functionality
+- [**nibi-stargate**](./nibi-stargate/README.md): Example smart contract that showcases how to use the Nibiru standard (nibiru-std) library to execute `CosmosMsg::Stargate` transactions for the token factory module.
 
-1. Initialize the contract with an admin address.
-2. Allow the admin to add or remove addresses from the whitelist.
-3. Allow anyone to query if an address is on the whitelist.
-4. Members of the whitelist set can execute permissioned calls on the Nibiru
-   x/perp module for dynamic optimizations like peg shift and depth shift.
+## Utility Contracts
 
-### Entry Points
+- **lockup**: Smart contract that enables users to lock or bond tokens for arbitrary durations. This contract can be used as a building block in combination with a contract like `incentives` to implement liquidity mining incentives or other yield mechanisms. 
 
-- InitMsg: Initializes the contract with the admin address.
-- ExecuteMsg: Enum for executing msgs
-  - ExecuteMsg::DepthShift
-  - ExecuteMsg::PegShift
-  - ExecuteMsg::AddMember adds an address to the whitelist
-  - ExecuteMsg::RemoveMember removes and address from the whitelist.
-  - ExecuteMsg::ChangeAdmin lets the current admin set a new one.
+- **incentives**: Smart contract for funding lockups based with tokens.
 
----
+
+- [**pricefeed**](./pricefeed): Legacy implementation of the Nibiru Oracle Module in pure
+  CosmWasm rather than the Cosmos-SDK.
