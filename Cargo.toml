@@ -1,5 +1,5 @@
 [workspace]
-members = ["packages/*", "contracts/*", "nibiru-std", "scripts"]
+members = ["scripts", "packages/*", "nibiru-std", "contracts/*"]
 exclude = ["packages/msig-ez"]
 resolver = "2"
 
@@ -11,4 +11,28 @@ resolver = "2"
 # ```
 [workspace.dependencies]
 anyhow = "1"
-thiserror = "1.0.49"
+thiserror = "1.0.50"
+assert_cmd = "2"
+lazy_static = "1.4.0"
+clap = { version = "4.4.7", features = ["derive", "cargo", "env", "string"] }
+
+nibiru-std = { path = "nibiru-std" }
+nibiru-macro = { path = "packages/nibiru-macro" }
+
+# deps: CosmWasm
+cosmwasm-std = { version = "1.5.0", features = ["stargate"] }
+cosmwasm-schema = "1.5.0"
+cw-storage-plus = { version = "1.1.0" }
+
+# deps: cw-plus
+cw2 = { version = "1.1.1" }
+cw3 = { version = "1.1.1" }
+cw3-fixed-multisig = { version = "1.1.1", features = ["library"] }
+cw4 = { version = "1.1.1" }
+cw20 = { version = "1.1.1" }
+
+# deps: core contracts
+# TODO: revive bindings-perp with stargate
+# bindings-perp = { path = "core/core-bindings-perp" }
+shifter = { path = "contracts/core-shifter" }
+controller = { path = "contracts/core-controller" }
