@@ -27,6 +27,26 @@ impl Name for cosmos::bank::v1beta1::QueryDenomMetadataRequest {
     const PACKAGE: &'static str = PACKAGE_BANK;
 }
 
+impl Name for cosmos::bank::v1beta1::MsgSend {
+    const NAME: &'static str = "MsgSend";
+    const PACKAGE: &'static str = PACKAGE_BANK;
+}
+
+impl Name for cosmos::bank::v1beta1::MsgMultiSend {
+    const NAME: &'static str = "MsgMultiSend";
+    const PACKAGE: &'static str = PACKAGE_BANK;
+}
+
+impl Name for cosmos::bank::v1beta1::MsgUpdateParams {
+    const NAME: &'static str = "MsgUpdateParams";
+    const PACKAGE: &'static str = PACKAGE_BANK;
+}
+
+impl Name for cosmos::bank::v1beta1::MsgSetSendEnabled {
+    const NAME: &'static str = "MsgSetSendEnabled";
+    const PACKAGE: &'static str = PACKAGE_BANK;
+}
+
 #[cfg(test)]
 mod tests {
 
