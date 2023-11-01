@@ -253,6 +253,15 @@ impl VestingSchedule {
                     });
                 }
 
+                if vesting_amount != deposit_amount {
+                    return Err(
+                        VestingError::MismatchedVestingAndDepositAmount {
+                            vesting_amount: vesting_amount.u128(),
+                            deposit_amount: deposit_amount.u128(),
+                        },
+                    );
+                }
+
                 let cliff = Cliff {
                     amount: *cliff_amount,
                     time: *cliff_time,
