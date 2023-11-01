@@ -7,6 +7,7 @@ use crate::msg::{
 };
 
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
+use cosmwasm_std::MessageInfo;
 use cosmwasm_std::{
     from_binary,
     testing::{mock_dependencies, mock_env, mock_info},
@@ -64,6 +65,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
     require_error(
         &mut deps,
         &env,
+        mock_info("addr0000", &[Coin::new(0u128, "uusd")]),
         msg,
         ContractError::Vesting(VestingError::ZeroVestingAmount),
     );
@@ -73,6 +75,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
     require_error(
         &mut deps,
         &env,
+        mock_info("addr0000", &[Coin::new(1000u128, "uusd")]),
         msg,
         ContractError::Vesting(VestingError::Cliff(CliffError::ZeroAmount)),
     );
@@ -82,6 +85,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
     require_error(
         &mut deps,
         &env,
+        mock_info("addr0000", &[Coin::new(1000u128, "uusd")]),
         msg,
         ContractError::Vesting(VestingError::Cliff(CliffError::InvalidTime {
             cliff_time: 99,
@@ -94,6 +98,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
     require_error(
         &mut deps,
         &env,
+        mock_info("addr0000", &[Coin::new(1000u128, "uusd")]),
         msg,
         ContractError::Vesting(VestingError::InvalidTimeRange {
             start_time: 110,
@@ -106,6 +111,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
     require_error(
         &mut deps,
         &env,
+        mock_info("addr0000", &[Coin::new(1000u128, "uusd")]),
         msg,
         ContractError::Vesting(VestingError::StartBeforeBlockTime {
             start_time: 99,
@@ -119,6 +125,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
     require_error(
         &mut deps,
         &env,
+        mock_info("addr0000", &[Coin::new(1000u128, "uusd")]),
         msg,
         ContractError::Vesting(
             CliffError::ExcessiveAmount {
@@ -128,16 +135,34 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
             .into(),
         ),
     );
+
+    // deposit amount different than vesting amount
+    let (vesting_amount, cliff_amount, cliff_time) = (1000, 250, 105);
+    let msg = create_msg(100, 110, vesting_amount, cliff_amount, cliff_time);
+    require_error(
+        &mut deps,
+        &env,
+        mock_info("addr0000", &[Coin::new(999u128, "uusd")]),
+        msg,
+        ContractError::Vesting(
+            VestingError::MismatchedVestingAndDepositAmount {
+                vesting_amount: 1000u128,
+                deposit_amount: 999u128,
+            }
+            .into(),
+        ),
+    );
+
     Ok(())
 }
 
 fn require_error(
     deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>,
     env: &Env,
+    info: MessageInfo,
     msg: ExecuteMsg,
     expected_error: ContractError,
 ) {
-    let info = mock_info("addr0000", &[Coin::new(0u128, "uusd")]);
     let res = execute(deps.as_mut(), env.clone(), info, msg);
     match res {
         Err(err) => {
@@ -173,6 +198,7 @@ fn register_vesting_account_with_native_token() -> TestResult {
     require_error(
         &mut deps,
         &env,
+        mock_info("addr0000", &[Coin::new(0u128, "uusd")]),
         msg,
         ContractError::Vesting(VestingError::ZeroVestingAmount),
     );
