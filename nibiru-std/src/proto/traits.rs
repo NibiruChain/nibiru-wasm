@@ -5,6 +5,8 @@ use cosmwasm_std::{Binary, CosmosMsg, QueryRequest};
 
 use crate::errors::{NibiruError, NibiruResult};
 
+use crate::proto::cosmos;
+
 pub trait NibiruProstMsg: prost::Message {
     /// Serialize this protobuf message as a byte vector
     fn to_bytes(&self) -> Vec<u8>;
@@ -123,5 +125,14 @@ where
                 .trim_end_matches("Request")
         );
         format!("/{}.{}", Self::PACKAGE, service_name)
+    }
+}
+
+impl From<cosmwasm_std::Coin> for cosmos::base::v1beta1::Coin {
+    fn from(cw_coin: cosmwasm_std::Coin) -> Self {
+        cosmos::base::v1beta1::Coin {
+            denom: cw_coin.denom,
+            amount: cw_coin.amount.to_string(),
+        }
     }
 }
