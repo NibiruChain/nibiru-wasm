@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # wasm-export.sh
 wasm_binding_dir="../nibiru/x/wasm/binding"
 
