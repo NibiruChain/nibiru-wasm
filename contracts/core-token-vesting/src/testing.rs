@@ -9,9 +9,9 @@ use crate::msg::{
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cosmwasm_std::MessageInfo;
 use cosmwasm_std::{
-    from_binary,
+    from_json,
     testing::{mock_dependencies, mock_env, mock_info},
-    to_binary, Addr, Attribute, BankMsg, Coin, Env, OwnedDeps, Response,
+    to_json_binary, Addr, Attribute, BankMsg, Coin, Env, OwnedDeps, Response,
     StdError, SubMsg, Timestamp, Uint128, Uint64, WasmMsg,
 };
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, Denom};
@@ -269,7 +269,7 @@ fn register_vesting_account_with_native_token() -> TestResult {
 
     // query vesting account
     assert_eq!(
-        from_binary::<VestingAccountResponse>(&query(
+        from_json::<VestingAccountResponse>(&query(
             deps.as_ref(),
             env,
             QueryMsg::VestingAccount {
@@ -314,7 +314,7 @@ fn register_vesting_account_with_cw20_token() -> TestResult {
     let msg = ExecuteMsg::Receive(Cw20ReceiveMsg {
         sender: "addr0000".to_string(),
         amount: Uint128::new(1000000u128),
-        msg: to_binary(&Cw20HookMsg::RegisterVestingAccount {
+        msg: to_json_binary(&Cw20HookMsg::RegisterVestingAccount {
             master_address: None,
             address: "addr0001".to_string(),
             vesting_schedule: VestingSchedule::LinearVesting {
@@ -341,7 +341,7 @@ fn register_vesting_account_with_cw20_token() -> TestResult {
     let msg = ExecuteMsg::Receive(Cw20ReceiveMsg {
         sender: "addr0000".to_string(),
         amount: Uint128::new(1000000u128),
-        msg: to_binary(&Cw20HookMsg::RegisterVestingAccount {
+        msg: to_json_binary(&Cw20HookMsg::RegisterVestingAccount {
             master_address: None,
             address: "addr0001".to_string(),
             vesting_schedule: VestingSchedule::LinearVesting {
@@ -371,7 +371,7 @@ fn register_vesting_account_with_cw20_token() -> TestResult {
     let msg = ExecuteMsg::Receive(Cw20ReceiveMsg {
         sender: "addr0000".to_string(),
         amount: Uint128::new(1000000u128),
-        msg: to_binary(&Cw20HookMsg::RegisterVestingAccount {
+        msg: to_json_binary(&Cw20HookMsg::RegisterVestingAccount {
             master_address: None,
             address: "addr0001".to_string(),
             vesting_schedule: VestingSchedule::LinearVesting {
@@ -397,7 +397,7 @@ fn register_vesting_account_with_cw20_token() -> TestResult {
 
     // query vesting account
     assert_eq!(
-        from_binary::<VestingAccountResponse>(&query(
+        from_json::<VestingAccountResponse>(&query(
             deps.as_ref(),
             env,
             QueryMsg::VestingAccount {
@@ -506,7 +506,7 @@ fn claim_native() -> TestResult {
 
     // query vesting account
     assert_eq!(
-        from_binary::<VestingAccountResponse>(&query(
+        from_json::<VestingAccountResponse>(&query(
             deps.as_ref(),
             env.clone(),
             QueryMsg::VestingAccount {
@@ -560,7 +560,7 @@ fn claim_native() -> TestResult {
 
     // query vesting account
     assert_eq!(
-        from_binary::<VestingAccountResponse>(&query(
+        from_json::<VestingAccountResponse>(&query(
             deps.as_ref(),
             env,
             QueryMsg::VestingAccount {
@@ -595,7 +595,7 @@ fn claim_cw20() -> TestResult {
     let msg = ExecuteMsg::Receive(Cw20ReceiveMsg {
         sender: "addr0000".to_string(),
         amount: Uint128::new(1000000u128),
-        msg: to_binary(&Cw20HookMsg::RegisterVestingAccount {
+        msg: to_json_binary(&Cw20HookMsg::RegisterVestingAccount {
             master_address: None,
             address: "addr0001".to_string(),
             vesting_schedule: VestingSchedule::LinearVesting {
@@ -644,7 +644,7 @@ fn claim_cw20() -> TestResult {
         vec![SubMsg::new(WasmMsg::Execute {
             contract_addr: "token0001".to_string(),
             funds: vec![],
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: "addr0001".to_string(),
                 amount: Uint128::new(500000u128),
             })?,
@@ -665,7 +665,7 @@ fn claim_cw20() -> TestResult {
 
     // query vesting account
     assert_eq!(
-        from_binary::<VestingAccountResponse>(&query(
+        from_json::<VestingAccountResponse>(&query(
             deps.as_ref(),
             env.clone(),
             QueryMsg::VestingAccount {
@@ -700,7 +700,7 @@ fn claim_cw20() -> TestResult {
         vec![SubMsg::new(WasmMsg::Execute {
             contract_addr: "token0001".to_string(),
             funds: vec![],
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: "addr0001".to_string(),
                 amount: Uint128::new(500000u128),
             })?,
@@ -720,7 +720,7 @@ fn claim_cw20() -> TestResult {
 
     // query vesting account
     assert_eq!(
-        from_binary::<VestingAccountResponse>(&query(
+        from_json::<VestingAccountResponse>(&query(
             deps.as_ref(),
             env,
             QueryMsg::VestingAccount {
@@ -769,7 +769,7 @@ fn query_vesting_account() -> TestResult {
     let msg = ExecuteMsg::Receive(Cw20ReceiveMsg {
         sender: "addr0000".to_string(),
         amount: Uint128::new(1000000u128),
-        msg: to_binary(&Cw20HookMsg::RegisterVestingAccount {
+        msg: to_json_binary(&Cw20HookMsg::RegisterVestingAccount {
             master_address: None,
             address: "addr0001".to_string(),
             vesting_schedule: VestingSchedule::LinearVesting {
@@ -789,7 +789,7 @@ fn query_vesting_account() -> TestResult {
 
     // query all entry
     assert_eq!(
-        from_binary::<VestingAccountResponse>(&query(
+        from_json::<VestingAccountResponse>(&query(
             deps.as_ref(),
             env.clone(),
             QueryMsg::VestingAccount {
@@ -831,7 +831,7 @@ fn query_vesting_account() -> TestResult {
 
     // query one entry
     assert_eq!(
-        from_binary::<VestingAccountResponse>(&query(
+        from_json::<VestingAccountResponse>(&query(
             deps.as_ref(),
             env.clone(),
             QueryMsg::VestingAccount {
@@ -859,7 +859,7 @@ fn query_vesting_account() -> TestResult {
 
     // query one entry after first one
     assert_eq!(
-        from_binary::<VestingAccountResponse>(&query(
+        from_json::<VestingAccountResponse>(&query(
             deps.as_ref(),
             env,
             QueryMsg::VestingAccount {

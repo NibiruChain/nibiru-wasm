@@ -7,16 +7,19 @@ use crate::state::{
     LAST_EPOCH_PROCESSED, LOCKUP_ADDR, PROGRAMS, PROGRAMS_ID, WITHDRAWALS,
 };
 use cosmwasm_std::{
-    to_binary, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env, MessageInfo,
-    Order, Response, StdResult, Uint128,
+    entry_point, to_json_binary, BankMsg, Binary, Coin, Decimal, Deps, DepsMut,
+    Env, MessageInfo, Order, Response, StdResult, Uint128,
 };
 use cw_storage_plus::Bound;
 use lockup::msgs::QueryMsg as LockupQueryMsg;
 use lockup::state::Lock;
 
+// TODO: test query entry point
+#[allow(dead_code)]
+#[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::ProgramFunding { program_id: id } => to_binary(
+        QueryMsg::ProgramFunding { program_id: id } => to_json_binary(
             &funding()
                 .idx
                 .pay_from_epoch
@@ -28,12 +31,15 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::EpochInfo {
             program_id,
             epoch_number,
-        } => to_binary(
+        } => to_json_binary(
             &EPOCH_INFO.load(deps.storage, (program_id, epoch_number))?,
         ),
     }
 }
 
+// TODO: test instantiate entry point
+#[allow(dead_code)]
+#[entry_point]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
@@ -49,6 +55,9 @@ pub fn instantiate(
     Ok(Response::new())
 }
 
+#[entry_point]
+// TODO: test execute entry point
+#[allow(dead_code)]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -82,8 +91,6 @@ pub fn execute(
         ExecuteMsg::WithdrawRewards { id } => {
             execute_withdraw_rewards(deps, env, info, id)
         }
-
-        _ => Err(ContractError::NotImplemented),
     }
 }
 
@@ -264,6 +271,8 @@ fn execute_withdraw_rewards(
     }))
 }
 
+// TODO: test execute_process_epoch
+#[allow(dead_code)]
 fn execute_process_epoch(
     deps: DepsMut,
     env: Env,
@@ -365,11 +374,12 @@ fn execute_process_epoch(
         &epoch_info,
     )?;
 
-    Ok(Response::new().set_data(to_binary(&epoch_info)?)) // TODO: don't like
+    Ok(Response::new().set_data(to_json_binary(&epoch_info)?)) // TODO: don't like
 }
 
-// todo: this is extremely inefficient and could be solved by simple
+// TODO: this is extremely inefficient and could be solved by simple
 // math but rn brain too fried to do divisions
+#[allow(dead_code)]
 fn calc_epoch_to_pay_from(funding_block: u64, program: &Program) -> u64 {
     for i in 1..=program.epochs {
         let epoch_block = i * program.epoch_duration + program.start_block;

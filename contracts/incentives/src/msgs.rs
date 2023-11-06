@@ -1,19 +1,18 @@
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Addr;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[cw_serde]
 pub struct InstantiateMsg {
     pub lockup_contract_address: Addr,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[cw_serde]
 pub enum QueryMsg {
     ProgramFunding { program_id: u64 },
     EpochInfo { program_id: u64, epoch_number: u64 },
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[cw_serde]
 pub enum ExecuteMsg {
     CreateProgram {
         denom: String,

@@ -237,12 +237,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 is_member,
                 whitelist,
             };
-            cosmwasm_std::to_binary(&res)
+            cosmwasm_std::to_json_binary(&res)
         }
         QueryMsg::Whitelist {} => {
             let whitelist = WHITELIST.load(deps.storage)?;
             let res = WhitelistResponse { whitelist };
-            cosmwasm_std::to_binary(&res)
+            cosmwasm_std::to_json_binary(&res)
         }
     }
 }
@@ -385,7 +385,7 @@ mod tests {
         let binary =
             query(deps.as_ref(), testing::mock_env(), query_req).unwrap();
         let response: IsMemberResponse =
-            cosmwasm_std::from_binary(&binary).unwrap();
+            cosmwasm_std::from_json(binary).unwrap();
         assert!(response.is_member);
     }
 
@@ -449,7 +449,7 @@ mod tests {
         let binary =
             query(deps.as_ref(), testing::mock_env(), query_req).unwrap();
         let response: WhitelistResponse =
-            cosmwasm_std::from_binary(&binary).unwrap();
+            cosmwasm_std::from_json(binary).unwrap();
         let expected_members: HashSet<String> = ["vitalik", "musk", "admin"]
             .iter()
             .map(|&s| s.to_string())
@@ -521,7 +521,7 @@ mod tests {
         let binary =
             query(deps.as_ref(), testing::mock_env(), query_req).unwrap();
         let response: IsMemberResponse =
-            cosmwasm_std::from_binary(&binary).unwrap();
+            cosmwasm_std::from_json(binary).unwrap();
         assert!(response.is_member);
     }
 }

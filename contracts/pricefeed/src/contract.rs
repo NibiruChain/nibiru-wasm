@@ -10,8 +10,8 @@ use crate::state::{
 };
 use crate::AssetPair;
 use cosmwasm_std::{
-    entry_point, to_binary, Addr, Binary, Decimal, Deps, DepsMut, Empty, Env,
-    Event, MessageInfo, Order, Response, StdResult, Uint128,
+    entry_point, to_json_binary, Addr, Binary, Decimal, Deps, DepsMut, Empty,
+    Env, Event, MessageInfo, Order, Response, StdResult, Uint128,
 };
 
 use std::collections::HashSet;
@@ -29,13 +29,13 @@ pub fn instantiate(
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Price { pair_id } => to_binary(&QueryPriceResponse {
+        QueryMsg::Price { pair_id } => to_json_binary(&QueryPriceResponse {
             current_price: CurrentPrice {
                 pair_id: pair_id.clone(),
                 price: CURRENT_PRICES.load(deps.storage, pair_id)?,
             },
         }),
-        QueryMsg::Prices {} => to_binary(&QueryPricesResponse {
+        QueryMsg::Prices {} => to_json_binary(&QueryPricesResponse {
             current_prices: CURRENT_PRICES
                 .range(deps.storage, None, None, Order::Ascending)
                 .map(|r| -> CurrentPrice {
@@ -45,13 +45,15 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 .collect::<Vec<CurrentPrice>>(),
         }),
 
-        QueryMsg::RawPrices { pair_id } => to_binary(&QueryRawPriceResponse {
-            raw_prices: RAW_PRICES
-                .prefix(pair_id)
-                .range(deps.storage, None, None, Order::Ascending)
-                .map(|r| -> PostedPrice { r.unwrap().1 })
-                .collect::<Vec<PostedPrice>>(),
-        }),
+        QueryMsg::RawPrices { pair_id } => {
+            to_json_binary(&QueryRawPriceResponse {
+                raw_prices: RAW_PRICES
+                    .prefix(pair_id)
+                    .range(deps.storage, None, None, Order::Ascending)
+                    .map(|r| -> PostedPrice { r.unwrap().1 })
+                    .collect::<Vec<PostedPrice>>(),
+            })
+        }
         QueryMsg::Oracles {} => {
             let mut unique_oracles: HashSet<Addr> = HashSet::new();
             let oracles: Vec<Addr> = ORACLE_PAIR_WHITELIST
@@ -63,7 +65,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 unique_oracles.insert(oracle);
             }
 
-            to_binary(&QueryOraclesResponse {
+            to_json_binary(&QueryOraclesResponse {
                 oracles: unique_oracles.into_iter().collect::<Vec<Addr>>(),
             })
         }
@@ -87,7 +89,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 markets.push(market)
             }
 
-            to_binary(&QueryMarketsResponse { markets })
+            to_json_binary(&QueryMarketsResponse { markets })
         }
     }
 }

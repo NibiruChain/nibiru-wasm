@@ -42,11 +42,11 @@ impl AssetPair {
             token1: self.token1.clone(),
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        // not clean but whatever... speeding
-        return [self.token0.clone(), self.token1.clone()]
-            .join(PAIR_SEPARATOR.to_string().as_str());
+impl std::fmt::Display for AssetPair {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(_f, "{}{}{}", self.token0, PAIR_SEPARATOR, self.token1,)
     }
 }
 

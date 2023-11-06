@@ -1,9 +1,9 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, to_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps,
-    DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult, Storage,
-    Timestamp, Uint128, WasmMsg,
+    from_json, to_json_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg,
+    Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult,
+    Storage, Timestamp, Uint128, WasmMsg,
 };
 
 use serde_json::to_string;
@@ -291,7 +291,7 @@ fn build_send_msg(
         .into(),
         Denom::Cw20(contract_addr) => WasmMsg::Execute {
             contract_addr: contract_addr.to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: to,
                 amount,
             })?,
@@ -311,7 +311,7 @@ pub fn receive_cw20(
     let _sender = cw20_msg.sender;
     let contract = info.sender;
 
-    match from_binary(&cw20_msg.msg) {
+    match from_json(&cw20_msg.msg) {
         Ok(Cw20HookMsg::RegisterVestingAccount {
             master_address,
             address,
@@ -336,9 +336,13 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             address,
             start_after,
             limit,
-        } => {
-            to_binary(&vesting_account(deps, env, address, start_after, limit)?)
-        }
+        } => to_json_binary(&vesting_account(
+            deps,
+            env,
+            address,
+            start_after,
+            limit,
+        )?),
     }
 }
 

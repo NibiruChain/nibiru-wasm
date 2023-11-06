@@ -4,8 +4,8 @@ mod integration_test {
     use crate::msgs::{ExecuteMsg, InstantiateMsg, QueryMsg};
     use crate::state::{EpochInfo, Funding};
 
-    use cosmwasm_std::{from_binary, Addr, Coin};
-    use cw_multi_test::{App, BankSudo, Contract, ContractWrapper, Executor};
+    use cosmwasm_std::{from_json, Addr, Coin};
+    use cw_multi_test::{App, BankSudo, ContractWrapper, Executor};
 
     const ROOT: &str = "root";
     const INCENTIVES: &str = "contract1";
@@ -88,7 +88,7 @@ mod integration_test {
     }
 
     fn process_epoch(app: &mut App, _program_id: u64) -> EpochInfo {
-        from_binary::<EpochInfo>(
+        from_json::<EpochInfo>(
             &app.execute_contract(
                 Addr::unchecked(ROOT),
                 Addr::unchecked(INCENTIVES),

@@ -6,7 +6,7 @@ use crate::events::{
 use crate::msgs::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{locks, Lock, LOCKS_ID, NOT_UNLOCKING_BLOCK_IDENTIFIER};
 use cosmwasm_std::{
-    entry_point, to_binary, BankMsg, Binary, Deps, DepsMut, Env, Event,
+    entry_point, to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, Event,
     MessageInfo, Order, Response, StdResult,
 };
 use cw_storage_plus::Bound;
@@ -161,7 +161,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             denom,
             unlocking_after,
             address,
-        } => Ok(to_binary(
+        } => Ok(to_json_binary(
             &locks()
                 .idx
                 .addr_denom_end
@@ -186,7 +186,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::LocksByDenomUnlockingAfter {
             denom,
             unlocking_after,
-        } => Ok(to_binary(
+        } => Ok(to_json_binary(
             &locks()
                 .idx
                 .denom_end
@@ -213,7 +213,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             denom,
             locked_before,
             unlocking_after,
-        } => Ok(to_binary(
+        } => Ok(to_json_binary(
             &locks()
                 .idx
                 .denom_start
@@ -236,7 +236,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             address,
             locked_before,
             unlocking_after,
-        } => Ok(to_binary(
+        } => Ok(to_json_binary(
             &locks()
                 .idx
                 .addr_denom_start
@@ -264,7 +264,7 @@ mod tests {
     use crate::state::Lock;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 
-    use cosmwasm_std::{from_binary, Addr, Coin, DepsMut, Env};
+    use cosmwasm_std::{from_json, Addr, Coin, DepsMut, Env};
 
     /// A 'TestLock' is struct representating an "owner" locking "coins" for
     /// some "duration".
@@ -295,13 +295,13 @@ mod tests {
     /// coins (Vec<Coin>): the expected coins on the lock returned by the query.
     fn test_query_locks_for_coins(
         msg: &QueryMsg,
-        coins: &Vec<Coin>,
+        coins: &[Coin],
         deps: DepsMut,
         env: Env,
     ) {
         assert_eq!(
-            coins.clone(),
-            from_binary::<Vec<Lock>>(
+            coins,
+            from_json::<Vec<Lock>>(
                 &query(deps.as_ref(), env, msg.clone()).unwrap()
             )
             .unwrap()
