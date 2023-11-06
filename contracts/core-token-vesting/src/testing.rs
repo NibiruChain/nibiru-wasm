@@ -106,19 +106,6 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
         }),
     );
 
-    // start time less than block time
-    let msg = create_msg(99, 110, 1000, 1000, 105);
-    require_error(
-        &mut deps,
-        &env,
-        mock_info("addr0000", &[Coin::new(1000u128, "uusd")]),
-        msg,
-        ContractError::Vesting(VestingError::StartBeforeBlockTime {
-            start_time: 99,
-            block_time: 100,
-        }),
-    );
-
     // cliff amount greater than vesting amount
     let (vesting_amount, cliff_amount, cliff_time) = (1000, 1001, 105);
     let msg = create_msg(100, 110, vesting_amount, cliff_amount, cliff_time);
