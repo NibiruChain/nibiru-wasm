@@ -1,5 +1,3 @@
-use std::fmt;
-
 use thiserror::Error;
 
 use crate::{
@@ -7,23 +5,13 @@ use crate::{
     tools::Binary,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum BashError {
-    BashCmdFailed(String, String),
-    General(String),
-}
+    #[error("bash command '{}' failed with error: {}", cmd, err)]
+    BashCmdFailed { cmd: String, err: String },
 
-impl std::error::Error for BashError {}
-
-impl fmt::Display for BashError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            BashError::BashCmdFailed(cmd, err) => {
-                write!(f, "bash command '{}' failed with error: {}", cmd, err)
-            }
-            BashError::General(err) => write!(f, "BashError: {}", err),
-        }
-    }
+    #[error("BashError: {}", msg)]
+    General { msg: String },
 }
 
 #[derive(Debug, Error)]

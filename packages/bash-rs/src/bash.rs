@@ -2,18 +2,19 @@ use std::process;
 
 use serde::Serialize;
 
+use std::io::{BufRead, BufReader};
+use std::process::{Child, Stdio};
+use std::thread;
+
 use crate::errors::BashError;
 
 /// Runs a shell command
-pub fn run_bash(cmd: String) -> Result<BashOutput, BashError> {
-    let output = std::process::Command::new("bash")
-        .arg("-c")
-        .arg(cmd.clone())
-        .output()
-        .expect("Failed to execute command");
+pub fn run_bash(bash_code: String) -> Result<BashOutput, BashError> {
+    let mut bash_cmd = build_bash_cmd(bash_code.clone());
+    let output = bash_cmd.output().expect("Failed to execute command");
 
     match output.status.success() {
-        true => Ok(BashOutput::new(cmd, output)),
+        true => Ok(BashOutput::new(bash_code, output)),
         false => {
             let error_json = serde_json::to_string_pretty(&BashOutput {
                 status: output
@@ -22,35 +23,77 @@ pub fn run_bash(cmd: String) -> Result<BashOutput, BashError> {
                     .expect("Failed to parse cmd status code"),
                 stdout: String::from_utf8_lossy(&output.stdout).to_string(),
                 stderr: String::from_utf8_lossy(&output.stderr).to_string(),
-                cmd: cmd.clone(),
+                cmd: bash_code.clone(),
             })
             .expect("Failed to parse bash command output as string");
-            Err(BashError::BashCmdFailed {
-                cmd,
-                err: error_json,
-            })
+            Err(BashError::BashCmdFailed { err: error_json })
         }
     }
 }
 
+fn build_bash_cmd(bash_code: String) -> std::process::Command {
+    let mut bash_cmd = std::process::Command::new("bash");
+    bash_cmd.arg("-c").arg(bash_code);
+    bash_cmd
+}
+
 /// run_cmd_print: Runs a command and prints its output.
-pub fn run_bash_and_print(cmd: String) -> Result<BashOutput, BashError> {
-    let out = run_bash(cmd)?;
-    if !out.stdout.is_empty() {
-        println!("{}", out.stdout);
+pub fn run_bash_and_print(bash_code: String) -> Result<(), BashError> {
+    let mut bash_cmd = build_bash_cmd(bash_code.clone());
+    let mut child: Child = bash_cmd
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
+
+    // Capture stdout and stderr
+    let stdout = child
+        .stdout
+        .take()
+        .expect("child did not have a handle to stdout");
+    let stderr = child
+        .stderr
+        .take()
+        .expect("child did not have a handle to stderr");
+
+    // Spawn a thread to handle stdout
+    let stdout_thread = thread::spawn(move || {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines() {
+            println!("{}", line.expect("Could not read line from stdout"));
+        }
+    });
+
+    // Spawn a thread to handle stderr
+    let stderr_thread = thread::spawn(move || {
+        let reader = BufReader::new(stderr);
+        for line in reader.lines() {
+            eprintln!("{}", line.expect("Could not read line from stderr"));
+        }
+    });
+
+    // Wait for threads to finish
+    stdout_thread
+        .join()
+        .expect("The stdout thread has panicked");
+    stderr_thread
+        .join()
+        .expect("The stderr thread has panicked");
+
+    // Wait for the process to finish
+    let status = child.wait()?;
+
+    match status.success() {
+        true => Ok(()),
+        false => Err(BashError::General { msg: bash_code }),
     }
-    if !out.stderr.is_empty() {
-        println!("{}", out.stderr);
-    }
-    Ok(out)
 }
 
 #[derive(Serialize, Debug, Clone)]
 pub struct BashOutput {
     pub status: i32,
+    pub cmd: String,
     pub stdout: String,
     pub stderr: String,
-    pub cmd: String,
 }
 
 impl BashOutput {
@@ -76,16 +119,14 @@ impl From<process::Output> for BashOutput {
 pub fn which_ok(bin: &str) -> bool {
     let err_msg_string = format!("failed to run 'which {}'", bin);
     let err_msg = err_msg_string.as_str();
-    let out = run_bash(
-        [
-            format!("if which {} >/dev/null; then", bin),
-            format!("    echo '{} is present'", bin),
-            "else".to_string(),
-            format!("    echo '{} is not installed'", bin),
-            "fi".to_string(),
-        ]
-        .join("\n"),
-    )
+    let out = run_bash(format!(
+        r#"
+if which {bin} >/dev/null; then
+    echo '{bin} is present'
+else
+    echo '{bin} is not installed'
+fi"#,
+    ))
     .expect(err_msg);
     out.stdout.contains("is present")
 }

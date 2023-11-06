@@ -1,4 +1,5 @@
-workspaces := "./packages ./contracts "
+workspaces := "./packages"
+# workspaces := "./packages ./core"
 
 # Displays available recipes by running `just -l`.
 setup:
@@ -10,6 +11,8 @@ install:
   rustup component add clippy
   # https://crates.io/crates/cargo-llvm-cov
   cargo install cargo-llvm-cov
+  # https://crates.io/crates/cosmwasm-check
+  cargo install cosmwasm-check
 
 wasm-all:
   bash scripts/wasm-out.sh
@@ -17,6 +20,10 @@ wasm-all:
 # Move binding artifacts to teh local nibiru wasmbin
 wasm-export:
   bash scripts/wasm-export.sh
+
+# Check if a Wasm smart contract binary is ready for the blockchain
+wasm-check:
+  cosmwasm-check artifacts/*.wasm
 
 # Compiles a single CW contract to wasm bytecode.
 # wasm-single:
@@ -69,10 +76,13 @@ test-coverage:
   cargo llvm-cov --lcov --output-path lcov.info \
     --ignore-filename-regex .*buf\/[^\/]+\.rs$
 
+alias t := tidy
+
 # Format, lint, and test
 tidy:
   just fmt
   just clippy
+  just wasm-check
   just test
 
 # Format, lint, update dependencies, and test
