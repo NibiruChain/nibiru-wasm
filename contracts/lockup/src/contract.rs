@@ -6,12 +6,12 @@ use crate::events::{
 use crate::msgs::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{locks, Lock, LOCKS_ID, NOT_UNLOCKING_BLOCK_IDENTIFIER};
 use cosmwasm_std::{
-    entry_point, to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, Event,
-    MessageInfo, Order, Response, StdResult,
+    to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, Event, MessageInfo,
+    Order, Response, StdResult,
 };
 use cw_storage_plus::Bound;
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
@@ -23,7 +23,7 @@ pub fn instantiate(
     Ok(Response::new())
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -155,6 +155,7 @@ pub(crate) fn execute_lock(
     Ok(Response::new().add_events(events))
 }
 
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::LocksByDenomAndAddressUnlockingAfter {

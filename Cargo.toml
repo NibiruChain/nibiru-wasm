@@ -15,6 +15,7 @@ thiserror = "1.0.50"
 assert_cmd = "2"
 lazy_static = "1.4.0"
 clap = { version = "4.4.7", features = ["derive", "cargo", "env", "string"] }
+schemars = "0.8.15"
 
 nibiru-std = { path = "nibiru-std" }
 nibiru-macro = { path = "packages/nibiru-macro" }
@@ -24,6 +25,8 @@ bash-rs = { path = "packages/bash-rs" }
 cosmwasm-std = { version = "1.5.0", features = ["stargate"] }
 cosmwasm-schema = "1.5.0"
 cw-storage-plus = { version = "1.1.0" }
+cw-multi-test = { version = "0.18.0" }
+cw-utils = { version = "1.0.2" }
 
 # deps: cw-plus
 cw2 = { version = "1.1.1" }
@@ -37,3 +40,5 @@ cw20 = { version = "1.1.1" }
 # bindings-perp = { path = "core/core-bindings-perp" }
 shifter = { path = "contracts/core-shifter" }
 controller = { path = "contracts/core-controller" }
+lockup = { path = "contracts/lockup", features = ["library"] }
+incentives = { path = "contracts/incentives", features = ["library"] }
