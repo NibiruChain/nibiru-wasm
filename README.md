@@ -5,26 +5,32 @@ Smart contract sandbox for Nibiru Chain.
 ```bash
 ⚡ NibiruChain/cw-nibiru
 ├── 📂 artifacts         # compiled .wasm smart contracts for cw-nibiru
-├── 📂 artifacts-cw-plus # compiled .wasm smart contracs from cw-plus
-├── 📂 contracts         # Contracts for Nibiru Chain
-    └── 📂 bindings-perp # Exposes queries and messages of the x/perp (and oracle) module of Nibiru.
+├── 📂 contracts         # Smart contracts for Nibiru Chain
+    └── 📂 nibi-stargate # Example contract using nibiru-std for CosmosMsg::Stargate
     └── 📂 incentives    # Generalized incentives over time for locked tokens
     └── 📂 lockup        # For locking and unlocking tokens like LP tokens
-    └── 📂 pricefeed     # CosmWasm version of the (now deprecated) x/pricefeed module.
-    └── 📂 shifter       # Calls peg shift and depth shift in x/perp.
-├── 📂 nibiru-std        # Nibiru Chain standard library for CosmsWasm smart contracts
-    └── 📦 bindings    # For sending custom messages via the x/wasm module of Nibiru.
+    └── 📂 pricefeed     # CosmWasm prototype of the (now deprecated) x/pricefeed module.
+    └── 📂 core-cw3-flex-msig # CW3-flex-multisig with stargate enabled.
+    └── 📂 core-shifter       # Calls peg shift and depth shift in x/perp.
+    └── 📂 core-controller    # Calls other admin calls from Nibiru foundation.
+    └── 📂 core-token-vesting # Token linear vesting contracts with optional cliffs.
+├── 📂 nibiru-std      # Nibiru Chain standard library for smart contracts
+    └── 📦 proto       # Types and traits for QueryRequest::Stargate and CosmosMsg::Stargate
+         └──           #   Includes constructors for Cosmos, IBC, and Nibiru. 
+    └── 📦 bindings    # For sending CosmosMsg::Custom msgs on Nibiru (soon deprecated).
 ├── 📂 packages        # Other Rust packages
+    └── 📦 bash-rs     # Easily run bash from Rust. Used for writing testable and maintainable scripts.
     └── 📦 nibi-dev    # Dev tooling package for Nibiru. 
-    └── 📦 macro       # Implements procedural macros for the "nibiru-macro" package. 
+    └── 📦 nibiru-macro  # Implements procedural macros for the "nibiru-macro" package. 
 ├── Cargo.toml
 ├── Cargo.lock
-├── README.md
+└── README.md
 ```
 
 ## Hacking
 
 Install `just` to run project-specific commands.
+
 ```bash
 cargo install just
 ```
