@@ -203,13 +203,6 @@ impl VestingSchedule {
                     return Err(VestingError::ZeroVestingAmount);
                 }
 
-                if start_time.u64() < block_time.seconds() {
-                    return Err(VestingError::StartBeforeBlockTime {
-                        start_time: start_time.u64(),
-                        block_time: block_time.seconds(),
-                    });
-                }
-
                 if end_time <= start_time {
                     return Err(VestingError::InvalidTimeRange {
                         start_time: start_time.u64(),
@@ -243,13 +236,6 @@ impl VestingSchedule {
                     return Err(VestingError::InvalidTimeRange {
                         start_time: start_time.u64(),
                         end_time: end_time.u64(),
-                    });
-                }
-
-                if start_time.u64() < block_time.seconds() {
-                    return Err(VestingError::StartBeforeBlockTime {
-                        start_time: start_time.u64(),
-                        block_time: block_time.seconds(),
                     });
                 }
 

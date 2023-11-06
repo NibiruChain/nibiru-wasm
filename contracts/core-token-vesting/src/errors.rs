@@ -40,9 +40,6 @@ pub enum VestingError {
     )]
     InvalidTimeRange { start_time: u64, end_time: u64 },
 
-    #[error("start_time ({start_time}) should be greater than block_time ({block_time})")]
-    StartBeforeBlockTime { start_time: u64, block_time: u64 },
-
     #[error(transparent)]
     Cliff(#[from] CliffError),
 
