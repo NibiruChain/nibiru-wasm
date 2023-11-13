@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "ExecuteMsg",
+  "description": "Enum respresenting message types for the execute entry point. These express the different ways in which one can invoke the contract and broadcast tx messages against it.",
   "oneOf": [
     {
       "type": "object",
@@ -15,7 +16,7 @@
       "additionalProperties": false
     },
     {
-      "description": "Creator Operations ///",
+      "description": "A creator operation that registers a vesting account address: String: Bech 32 address of the owner of the vesting account. master_address: Option<String>: Bech 32 address that can unregister the vesting account. vesting_schedule: VestingSchedule: The vesting schedule of the account.",
       "type": "object",
       "required": [
         "register_vesting_account"
@@ -47,7 +48,7 @@
       "additionalProperties": false
     },
     {
-      "description": "only available when master_address was set",
+      "description": "A creator operation that unregisters a vesting account. This method is only available only available when 'master_address' was set during vesting account registration. Args: - address: String: Bech 32 address of the owner of vesting account. - denom: Denom: The denomination of the tokens vested. - vested_token_recipient: Option<String>: Bech 32 address that will receive the vested tokens after deregistration. If None, tokens are received by the owner address. - left_vesting_token_recipient: Option<String>: Bech 32 address that will receive the left vesting tokens after deregistration.",
       "type": "object",
       "required": [
         "deregister_vesting_account"
@@ -85,7 +86,7 @@
       "additionalProperties": false
     },
     {
-      "description": "VestingAccount Operations ///",
+      "description": "Claim is an operation that allows one to claim vested tokens.",
       "type": "object",
       "required": [
         "claim"
