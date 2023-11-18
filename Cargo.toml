@@ -16,6 +16,9 @@ assert_cmd = "2"
 lazy_static = "1.4.0"
 clap = { version = "4.4.7", features = ["derive", "cargo", "env", "string"] }
 schemars = "0.8.15"
+# serde
+serde = { version = "1.0.189", default-features = false, features = ["derive"] }
+serde_json = "1.0.108"
 
 nibiru-std = { path = "nibiru-std" }
 nibiru-macro = { path = "packages/nibiru-macro" }
@@ -27,6 +30,8 @@ cosmwasm-schema = "1.5.0"
 cw-storage-plus = { version = "1.1.0" }
 cw-multi-test = { version = "0.18.0" }
 cw-utils = { version = "1.0.2" }
+# Macros for controlling ownership of CosmWasm smart contracts
+cw-ownable = { version = "0.5.1"}
 
 # deps: cw-plus
 cw2 = { version = "1.1.1" }
