@@ -51,11 +51,11 @@ pub struct GenesisState {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryEpochsInfoRequest {
+pub struct QueryEpochInfosRequest {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryEpochsInfoResponse {
+pub struct QueryEpochInfosResponse {
     #[prost(message, repeated, tag="1")]
     pub epochs: ::prost::alloc::vec::Vec<EpochInfo>,
 }

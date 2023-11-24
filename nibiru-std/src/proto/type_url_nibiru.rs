@@ -52,8 +52,8 @@ impl Name for nibiru::tokenfactory::QueryDenomInfoRequest {
 
 const PACKAGE_EPOCHS: &str = "nibiru.epochs.v1";
 
-impl Name for nibiru::epochs::QueryEpochsInfoRequest {
-    const NAME: &'static str = "QueryEpochsInfoRequest";
+impl Name for nibiru::epochs::QueryEpochInfosRequest {
+    const NAME: &'static str = "QueryEpochInfosRequest";
     const PACKAGE: &'static str = PACKAGE_EPOCHS;
 }
 
