@@ -2109,6 +2109,7 @@ dependencies = [
 name = "nibi-stargate-perp"
 version = "0.2.0"
 dependencies = [
+ "anyhow",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-vm",
