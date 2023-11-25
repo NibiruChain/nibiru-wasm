@@ -1,10 +1,7 @@
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    attr, entry_point, Binary, CosmosMsg, CustomMsg, Deps, DepsMut, Env,
-    MessageInfo, Response, StdResult,
+    attr, entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response,
+    StdResult,
 };
-use nibiru_macro::cw_custom;
-use nibiru_std::bindings::msg::NibiruRoute;
 
 use crate::{
     msgs::{ExecuteMsg, InitMsg, IsMemberResponse, QueryMsg, WhitelistResponse},
@@ -46,59 +43,42 @@ fn check_member(can: CanExecute) -> Result<(), cosmwasm_std::StdError> {
     }
 }
 
-/// ExecuteResponse allows the execute entry point to return different response
-/// types depending on the input. This is possible because we wrap the Response
-/// type with variants of ExecuteResponse. These variants store a Response type.
-///
-/// In CosmWasm, there are multiple entry points for handling different message
-/// types, such as instantiate, execute, query, sudo, and migrate. However,
-/// each entry point returns a single type of response. You cannot have multiple
-/// entry points return different returning different response types for the
-/// same message type. Ref: https://book.cosmwasm.com/basics/entry-points.html
-#[cw_serde]
-#[cw_custom]
-pub struct ContractExecMsg {
-    pub route: NibiruRoute,
-    pub msg: Option<ExecuteMsg>,
-}
-
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> StdResult<Response<ContractExecMsg>> {
+) -> StdResult<Response> {
     let deps_for_check = &deps;
     let check: CanExecute =
         can_execute(deps_for_check.as_ref(), info.sender.as_ref())?;
     let mut whitelist = check.whitelist.clone();
 
     match msg {
+        #[allow(unused_variables, deprecated, unreachable_code)]
         ExecuteMsg::InsuranceFundWithdraw { amount, to } => {
             check_member(check)?;
-            let cw_msg = ContractExecMsg {
-                route: NibiruRoute::Perp,
-                msg: Some(ExecuteMsg::InsuranceFundWithdraw { amount, to }),
-            };
-            let res = Response::new()
-                .add_message(cw_msg)
-                .add_attributes(vec![attr("action", "insurance_fund_withdraw")]);
-            Ok(res)
+            todo!();
+            let _cw_msg = ExecuteMsg::InsuranceFundWithdraw { amount, to };
+            // let res = Response::new()
+            //     .add_message(cw_msg)
+            //     .add_attributes(vec![attr("action", "insurance_fund_withdraw")]);
+            // Ok(res)
         }
 
+        #[allow(unused_variables, deprecated, unreachable_code)]
         ExecuteMsg::SetMarketEnabled { pair, enabled } => {
             check_member(check)?;
-            let cw_msg = ContractExecMsg {
-                route: NibiruRoute::Perp,
-                msg: Some(ExecuteMsg::SetMarketEnabled { pair, enabled }),
-            };
-            let res = Response::new()
-                .add_message(cw_msg)
-                .add_attributes(vec![attr("action", "toggle_market_enabled")]);
-            Ok(res)
+            todo!();
+            let _cw_msg = ExecuteMsg::SetMarketEnabled { pair, enabled };
+            // let res = Response::new()
+            //     .add_message(cw_msg)
+            //     .add_attributes(vec![attr("action", "toggle_market_enabled")]);
+            // Ok(res)
         }
 
+        #[allow(unused_variables, deprecated, unreachable_code)]
         ExecuteMsg::CreateMarket {
             pair,
             peg_mult,
@@ -106,21 +86,20 @@ pub fn execute(
             market_params,
         } => {
             check_member(check)?;
-            let cw_msg = ContractExecMsg {
-                route: NibiruRoute::Perp,
-                msg: Some(ExecuteMsg::CreateMarket {
-                    pair,
-                    peg_mult,
-                    sqrt_depth,
-                    market_params,
-                }),
+            todo!();
+            let _cw_msg = ExecuteMsg::CreateMarket {
+                pair,
+                peg_mult,
+                sqrt_depth,
+                market_params,
             };
-            let res = Response::new()
-                .add_message(cw_msg)
-                .add_attributes(vec![attr("action", "create_market")]);
-            Ok(res)
+            // let res = Response::new()
+            //     .add_message(cw_msg)
+            //     .add_attributes(vec![attr("action", "create_market")]);
+            // Ok(res)
         }
 
+        #[allow(unused_variables, deprecated, unreachable_code)]
         ExecuteMsg::EditOracleParams {
             vote_period,
             vote_threshold,
@@ -134,25 +113,23 @@ pub fn execute(
             validator_fee_ratio,
         } => {
             check_member(check)?;
-            let cw_msg = ContractExecMsg {
-                route: NibiruRoute::Oracle,
-                msg: Some(ExecuteMsg::EditOracleParams {
-                    vote_period,
-                    vote_threshold,
-                    reward_band,
-                    whitelist,
-                    slash_fraction,
-                    slash_window,
-                    min_valid_per_window,
-                    twap_lookback_window,
-                    min_voters,
-                    validator_fee_ratio,
-                }),
+            todo!();
+            let _cw_msg = ExecuteMsg::EditOracleParams {
+                vote_period,
+                vote_threshold,
+                reward_band,
+                whitelist,
+                slash_fraction,
+                slash_window,
+                min_valid_per_window,
+                twap_lookback_window,
+                min_voters,
+                validator_fee_ratio,
             };
-            let res = Response::new()
-                .add_message(cw_msg)
-                .add_attributes(vec![attr("action", "edit_oracle")]);
-            Ok(res)
+            // let res = Response::new()
+            //     .add_message(cw_msg)
+            //     .add_attributes(vec![attr("action", "edit_oracle")]);
+            // Ok(res)
         }
 
         ExecuteMsg::AddMember { address } => {
@@ -162,11 +139,7 @@ pub fn execute(
             whitelist.members.insert(addr.into_string());
             WHITELIST.save(deps.storage, &whitelist)?;
 
-            let cw_msg = ContractExecMsg {
-                route: NibiruRoute::NoOp,
-                msg: None,
-            };
-            let res = Response::new().add_message(cw_msg).add_attributes(vec![
+            let res = Response::new().add_attributes(vec![
                 attr("action", "add_member"),
                 attr("address", address),
             ]);
@@ -178,11 +151,7 @@ pub fn execute(
             whitelist.members.remove(address.as_str());
             WHITELIST.save(deps.storage, &whitelist)?;
 
-            let cw_msg = ContractExecMsg {
-                route: NibiruRoute::NoOp,
-                msg: None,
-            };
-            let res = Response::new().add_message(cw_msg).add_attributes(vec![
+            let res = Response::new().add_attributes(vec![
                 attr("action", "remove_member"),
                 attr("address", address),
             ]);
@@ -197,11 +166,7 @@ pub fn execute(
             whitelist.members.insert(new_admin.to_string());
             WHITELIST.save(deps.storage, &whitelist)?;
 
-            let cw_msg = ContractExecMsg {
-                route: NibiruRoute::NoOp,
-                msg: None,
-            };
-            let res = Response::new().add_message(cw_msg).add_attributes(vec![
+            let res = Response::new().add_attributes(vec![
                 attr("action", "change_admin"),
                 attr("address", address),
             ]);
@@ -350,10 +315,10 @@ mod tests {
         };
         let execute_info = testing::mock_info(admin.as_str(), &[]);
 
-        let check_resp = |resp: Response<ContractExecMsg>| {
+        let check_resp = |resp: Response| {
             assert_eq!(
                 resp.messages.len(),
-                1,
+                0,
                 "resp.messages: {:?}",
                 resp.messages
             );
@@ -421,10 +386,10 @@ mod tests {
             address: "satoshi".to_string(),
         };
         let execute_info = testing::mock_info(admin.as_str(), &[]);
-        let check_resp = |resp: Response<ContractExecMsg>| {
+        let check_resp = |resp: Response| {
             assert_eq!(
                 resp.messages.len(),
-                1,
+                0,
                 "resp.messages: {:?}",
                 resp.messages
             );
@@ -485,10 +450,10 @@ mod tests {
         };
         let execute_info = testing::mock_info(admin.as_str(), &[]);
 
-        let check_resp = |resp: Response<ContractExecMsg>| {
+        let check_resp = |resp: Response| {
             assert_eq!(
                 resp.messages.len(),
-                1,
+                0,
                 "resp.messages: {:?}",
                 resp.messages
             );
