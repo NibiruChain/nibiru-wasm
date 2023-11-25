@@ -1,17 +1,15 @@
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    attr, entry_point, Binary, CosmosMsg, CustomMsg, Deps, DepsMut, Env,
-    MessageInfo, Response, StdResult,
+    attr, entry_point, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Response, StdResult,
 };
-use nibiru_macro::cw_custom;
-use nibiru_std::bindings::msg::NibiruRoute;
+use nibiru_std::proto::{nibiru, NibiruStargateMsg};
 
 use crate::{
     msgs::{ExecuteMsg, InitMsg, IsMemberResponse, QueryMsg, WhitelistResponse},
     state::{Whitelist, WHITELIST},
 };
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
@@ -46,55 +44,47 @@ fn check_member(can: CanExecute) -> Result<(), cosmwasm_std::StdError> {
     }
 }
 
-/// ExecuteResponse allows the execute entry point to return different response
-/// types depending on the input. This is possible because we wrap the Response
-/// type with variants of ExecuteResponse. These variants store a Response type.
-///
-/// In CosmWasm, there are multiple entry points for handling different message
-/// types, such as instantiate, execute, query, sudo, and migrate. However,
-/// each entry point returns a single type of response. You cannot have multiple
-/// entry points return different returning different response types for the
-/// same message type. Ref: https://book.cosmwasm.com/basics/entry-points.html
-#[cw_serde]
-#[cw_custom]
-pub struct ContractExecMsg {
-    pub route: NibiruRoute,
-    pub msg: ExecuteMsg,
-}
-
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> StdResult<Response<ContractExecMsg>> {
+) -> StdResult<Response> {
     let deps_for_check = &deps;
     let check: CanExecute =
         can_execute(deps_for_check.as_ref(), info.sender.as_ref())?;
     let mut whitelist = check.whitelist.clone();
 
+    let contract_addr = env.contract.address.to_string();
     match msg {
-        ExecuteMsg::DepthShift { pair, depth_mult } => {
+        ExecuteMsg::ShiftSwapInvariant {
+            pair,
+            new_swap_invariant,
+        } => {
             check_member(check)?;
-            let cw_msg = ContractExecMsg {
-                route: NibiruRoute::Perp,
-                msg: ExecuteMsg::DepthShift { pair, depth_mult },
-            };
+            let cosmos_msg: CosmosMsg = nibiru::perp::MsgShiftSwapInvariant {
+                sender: contract_addr,
+                pair,
+                new_swap_invariant: new_swap_invariant.to_string(),
+            }
+            .into_stargate_msg();
             let res = Response::new()
-                .add_message(cw_msg)
+                .add_message(cosmos_msg)
                 .add_attributes(vec![attr("action", "depth_shift")]);
             Ok(res)
         }
 
-        ExecuteMsg::PegShift { pair, peg_mult } => {
+        ExecuteMsg::ShiftPegMultiplier { pair, new_peg_mult } => {
             check_member(check)?;
-            let cw_msg = ContractExecMsg {
-                route: NibiruRoute::Perp,
-                msg: ExecuteMsg::PegShift { pair, peg_mult },
-            };
+            let cosmos_msg: CosmosMsg = nibiru::perp::MsgShiftPegMultiplier {
+                sender: contract_addr,
+                pair,
+                new_peg_mult: new_peg_mult.to_string(),
+            }
+            .into_stargate_msg();
             let res = Response::new()
-                .add_message(cw_msg)
+                .add_message(cosmos_msg)
                 .add_attributes(vec![attr("action", "peg_shift")]);
             Ok(res)
         }
@@ -106,11 +96,7 @@ pub fn execute(
             whitelist.members.insert(addr.into_string());
             WHITELIST.save(deps.storage, &whitelist)?;
 
-            let cw_msg = ContractExecMsg {
-                route: NibiruRoute::NoOp,
-                msg: ExecuteMsg::NoOp {},
-            };
-            let res = Response::new().add_message(cw_msg).add_attributes(vec![
+            let res = Response::new().add_attributes(vec![
                 attr("action", "add_member"),
                 attr("address", address),
             ]);
@@ -122,11 +108,7 @@ pub fn execute(
             whitelist.members.remove(address.as_str());
             WHITELIST.save(deps.storage, &whitelist)?;
 
-            let cw_msg = ContractExecMsg {
-                route: NibiruRoute::NoOp,
-                msg: ExecuteMsg::NoOp {},
-            };
-            let res = Response::new().add_message(cw_msg).add_attributes(vec![
+            let res = Response::new().add_attributes(vec![
                 attr("action", "remove_member"),
                 attr("address", address),
             ]);
@@ -141,24 +123,10 @@ pub fn execute(
             whitelist.members.insert(new_admin.to_string());
             WHITELIST.save(deps.storage, &whitelist)?;
 
-            let cw_msg = ContractExecMsg {
-                route: NibiruRoute::NoOp,
-                msg: ExecuteMsg::NoOp {},
-            };
-            let res = Response::new().add_message(cw_msg).add_attributes(vec![
+            let res = Response::new().add_attributes(vec![
                 attr("action", "change_admin"),
                 attr("address", address),
             ]);
-            Ok(res)
-        }
-
-        // Purely here to satisfy the enum.
-        ExecuteMsg::NoOp {} => {
-            let cw_msg = ContractExecMsg {
-                route: NibiruRoute::NoOp,
-                msg: ExecuteMsg::NoOp {},
-            };
-            let res = Response::new().add_message(cw_msg);
             Ok(res)
         }
     }
@@ -181,7 +149,7 @@ fn can_execute(deps: Deps, sender: &str) -> StdResult<CanExecute> {
     })
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::IsMember { address } => {
@@ -304,10 +272,10 @@ mod tests {
         };
         let execute_info = testing::mock_info(admin.as_str(), &[]);
 
-        let check_resp = |resp: Response<ContractExecMsg>| {
+        let check_resp = |resp: Response| {
             assert_eq!(
                 resp.messages.len(),
-                1,
+                0,
                 "resp.messages: {:?}",
                 resp.messages
             );
@@ -375,10 +343,10 @@ mod tests {
             address: "satoshi".to_string(),
         };
         let execute_info = testing::mock_info(admin.as_str(), &[]);
-        let check_resp = |resp: Response<ContractExecMsg>| {
+        let check_resp = |resp: Response| {
             assert_eq!(
                 resp.messages.len(),
-                1,
+                0,
                 "resp.messages: {:?}",
                 resp.messages
             );
@@ -439,10 +407,10 @@ mod tests {
         };
         let execute_info = testing::mock_info(admin.as_str(), &[]);
 
-        let check_resp = |resp: Response<ContractExecMsg>| {
+        let check_resp = |resp: Response| {
             assert_eq!(
                 resp.messages.len(),
-                1,
+                0,
                 "resp.messages: {:?}",
                 resp.messages
             );
