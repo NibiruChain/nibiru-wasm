@@ -239,55 +239,66 @@ impl Name for nibiru::perp::MsgDonateToEcosystemFund {
     const NAME: &'static str = "MsgDonateToEcosystemFund";
     const PACKAGE: &'static str = PACKAGE_PERP;
 }
-// TODO: Msg not included yet in protobuf types: MsgSettlePosition
-// impl Name for nibiru::perp::MsgSettlePosition {
-//     const NAME: &'static str = "MsgSettlePosition";
-//     const PACKAGE: &'static str = PACKAGE_PERP;
-// }
 
-// TODO: Msg not included yet in protobuf types: MsgChangeCollateralDenom
-// impl Name for nibiru::perp::MsgChangeCollateralDenom {
-//     const NAME: &'static str = "MsgChangeCollateralDenom";
-//     const PACKAGE: &'static str = PACKAGE_PERP;
-// }
+impl Name for nibiru::perp::MsgSettlePosition {
+    const NAME: &'static str = "MsgSettlePosition";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
 
-// TODO: Msg not included yet in protobuf types: MsgAllocateEpochRebates
-// impl Name for nibiru::perp::MsgAllocateEpochRebates {
-//     const NAME: &'static str = "MsgAllocateEpochRebates";
-//     const PACKAGE: &'static str = PACKAGE_PERP;
-// }
+impl Name for nibiru::perp::MsgChangeCollateralDenom {
+    const NAME: &'static str = "MsgChangeCollateralDenom";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
 
-// TODO: Msg not included yet in protobuf types: MsgWithdrawEpochRebates
-// impl Name for nibiru::perp::MsgWithdrawEpochRebates {
-//     const NAME: &'static str = "MsgWithdrawEpochRebates";
-//     const PACKAGE: &'static str = PACKAGE_PERP;
-// }
+impl Name for nibiru::perp::MsgAllocateEpochRebates {
+    const NAME: &'static str = "MsgAllocateEpochRebates";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+
+impl Name for nibiru::perp::MsgWithdrawEpochRebates {
+    const NAME: &'static str = "MsgWithdrawEpochRebates";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+
+impl Name for nibiru::perp::MsgShiftPegMultiplier {
+    const NAME: &'static str = "MsgShiftPegMultiplier";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+
+impl Name for nibiru::perp::MsgShiftSwapInvariant {
+    const NAME: &'static str = "MsgShiftSwapInvariant";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
 
 impl Name for nibiru::perp::QueryPositionRequest {
     const NAME: &'static str = "QueryPositionRequest";
     const PACKAGE: &'static str = PACKAGE_PERP;
 }
+
 impl Name for nibiru::perp::QueryPositionsRequest {
     const NAME: &'static str = "QueryPositionsRequest";
     const PACKAGE: &'static str = PACKAGE_PERP;
 }
+
 impl Name for nibiru::perp::QueryPositionStoreRequest {
     const NAME: &'static str = "QueryPositionStoreRequest";
     const PACKAGE: &'static str = PACKAGE_PERP;
 }
+
 impl Name for nibiru::perp::QueryModuleAccountsRequest {
     const NAME: &'static str = "QueryModuleAccountsRequest";
     const PACKAGE: &'static str = PACKAGE_PERP;
 }
+
 impl Name for nibiru::perp::QueryMarketsRequest {
     const NAME: &'static str = "QueryMarketsRequest";
     const PACKAGE: &'static str = PACKAGE_PERP;
 }
-// TODO: included in v1 but not v0.21
-// impl Name for nibiru::perp::QueryCollateralRequest {
-//     const NAME: &'static str = "QueryCollateralRequest";
-//     const PACKAGE: &'static str = PACKAGE_PERP;
-// }
+
+impl Name for nibiru::perp::QueryCollateralRequest {
+    const NAME: &'static str = "QueryCollateralRequest";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
 
 #[cfg(test)]
 pub mod tests {
