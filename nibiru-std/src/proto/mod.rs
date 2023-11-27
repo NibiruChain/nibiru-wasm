@@ -1,3 +1,5 @@
+//! proto/mod.rs: Protobuf types defined in NibiruChain/nibiru/proto.
+
 mod traits;
 mod type_url_cosmos;
 mod type_url_nibiru;

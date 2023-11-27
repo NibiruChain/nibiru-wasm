@@ -37,6 +37,19 @@ impl Name for nibiru::tokenfactory::MsgSetDenomMetadata {
     const PACKAGE: &'static str = PACKAGE_TOKENFACTORY;
 }
 
+impl Name for nibiru::tokenfactory::QueryParamsRequest {
+    const NAME: &'static str = "QueryParamsRequest";
+    const PACKAGE: &'static str = PACKAGE_TOKENFACTORY;
+}
+impl Name for nibiru::tokenfactory::QueryDenomsRequest {
+    const NAME: &'static str = "QueryDenomsRequest";
+    const PACKAGE: &'static str = PACKAGE_TOKENFACTORY;
+}
+impl Name for nibiru::tokenfactory::QueryDenomInfoRequest {
+    const NAME: &'static str = "QueryDenomInfoRequest";
+    const PACKAGE: &'static str = PACKAGE_TOKENFACTORY;
+}
+
 const PACKAGE_EPOCHS: &str = "nibiru.epochs.v1";
 
 impl Name for nibiru::epochs::QueryEpochsInfoRequest {
@@ -48,6 +61,233 @@ impl Name for nibiru::epochs::QueryCurrentEpochRequest {
     const NAME: &'static str = "QueryCurrentEpochRequest";
     const PACKAGE: &'static str = PACKAGE_EPOCHS;
 }
+
+const PACKAGE_ORACLE: &str = "nibiru.oracle.v1";
+
+impl Name for nibiru::oracle::QueryExchangeRateRequest {
+    const NAME: &'static str = "QueryExchangeRateRequest";
+    const PACKAGE: &'static str = PACKAGE_ORACLE;
+}
+
+// TODO: This type exists but was not exported by the protos. Why?
+// impl Name for nibiru::oracle::QueryExchangeRateTwapRequest {
+//     const NAME: &'static str = "QueryExchangeRateTwapRequest";
+//     const PACKAGE: &'static str = PACKAGE_ORACLE;
+// }
+
+impl Name for nibiru::oracle::QueryExchangeRatesRequest {
+    const NAME: &'static str = "QueryExchangeRatesRequest";
+    const PACKAGE: &'static str = PACKAGE_ORACLE;
+}
+
+impl Name for nibiru::oracle::QueryActivesRequest {
+    const NAME: &'static str = "QueryActivesRequest";
+    const PACKAGE: &'static str = PACKAGE_ORACLE;
+}
+
+impl Name for nibiru::oracle::QueryVoteTargetsRequest {
+    const NAME: &'static str = "QueryVoteTargetsRequest";
+    const PACKAGE: &'static str = PACKAGE_ORACLE;
+}
+
+impl Name for nibiru::oracle::QueryFeederDelegationRequest {
+    const NAME: &'static str = "QueryFeederDelegationRequest";
+    const PACKAGE: &'static str = PACKAGE_ORACLE;
+}
+
+impl Name for nibiru::oracle::QueryMissCounterRequest {
+    const NAME: &'static str = "QueryMissCounterRequest";
+    const PACKAGE: &'static str = PACKAGE_ORACLE;
+}
+
+impl Name for nibiru::oracle::QueryAggregatePrevoteRequest {
+    const NAME: &'static str = "QueryAggregatePrevoteRequest";
+    const PACKAGE: &'static str = PACKAGE_ORACLE;
+}
+
+impl Name for nibiru::oracle::QueryAggregatePrevotesRequest {
+    const NAME: &'static str = "QueryAggregatePrevotesRequest";
+    const PACKAGE: &'static str = PACKAGE_ORACLE;
+}
+
+impl Name for nibiru::oracle::QueryAggregateVoteRequest {
+    const NAME: &'static str = "QueryAggregateVoteRequest";
+    const PACKAGE: &'static str = PACKAGE_ORACLE;
+}
+
+impl Name for nibiru::oracle::QueryAggregateVotesRequest {
+    const NAME: &'static str = "QueryAggregateVotesRequest";
+    const PACKAGE: &'static str = PACKAGE_ORACLE;
+}
+
+impl Name for nibiru::oracle::QueryParamsRequest {
+    const NAME: &'static str = "QueryParamsRequest";
+    const PACKAGE: &'static str = PACKAGE_ORACLE;
+}
+
+const PACKAGE_SPOT: &str = "nibiru.spot.v1";
+
+impl Name for nibiru::spot::QueryParamsRequest {
+    const NAME: &'static str = "QueryParamsRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::QueryPoolNumberRequest {
+    const NAME: &'static str = "QueryPoolNumberRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::QueryPoolRequest {
+    const NAME: &'static str = "QueryPoolRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::QueryPoolsRequest {
+    const NAME: &'static str = "QueryPoolsRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::QueryPoolParamsRequest {
+    const NAME: &'static str = "QueryPoolParamsRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::QueryNumPoolsRequest {
+    const NAME: &'static str = "QueryNumPoolsRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::QueryTotalLiquidityRequest {
+    const NAME: &'static str = "QueryTotalLiquidityRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::QueryTotalPoolLiquidityRequest {
+    const NAME: &'static str = "QueryTotalPoolLiquidityRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::QueryTotalSharesRequest {
+    const NAME: &'static str = "QueryTotalSharesRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::QuerySpotPriceRequest {
+    const NAME: &'static str = "QuerySpotPriceRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::QuerySwapExactAmountInRequest {
+    const NAME: &'static str = "QuerySwapExactAmountInRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::QuerySwapExactAmountOutRequest {
+    const NAME: &'static str = "QuerySwapExactAmountOutRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::QueryJoinExactAmountInRequest {
+    const NAME: &'static str = "QueryJoinExactAmountInRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::QueryJoinExactAmountOutRequest {
+    const NAME: &'static str = "QueryJoinExactAmountOutRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::QueryExitExactAmountInRequest {
+    const NAME: &'static str = "QueryExitExactAmountInRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::QueryExitExactAmountOutRequest {
+    const NAME: &'static str = "QueryExitExactAmountOutRequest";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+
+impl Name for nibiru::spot::MsgCreatePool {
+    const NAME: &'static str = "MsgCreatePool";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::MsgJoinPool {
+    const NAME: &'static str = "MsgJoinPool";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::MsgExitPool {
+    const NAME: &'static str = "MsgExitPool";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+impl Name for nibiru::spot::MsgSwapAssets {
+    const NAME: &'static str = "MsgSwapAssets";
+    const PACKAGE: &'static str = PACKAGE_SPOT;
+}
+
+const PACKAGE_PERP: &str = "nibiru.perp.v1";
+
+impl Name for nibiru::perp::MsgRemoveMargin {
+    const NAME: &'static str = "MsgRemoveMargin";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+impl Name for nibiru::perp::MsgAddMargin {
+    const NAME: &'static str = "MsgAddMargin";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+impl Name for nibiru::perp::MsgMultiLiquidate {
+    const NAME: &'static str = "MsgMultiLiquidate";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+impl Name for nibiru::perp::MsgMarketOrder {
+    const NAME: &'static str = "MsgMarketOrder";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+impl Name for nibiru::perp::MsgClosePosition {
+    const NAME: &'static str = "MsgClosePosition";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+impl Name for nibiru::perp::MsgPartialClose {
+    const NAME: &'static str = "MsgPartialClose";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+impl Name for nibiru::perp::MsgDonateToEcosystemFund {
+    const NAME: &'static str = "MsgDonateToEcosystemFund";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+// TODO: Msg not included yet in protobuf types: MsgSettlePosition
+// impl Name for nibiru::perp::MsgSettlePosition {
+//     const NAME: &'static str = "MsgSettlePosition";
+//     const PACKAGE: &'static str = PACKAGE_PERP;
+// }
+
+// TODO: Msg not included yet in protobuf types: MsgChangeCollateralDenom
+// impl Name for nibiru::perp::MsgChangeCollateralDenom {
+//     const NAME: &'static str = "MsgChangeCollateralDenom";
+//     const PACKAGE: &'static str = PACKAGE_PERP;
+// }
+
+// TODO: Msg not included yet in protobuf types: MsgAllocateEpochRebates
+// impl Name for nibiru::perp::MsgAllocateEpochRebates {
+//     const NAME: &'static str = "MsgAllocateEpochRebates";
+//     const PACKAGE: &'static str = PACKAGE_PERP;
+// }
+
+// TODO: Msg not included yet in protobuf types: MsgWithdrawEpochRebates
+// impl Name for nibiru::perp::MsgWithdrawEpochRebates {
+//     const NAME: &'static str = "MsgWithdrawEpochRebates";
+//     const PACKAGE: &'static str = PACKAGE_PERP;
+// }
+
+impl Name for nibiru::perp::QueryPositionRequest {
+    const NAME: &'static str = "QueryPositionRequest";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+impl Name for nibiru::perp::QueryPositionsRequest {
+    const NAME: &'static str = "QueryPositionsRequest";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+impl Name for nibiru::perp::QueryPositionStoreRequest {
+    const NAME: &'static str = "QueryPositionStoreRequest";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+impl Name for nibiru::perp::QueryModuleAccountsRequest {
+    const NAME: &'static str = "QueryModuleAccountsRequest";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+impl Name for nibiru::perp::QueryMarketsRequest {
+    const NAME: &'static str = "QueryMarketsRequest";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+// TODO: included in v1 but not v0.21
+// impl Name for nibiru::perp::QueryCollateralRequest {
+//     const NAME: &'static str = "QueryCollateralRequest";
+//     const PACKAGE: &'static str = PACKAGE_PERP;
+// }
 
 #[cfg(test)]
 pub mod tests {
