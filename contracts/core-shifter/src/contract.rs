@@ -1,13 +1,20 @@
 use cosmwasm_std::{
     attr, entry_point, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
-    Response, StdResult,
+    Response,
 };
+use cw2::set_contract_version;
 use nibiru_std::proto::{nibiru, NibiruStargateMsg};
 
 use crate::{
-    msgs::{ExecuteMsg, InitMsg, IsMemberResponse, QueryMsg, WhitelistResponse},
-    state::{Whitelist, WHITELIST},
+    error::ContractError,
+    msgs::{
+        ExecuteMsg, HasPermsResponse, InitMsg, PermissionsResponse, QueryMsg,
+    },
+    state::{instantiate_perms, Permissions, OPERATORS},
 };
+
+pub const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
+pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -15,17 +22,19 @@ pub fn instantiate(
     _env: Env,
     _info: MessageInfo,
     msg: InitMsg,
-) -> StdResult<Response> {
-    let whitelist = Whitelist {
-        members: vec![msg.admin.clone()].into_iter().collect(),
-        admin: msg.admin,
-    };
-    WHITELIST.save(deps.storage, &whitelist)?;
+) -> Result<Response, ContractError> {
+    set_contract_version(
+        deps.storage,
+        format!("crates.io:{CONTRACT_NAME}"),
+        CONTRACT_VERSION,
+    )?;
+    instantiate_perms(Some(&msg.owner), deps.storage, deps.api)?;
     Ok(Response::default())
 }
 
-fn check_admin(can: CanExecute) -> Result<(), cosmwasm_std::StdError> {
-    match can.is_admin {
+/// Errors if the sender does not have owner permissions.
+fn check_perms_owner(can: CanExecute) -> Result<(), cosmwasm_std::StdError> {
+    match can.is_owner {
         true => Ok(()),
         false => Err(cosmwasm_std::StdError::generic_err(format!(
             "unauthorized : sender {} is not an admin",
@@ -34,11 +43,12 @@ fn check_admin(can: CanExecute) -> Result<(), cosmwasm_std::StdError> {
     }
 }
 
-fn check_member(can: CanExecute) -> Result<(), cosmwasm_std::StdError> {
-    match can.is_member {
+/// Errors if the sender does not have operator permissions.
+fn check_perms_operator(can: CanExecute) -> Result<(), cosmwasm_std::StdError> {
+    match can.is_operator || can.is_owner {
         true => Ok(()),
         false => Err(cosmwasm_std::StdError::generic_err(format!(
-            "unauthorized : sender {} is not a whitelist member",
+            "unauthorized : sender {} is not a perms member",
             can.sender,
         ))),
     }
@@ -50,11 +60,11 @@ pub fn execute(
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> StdResult<Response> {
+) -> Result<Response, ContractError> {
     let deps_for_check = &deps;
     let check: CanExecute =
         can_execute(deps_for_check.as_ref(), info.sender.as_ref())?;
-    let mut whitelist = check.whitelist.clone();
+    let mut perms = check.perms.clone();
 
     let contract_addr = env.contract.address.to_string();
     match msg {
@@ -62,7 +72,7 @@ pub fn execute(
             pair,
             new_swap_invariant,
         } => {
-            check_member(check)?;
+            check_perms_operator(check)?;
             let cosmos_msg: CosmosMsg = nibiru::perp::MsgShiftSwapInvariant {
                 sender: contract_addr,
                 pair,
@@ -76,7 +86,7 @@ pub fn execute(
         }
 
         ExecuteMsg::ShiftPegMultiplier { pair, new_peg_mult } => {
-            check_member(check)?;
+            check_perms_operator(check)?;
             let cosmos_msg: CosmosMsg = nibiru::perp::MsgShiftPegMultiplier {
                 sender: contract_addr,
                 pair,
@@ -90,11 +100,11 @@ pub fn execute(
         }
 
         ExecuteMsg::AddMember { address } => {
-            check_admin(check)?;
+            check_perms_owner(check)?;
             let api = deps.api;
-            let addr = api.addr_validate(address.as_str()).unwrap();
-            whitelist.members.insert(addr.into_string());
-            WHITELIST.save(deps.storage, &whitelist)?;
+            let addr = api.addr_validate(address.as_str())?;
+            perms.operators.insert(addr.into_string());
+            OPERATORS.save(deps.storage, &perms.operators)?;
 
             let res = Response::new().add_attributes(vec![
                 attr("action", "add_member"),
@@ -104,9 +114,9 @@ pub fn execute(
         }
 
         ExecuteMsg::RemoveMember { address } => {
-            check_admin(check)?;
-            whitelist.members.remove(address.as_str());
-            WHITELIST.save(deps.storage, &whitelist)?;
+            check_perms_owner(check)?;
+            perms.operators.remove(address.as_str());
+            OPERATORS.save(deps.storage, &perms.operators)?;
 
             let res = Response::new().add_attributes(vec![
                 attr("action", "remove_member"),
@@ -116,12 +126,12 @@ pub fn execute(
         }
 
         ExecuteMsg::ChangeAdmin { address } => {
-            check_admin(check)?;
+            check_perms_owner(check)?;
             let api = deps.api;
-            let new_admin = api.addr_validate(address.as_str()).unwrap();
-            whitelist.admin = new_admin.clone().into_string();
-            whitelist.members.insert(new_admin.to_string());
-            WHITELIST.save(deps.storage, &whitelist)?;
+            let new_admin = api.addr_validate(address.as_str())?;
+            perms.owner = Some(new_admin.clone().into_string());
+            perms.operators.insert(new_admin.to_string());
+            OPERATORS.save(deps.storage, &perms.operators)?;
 
             let res = Response::new().add_attributes(vec![
                 attr("action", "change_admin"),
@@ -129,111 +139,132 @@ pub fn execute(
             ]);
             Ok(res)
         }
+
+        ExecuteMsg::UpdateOwnership(action) => {
+            Ok(execute_update_ownership(deps, env, info, action)?)
+        }
     }
 }
 
-struct CanExecute {
-    is_admin: bool,
-    is_member: bool,
-    sender: String,
-    whitelist: Whitelist,
+fn execute_update_ownership(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    action: cw_ownable::Action,
+) -> Result<Response, cw_ownable::OwnershipError> {
+    let ownership =
+        cw_ownable::update_ownership(deps, &env.block, &info.sender, action)?;
+    Ok(Response::new().add_attributes(ownership.into_attributes()))
 }
 
-fn can_execute(deps: Deps, sender: &str) -> StdResult<CanExecute> {
-    let whitelist = WHITELIST.load(deps.storage).unwrap();
+struct CanExecute {
+    is_owner: bool,
+    is_operator: bool,
+    sender: String,
+    perms: Permissions,
+}
+
+fn can_execute(deps: Deps, sender: &str) -> Result<CanExecute, ContractError> {
+    let perms = Permissions::load(deps.storage)?;
     Ok(CanExecute {
-        is_admin: whitelist.is_admin(sender),
-        is_member: whitelist.is_member(sender),
+        is_owner: perms.is_owner(sender),
+        is_operator: perms.is_operator(sender),
         sender: sender.into(),
-        whitelist,
+        perms,
     })
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(
+    deps: Deps,
+    _env: Env,
+    msg: QueryMsg,
+) -> Result<Binary, ContractError> {
     match msg {
-        QueryMsg::IsMember { address } => {
-            let whitelist = WHITELIST.load(deps.storage)?;
-            let is_member: bool = whitelist.is_member(address);
-            let res = IsMemberResponse {
-                is_member,
-                whitelist,
+        QueryMsg::HasPerms { address } => {
+            let perms = Permissions::load(deps.storage)?;
+            let has_perms: bool = perms.is_operator(&address);
+            let res = HasPermsResponse {
+                has_perms,
+                perms,
+                addr: address,
             };
-            cosmwasm_std::to_json_binary(&res)
+            Ok(cosmwasm_std::to_json_binary(&res)?)
         }
-        QueryMsg::Whitelist {} => {
-            let whitelist = WHITELIST.load(deps.storage)?;
-            let res = WhitelistResponse { whitelist };
-            cosmwasm_std::to_json_binary(&res)
+        QueryMsg::Perms {} => {
+            let perms = Permissions::load(deps.storage)?;
+            let res = PermissionsResponse { perms };
+            Ok(cosmwasm_std::to_json_binary(&res)?)
         }
     }
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::{
         msgs::{ExecuteMsg, InitMsg},
-        state::WHITELIST,
+        state::OPERATORS,
     };
 
     use cosmwasm_std::{coins, testing, Addr};
-    use std::collections::HashSet;
+    use std::collections::BTreeSet;
+
+    pub type TestResult = anyhow::Result<()>;
 
     // ---------------------------------------------------------------------------
     // Tests
     // ---------------------------------------------------------------------------
 
     #[test]
-    fn test_instantiate() {
+    fn test_instantiate() -> TestResult {
         let mut deps = testing::mock_dependencies();
         let msg = InitMsg {
-            admin: "admin".to_string(),
+            owner: "admin".to_string(),
         };
         let info: MessageInfo =
             testing::mock_info("addr0000", &coins(2, "token"));
 
-        let result =
-            instantiate(deps.as_mut(), testing::mock_env(), info, msg).unwrap();
+        let result = instantiate(deps.as_mut(), testing::mock_env(), info, msg)?;
         assert_eq!(result.messages.len(), 0);
+        Ok(())
     }
 
     #[test]
-    fn test_has_admin_power() {
+    fn test_has_admin_power() -> TestResult {
         let admin = Addr::unchecked("admin");
         let msg = &InitMsg {
-            admin: admin.to_string(),
+            owner: admin.to_string(),
         };
 
         let sender = "not-admin";
         let mut deps = testing::mock_dependencies();
         let msg_info = testing::mock_info(sender, &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg.clone())
-            .unwrap();
-        let whitelist = WHITELIST.load(&deps.storage).unwrap();
-        let has: bool = whitelist.is_admin(sender);
+        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg.clone())?;
+        let whitelist = Permissions::load(&deps.storage)?;
+        let has: bool = whitelist.is_owner(sender);
         assert!(!has);
 
         let sender = "admin";
         let mut deps = testing::mock_dependencies();
         let msg_info = testing::mock_info(sender, &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg.clone())
-            .unwrap();
-        let whitelist = WHITELIST.load(&deps.storage).unwrap();
-        let has: bool = whitelist.is_admin(sender);
+        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg.clone())?;
+        let whitelist = Permissions::load(&deps.storage)?;
+        let has: bool = whitelist.is_owner(sender);
         assert!(has);
+        Ok(())
     }
 
     #[test]
-    fn test_execute_unauthorized() {
+    fn test_execute_unauthorized() -> TestResult {
         let mut deps = testing::mock_dependencies();
         let admin = Addr::unchecked("admin");
 
         let msg = InitMsg {
-            admin: admin.as_str().to_string(),
+            owner: admin.as_str().to_string(),
         };
         let msg_info = testing::mock_info("addr0000", &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg).unwrap();
+        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg)?;
 
         let execute_msg = ExecuteMsg::AddMember {
             address: "addr0001".to_string(),
@@ -246,27 +277,27 @@ mod tests {
             execute_msg,
         );
         assert!(result.is_err());
+        Ok(())
     }
 
     #[test]
-    fn test_execute_add_member() {
+    fn test_execute_add_member() -> TestResult {
         // Init contract
         let mut deps = testing::mock_dependencies();
         let admin = Addr::unchecked("admin");
 
         let init_msg = InitMsg {
-            admin: admin.as_str().to_string(),
+            owner: admin.as_str().to_string(),
         };
         let init_info = testing::mock_info("addr0000", &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), init_info, init_msg)
-            .unwrap();
+        instantiate(deps.as_mut(), testing::mock_env(), init_info, init_msg)?;
 
         let new_member = "new_member";
-        let whitelist = WHITELIST.load(&deps.storage).unwrap();
-        let has: bool = whitelist.is_admin(new_member);
+        let perms = Permissions::load(&deps.storage)?;
+        let has: bool = perms.is_owner(new_member);
         assert!(!has);
 
-        // Add a member to whitelist
+        // Add an operator to the permission set
         let execute_msg = ExecuteMsg::AddMember {
             address: new_member.to_string(),
         };
@@ -292,50 +323,47 @@ mod tests {
             testing::mock_env(),
             execute_info,
             execute_msg,
-        )
-        .unwrap();
+        )?;
         check_resp(result);
 
         // Check correctness of the result
-        let whitelist = WHITELIST.load(&deps.storage).unwrap();
-        let has: bool = whitelist.has(new_member);
+        let perms = Permissions::load(&deps.storage)?;
+        let has: bool = perms.has(new_member);
         assert!(has);
 
-        let query_req = QueryMsg::IsMember {
+        let query_req = QueryMsg::HasPerms {
             address: new_member.to_string(),
         };
-        let binary =
-            query(deps.as_ref(), testing::mock_env(), query_req).unwrap();
-        let response: IsMemberResponse =
-            cosmwasm_std::from_json(binary).unwrap();
-        assert!(response.is_member);
+        let binary = query(deps.as_ref(), testing::mock_env(), query_req)?;
+        let response: HasPermsResponse = cosmwasm_std::from_json(binary)?;
+        assert!(response.has_perms);
+        Ok(())
     }
 
     #[test]
-    fn test_execute_remove_member() {
+    fn test_execute_remove_member() -> TestResult {
         // Init contract
         let _deps = testing::mock_dependencies();
         let mut deps = testing::mock_dependencies();
         let admin = Addr::unchecked("admin");
 
         let init_msg = InitMsg {
-            admin: admin.as_str().to_string(),
+            owner: admin.as_str().to_string(),
         };
         let init_info = testing::mock_info("addr0000", &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), init_info, init_msg)
-            .unwrap();
+        instantiate(deps.as_mut(), testing::mock_env(), init_info, init_msg)?;
 
-        // Set up initial whitelist
-        let members_start: Vec<String> = ["vitalik", "musk", "satoshi"]
+        // Set up initial perms
+        let opers_start: Vec<String> = ["vitalik", "musk", "satoshi"]
             .iter()
             .map(|&s| s.to_string())
             .collect();
-        let mut whitelist = WHITELIST.load(&deps.storage).unwrap();
-        assert_eq!(whitelist.members.len(), 1); // admin remains
-        for member in members_start.iter() {
-            whitelist.members.insert(member.clone());
+        let mut whitelist = Permissions::load(&deps.storage)?;
+        assert_eq!(whitelist.operators.len(), 0); // admin remains
+        for member in opers_start.iter() {
+            whitelist.operators.insert(member.clone());
         }
-        let res = WHITELIST.save(deps.as_mut().storage, &whitelist);
+        let res = OPERATORS.save(deps.as_mut().storage, &whitelist.operators);
         assert!(res.is_ok());
 
         // Remove a member from the whitelist
@@ -362,43 +390,38 @@ mod tests {
             testing::mock_env(),
             execute_info,
             execute_msg,
-        )
-        .unwrap();
+        )?;
         check_resp(result);
 
         // Check correctness of the result
-        let query_req = QueryMsg::Whitelist {};
-        let binary =
-            query(deps.as_ref(), testing::mock_env(), query_req).unwrap();
-        let response: WhitelistResponse =
-            cosmwasm_std::from_json(binary).unwrap();
-        let expected_members: HashSet<String> = ["vitalik", "musk", "admin"]
-            .iter()
-            .map(|&s| s.to_string())
-            .collect();
+        let query_req = QueryMsg::Perms {};
+        let binary = query(deps.as_ref(), testing::mock_env(), query_req)?;
+        let response: PermissionsResponse = cosmwasm_std::from_json(binary)?;
+        let expected_opers: BTreeSet<String> =
+            ["vitalik", "musk"].iter().map(|&s| s.to_string()).collect();
         assert_eq!(
-            response.whitelist.members, expected_members,
+            response.perms.operators, expected_opers,
             "got: {:#?}, wanted: {:#?}",
-            response.whitelist.members, expected_members
+            response.perms.operators, expected_opers
         );
+        Ok(())
     }
 
     #[test]
-    fn test_execute_change_admin() {
+    fn test_execute_change_admin() -> TestResult {
         // Init contract
         let mut deps = testing::mock_dependencies();
         let admin = Addr::unchecked("admin");
 
         let init_msg = InitMsg {
-            admin: admin.as_str().to_string(),
+            owner: admin.as_str().to_string(),
         };
         let init_info = testing::mock_info("addr0000", &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), init_info, init_msg)
-            .unwrap();
+        instantiate(deps.as_mut(), testing::mock_env(), init_info, init_msg)?;
 
         let new_admin = "new_admin";
-        let whitelist = WHITELIST.load(&deps.storage).unwrap();
-        let has: bool = whitelist.is_admin(new_admin);
+        let whitelist = Permissions::load(&deps.storage)?;
+        let has: bool = whitelist.is_owner(new_admin);
         assert!(!has);
 
         // Add a member to whitelist
@@ -427,23 +450,21 @@ mod tests {
             testing::mock_env(),
             execute_info,
             execute_msg,
-        )
-        .unwrap();
+        )?;
         check_resp(result);
 
         // Check correctness of the result
-        let whitelist = WHITELIST.load(&deps.storage).unwrap();
+        let whitelist = Permissions::load(&deps.storage)?;
         let has: bool = whitelist.has(new_admin);
         assert!(has);
 
         // The new admin should not yet be a member
-        let query_req = QueryMsg::IsMember {
+        let query_req = QueryMsg::HasPerms {
             address: new_admin.to_string(),
         };
-        let binary =
-            query(deps.as_ref(), testing::mock_env(), query_req).unwrap();
-        let response: IsMemberResponse =
-            cosmwasm_std::from_json(binary).unwrap();
-        assert!(response.is_member);
+        let binary = query(deps.as_ref(), testing::mock_env(), query_req)?;
+        let response: HasPermsResponse = cosmwasm_std::from_json(binary)?;
+        assert!(response.has_perms);
+        Ok(())
     }
 }

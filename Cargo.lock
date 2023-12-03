@@ -3155,9 +3155,12 @@ dependencies = [
 name = "shifter"
 version = "0.2.0"
 dependencies = [
+ "anyhow",
  "cosmwasm-schema",
  "cosmwasm-std",
+ "cw-ownable",
  "cw-storage-plus",
+ "cw2",
  "nibiru-macro",
  "nibiru-std",
  "schemars",

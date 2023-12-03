@@ -1,15 +1,16 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Decimal, Uint256};
 
-use crate::state::Whitelist;
+use crate::state::Permissions;
 
 /// InitMsg specifies the args for the instantiate entry point of the contract.
 #[cw_serde]
 pub struct InitMsg {
-    pub admin: String,
+    pub owner: String,
 }
 
 /// ExecuteMsg specifies the args for the execute entry point of the contract.
+#[cw_ownable::cw_ownable_execute]
 #[cw_serde]
 pub enum ExecuteMsg {
     ShiftSwapInvariant {
@@ -34,17 +35,18 @@ pub enum ExecuteMsg {
 /// QueryMsg specifies the args for the query entry point of the contract.
 #[cw_serde]
 pub enum QueryMsg {
-    IsMember { address: String },
-    Whitelist {},
+    HasPerms { address: String },
+    Perms {},
 }
 
 #[cw_serde]
-pub struct IsMemberResponse {
-    pub is_member: bool,
-    pub whitelist: Whitelist,
+pub struct HasPermsResponse {
+    pub has_perms: bool,
+    pub addr: String,
+    pub perms: Permissions,
 }
 
 #[cw_serde]
-pub struct WhitelistResponse {
-    pub whitelist: Whitelist,
+pub struct PermissionsResponse {
+    pub perms: Permissions,
 }
