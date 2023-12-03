@@ -8,7 +8,8 @@ use nibiru_std::proto::{nibiru, NibiruStargateMsg};
 use crate::{
     error::ContractError,
     msgs::{
-        ExecuteMsg, HasPermsResponse, InitMsg, PermissionsResponse, QueryMsg,
+        operator_perms, ExecuteMsg, HasPermsResponse, InitMsg, PermsResponse,
+        QueryMsg,
     },
     state::{instantiate_perms, Permissions, OPERATORS},
 };
@@ -32,28 +33,6 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-/// Errors if the sender does not have owner permissions.
-fn check_perms_owner(can: CanExecute) -> Result<(), cosmwasm_std::StdError> {
-    match can.is_owner {
-        true => Ok(()),
-        false => Err(cosmwasm_std::StdError::generic_err(format!(
-            "unauthorized : sender {} is not an admin",
-            can.sender,
-        ))),
-    }
-}
-
-/// Errors if the sender does not have operator permissions.
-fn check_perms_operator(can: CanExecute) -> Result<(), cosmwasm_std::StdError> {
-    match can.is_operator || can.is_owner {
-        true => Ok(()),
-        false => Err(cosmwasm_std::StdError::generic_err(format!(
-            "unauthorized : sender {} is not a perms member",
-            can.sender,
-        ))),
-    }
-}
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
@@ -62,8 +41,7 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     let deps_for_check = &deps;
-    let check: CanExecute =
-        can_execute(deps_for_check.as_ref(), info.sender.as_ref())?;
+    let check = CanExecute::new(deps_for_check.as_ref(), info.sender.as_ref())?;
     let mut perms = check.perms.clone();
 
     let contract_addr = env.contract.address.to_string();
@@ -72,7 +50,7 @@ pub fn execute(
             pair,
             new_swap_invariant,
         } => {
-            check_perms_operator(check)?;
+            check.check_perms_operator()?;
             let cosmos_msg: CosmosMsg = nibiru::perp::MsgShiftSwapInvariant {
                 sender: contract_addr,
                 pair,
@@ -81,12 +59,12 @@ pub fn execute(
             .into_stargate_msg();
             let res = Response::new()
                 .add_message(cosmos_msg)
-                .add_attributes(vec![attr("action", "depth_shift")]);
+                .add_attributes(vec![attr("action", "shift_swap_invariant")]);
             Ok(res)
         }
 
         ExecuteMsg::ShiftPegMultiplier { pair, new_peg_mult } => {
-            check_perms_operator(check)?;
+            check.check_perms_operator()?;
             let cosmos_msg: CosmosMsg = nibiru::perp::MsgShiftPegMultiplier {
                 sender: contract_addr,
                 pair,
@@ -95,49 +73,37 @@ pub fn execute(
             .into_stargate_msg();
             let res = Response::new()
                 .add_message(cosmos_msg)
-                .add_attributes(vec![attr("action", "peg_shift")]);
+                .add_attributes(vec![attr("action", "shift_peg_multiplier")]);
             Ok(res)
         }
 
-        ExecuteMsg::AddMember { address } => {
-            check_perms_owner(check)?;
+        ExecuteMsg::EditOpers(action) => {
+            check.check_perms_operator()?;
             let api = deps.api;
-            let addr = api.addr_validate(address.as_str())?;
-            perms.operators.insert(addr.into_string());
-            OPERATORS.save(deps.storage, &perms.operators)?;
+            match action {
+                operator_perms::Action::AddOper { address } => {
+                    let addr = api.addr_validate(address.as_str())?;
+                    perms.operators.insert(addr.into_string());
+                    OPERATORS.save(deps.storage, &perms.operators)?;
 
-            let res = Response::new().add_attributes(vec![
-                attr("action", "add_member"),
-                attr("address", address),
-            ]);
-            Ok(res)
-        }
+                    let res = Response::new().add_attributes(vec![
+                        attr("action", "add_operator"),
+                        attr("address", address),
+                    ]);
+                    Ok(res)
+                }
 
-        ExecuteMsg::RemoveMember { address } => {
-            check_perms_owner(check)?;
-            perms.operators.remove(address.as_str());
-            OPERATORS.save(deps.storage, &perms.operators)?;
+                operator_perms::Action::RemoveOper { address } => {
+                    perms.operators.remove(address.as_str());
+                    OPERATORS.save(deps.storage, &perms.operators)?;
 
-            let res = Response::new().add_attributes(vec![
-                attr("action", "remove_member"),
-                attr("address", address),
-            ]);
-            Ok(res)
-        }
-
-        ExecuteMsg::ChangeAdmin { address } => {
-            check_perms_owner(check)?;
-            let api = deps.api;
-            let new_admin = api.addr_validate(address.as_str())?;
-            perms.owner = Some(new_admin.clone().into_string());
-            perms.operators.insert(new_admin.to_string());
-            OPERATORS.save(deps.storage, &perms.operators)?;
-
-            let res = Response::new().add_attributes(vec![
-                attr("action", "change_admin"),
-                attr("address", address),
-            ]);
-            Ok(res)
+                    let res = Response::new().add_attributes(vec![
+                        attr("action", "remove_operator"),
+                        attr("address", address),
+                    ]);
+                    Ok(res)
+                }
+            }
         }
 
         ExecuteMsg::UpdateOwnership(action) => {
@@ -164,14 +130,26 @@ struct CanExecute {
     perms: Permissions,
 }
 
-fn can_execute(deps: Deps, sender: &str) -> Result<CanExecute, ContractError> {
-    let perms = Permissions::load(deps.storage)?;
-    Ok(CanExecute {
-        is_owner: perms.is_owner(sender),
-        is_operator: perms.is_operator(sender),
-        sender: sender.into(),
-        perms,
-    })
+impl CanExecute {
+    pub fn new(deps: Deps, sender: &str) -> Result<Self, ContractError> {
+        let perms = Permissions::load(deps.storage)?;
+        Ok(CanExecute {
+            is_owner: perms.is_owner(sender),
+            is_operator: perms.is_operator(sender),
+            sender: sender.into(),
+            perms,
+        })
+    }
+
+    /// Errors if the sender does not have operator permissions.
+    pub fn check_perms_operator(&self) -> Result<(), ContractError> {
+        match self.is_operator || self.is_owner {
+            true => Ok(()),
+            false => Err(ContractError::NoOperatorPerms {
+                sender: self.sender.to_string(),
+            }),
+        }
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -193,7 +171,7 @@ pub fn query(
         }
         QueryMsg::Perms {} => {
             let perms = Permissions::load(deps.storage)?;
-            let res = PermissionsResponse { perms };
+            let res = PermsResponse { perms };
             Ok(cosmwasm_std::to_json_binary(&res)?)
         }
     }
@@ -239,24 +217,24 @@ pub mod tests {
 
         let sender = "not-admin";
         let mut deps = testing::mock_dependencies();
-        let msg_info = testing::mock_info(sender, &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg.clone())?;
-        let whitelist = Permissions::load(&deps.storage)?;
-        let has: bool = whitelist.is_owner(sender);
+        let info = testing::mock_info(sender, &coins(2, "token"));
+        instantiate(deps.as_mut(), testing::mock_env(), info, msg.clone())?;
+        let perms = Permissions::load(&deps.storage)?;
+        let has: bool = perms.is_owner(sender);
         assert!(!has);
 
         let sender = "admin";
         let mut deps = testing::mock_dependencies();
-        let msg_info = testing::mock_info(sender, &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg.clone())?;
-        let whitelist = Permissions::load(&deps.storage)?;
-        let has: bool = whitelist.is_owner(sender);
+        let info = testing::mock_info(sender, &coins(2, "token"));
+        instantiate(deps.as_mut(), testing::mock_env(), info, msg.clone())?;
+        let perms = Permissions::load(&deps.storage)?;
+        let has: bool = perms.is_owner(sender);
         assert!(has);
         Ok(())
     }
 
     #[test]
-    fn test_execute_unauthorized() -> TestResult {
+    fn test_exec_unauthorized() -> TestResult {
         let mut deps = testing::mock_dependencies();
         let admin = Addr::unchecked("admin");
 
@@ -266,9 +244,10 @@ pub mod tests {
         let msg_info = testing::mock_info("addr0000", &coins(2, "token"));
         instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg)?;
 
-        let execute_msg = ExecuteMsg::AddMember {
-            address: "addr0001".to_string(),
-        };
+        let execute_msg =
+            ExecuteMsg::EditOpers(operator_perms::Action::AddOper {
+                address: "addr0001".to_string(),
+            });
         let unauthorized_info = testing::mock_info("unauthorized", &[]);
         let result = execute(
             deps.as_mut(),
@@ -281,7 +260,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_execute_add_member() -> TestResult {
+    fn test_exec_edit_opers_add() -> TestResult {
         // Init contract
         let mut deps = testing::mock_dependencies();
         let admin = Addr::unchecked("admin");
@@ -298,9 +277,10 @@ pub mod tests {
         assert!(!has);
 
         // Add an operator to the permission set
-        let execute_msg = ExecuteMsg::AddMember {
-            address: new_member.to_string(),
-        };
+        let execute_msg =
+            ExecuteMsg::EditOpers(operator_perms::Action::AddOper {
+                address: new_member.to_string(),
+            });
         let execute_info = testing::mock_info(admin.as_str(), &[]);
 
         let check_resp = |resp: Response| {
@@ -341,9 +321,8 @@ pub mod tests {
     }
 
     #[test]
-    fn test_execute_remove_member() -> TestResult {
+    fn test_exec_edit_opers_remove() -> TestResult {
         // Init contract
-        let _deps = testing::mock_dependencies();
         let mut deps = testing::mock_dependencies();
         let admin = Addr::unchecked("admin");
 
@@ -358,18 +337,19 @@ pub mod tests {
             .iter()
             .map(|&s| s.to_string())
             .collect();
-        let mut whitelist = Permissions::load(&deps.storage)?;
-        assert_eq!(whitelist.operators.len(), 0); // admin remains
+        let mut perms = Permissions::load(&deps.storage)?;
+        assert_eq!(perms.operators.len(), 0); // admin remains
         for member in opers_start.iter() {
-            whitelist.operators.insert(member.clone());
+            perms.operators.insert(member.clone());
         }
-        let res = OPERATORS.save(deps.as_mut().storage, &whitelist.operators);
+        let res = OPERATORS.save(deps.as_mut().storage, &perms.operators);
         assert!(res.is_ok());
 
         // Remove a member from the whitelist
-        let execute_msg = ExecuteMsg::RemoveMember {
-            address: "satoshi".to_string(),
-        };
+        let execute_msg =
+            ExecuteMsg::EditOpers(operator_perms::Action::RemoveOper {
+                address: "satoshi".to_string(),
+            });
         let execute_info = testing::mock_info(admin.as_str(), &[]);
         let check_resp = |resp: Response| {
             assert_eq!(
@@ -396,7 +376,7 @@ pub mod tests {
         // Check correctness of the result
         let query_req = QueryMsg::Perms {};
         let binary = query(deps.as_ref(), testing::mock_env(), query_req)?;
-        let response: PermissionsResponse = cosmwasm_std::from_json(binary)?;
+        let response: PermsResponse = cosmwasm_std::from_json(binary)?;
         let expected_opers: BTreeSet<String> =
             ["vitalik", "musk"].iter().map(|&s| s.to_string()).collect();
         assert_eq!(
@@ -407,64 +387,9 @@ pub mod tests {
         Ok(())
     }
 
+    /// TODO: test change owner
     #[test]
-    fn test_execute_change_admin() -> TestResult {
-        // Init contract
-        let mut deps = testing::mock_dependencies();
-        let admin = Addr::unchecked("admin");
-
-        let init_msg = InitMsg {
-            owner: admin.as_str().to_string(),
-        };
-        let init_info = testing::mock_info("addr0000", &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), init_info, init_msg)?;
-
-        let new_admin = "new_admin";
-        let whitelist = Permissions::load(&deps.storage)?;
-        let has: bool = whitelist.is_owner(new_admin);
-        assert!(!has);
-
-        // Add a member to whitelist
-        let execute_msg = ExecuteMsg::ChangeAdmin {
-            address: new_admin.to_string(),
-        };
-        let execute_info = testing::mock_info(admin.as_str(), &[]);
-
-        let check_resp = |resp: Response| {
-            assert_eq!(
-                resp.messages.len(),
-                0,
-                "resp.messages: {:?}",
-                resp.messages
-            );
-            assert_eq!(
-                resp.attributes.len(),
-                2,
-                "resp.attributes: {:#?}",
-                resp.attributes
-            );
-        };
-
-        let result = execute(
-            deps.as_mut(),
-            testing::mock_env(),
-            execute_info,
-            execute_msg,
-        )?;
-        check_resp(result);
-
-        // Check correctness of the result
-        let whitelist = Permissions::load(&deps.storage)?;
-        let has: bool = whitelist.has(new_admin);
-        assert!(has);
-
-        // The new admin should not yet be a member
-        let query_req = QueryMsg::HasPerms {
-            address: new_admin.to_string(),
-        };
-        let binary = query(deps.as_ref(), testing::mock_env(), query_req)?;
-        let response: HasPermsResponse = cosmwasm_std::from_json(binary)?;
-        assert!(response.has_perms);
+    fn test_exec_change_admin() -> TestResult {
         Ok(())
     }
 }

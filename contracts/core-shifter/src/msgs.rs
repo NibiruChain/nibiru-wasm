@@ -1,4 +1,4 @@
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Decimal, Uint256};
 
 use crate::state::Permissions;
@@ -21,21 +21,29 @@ pub enum ExecuteMsg {
         pair: String,
         new_peg_mult: Decimal,
     },
-    AddMember {
-        address: String,
-    },
-    RemoveMember {
-        address: String,
-    },
-    ChangeAdmin {
-        address: String,
-    },
+    EditOpers(operator_perms::Action),
+}
+
+pub mod operator_perms {
+    use cosmwasm_schema::cw_serde;
+
+    #[cw_serde]
+    pub enum Action {
+        AddOper { address: String },
+        RemoveOper { address: String },
+    }
 }
 
 /// QueryMsg specifies the args for the query entry point of the contract.
+#[derive(QueryResponses)]
 #[cw_serde]
 pub enum QueryMsg {
+    /// HasPerms: Query whether the given address has operator permissions.
+    /// The query response showcases the contract owner and set of operators.
+    #[returns(HasPermsResponse)]
     HasPerms { address: String },
+    /// Perms: Query the contract owner and set of operators.
+    #[returns(PermsResponse)]
     Perms {},
 }
 
@@ -47,6 +55,6 @@ pub struct HasPermsResponse {
 }
 
 #[cw_serde]
-pub struct PermissionsResponse {
+pub struct PermsResponse {
     pub perms: Permissions,
 }
