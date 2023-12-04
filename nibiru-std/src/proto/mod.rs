@@ -95,6 +95,43 @@ pub mod cosmos {
         }
     }
 
+    pub mod crisis {
+        pub mod v1beta1 {
+            include!("buf/cosmos.crisis.v1beta1.rs");
+        }
+    }
+
+    pub mod crypto {
+        pub mod v1beta1 {
+            include!("buf/cosmos.crisis.v1beta1.rs");
+        }
+
+        pub mod ed25519 {
+            include!("buf/cosmos.crypto.ed25519.rs");
+        }
+
+        pub mod hd {
+            pub mod v1 {
+                include!("buf/cosmos.crypto.hd.v1.rs");
+            }
+        }
+
+        pub mod keyring {
+            pub mod v1 {
+                include!("buf/cosmos.crypto.keyring.v1.rs");
+            }
+        }
+
+        pub mod multisig {
+            pub mod v1beta1 {
+                include!("buf/cosmos.crypto.multisig.v1beta1.rs");
+            }
+        }
+        pub mod secp256r1 {
+            include!("buf/cosmos.crypto.secp256r1.rs");
+        }
+    }
+
     pub mod genutil {
         pub mod v1beta1 {
             include!("buf/cosmos.genutil.v1beta1.rs");
