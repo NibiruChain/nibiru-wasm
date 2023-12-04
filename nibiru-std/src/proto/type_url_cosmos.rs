@@ -6,6 +6,31 @@ use prost::Name;
 use crate::proto::cosmos;
 
 const PACKAGE_BANK: &str = "cosmos.bank.v1beta1";
+const PACKAGE_AUTH: &str = "cosmos.auth.v1beta1";
+
+// BANK tx msg
+
+impl Name for cosmos::bank::v1beta1::MsgSend {
+    const NAME: &'static str = "MsgSend";
+    const PACKAGE: &'static str = PACKAGE_BANK;
+}
+
+impl Name for cosmos::bank::v1beta1::MsgMultiSend {
+    const NAME: &'static str = "MsgMultiSend";
+    const PACKAGE: &'static str = PACKAGE_BANK;
+}
+
+impl Name for cosmos::bank::v1beta1::MsgUpdateParams {
+    const NAME: &'static str = "MsgUpdateParams";
+    const PACKAGE: &'static str = PACKAGE_BANK;
+}
+
+impl Name for cosmos::bank::v1beta1::MsgSetSendEnabled {
+    const NAME: &'static str = "MsgSetSendEnabled";
+    const PACKAGE: &'static str = PACKAGE_BANK;
+}
+
+// BANK query
 
 impl Name for cosmos::bank::v1beta1::QuerySupplyOfRequest {
     const NAME: &'static str = "QuerySupplyOfRequest";
@@ -27,24 +52,33 @@ impl Name for cosmos::bank::v1beta1::QueryDenomMetadataRequest {
     const PACKAGE: &'static str = PACKAGE_BANK;
 }
 
-impl Name for cosmos::bank::v1beta1::MsgSend {
-    const NAME: &'static str = "MsgSend";
-    const PACKAGE: &'static str = PACKAGE_BANK;
-}
+// AUTH tx msg
 
-impl Name for cosmos::bank::v1beta1::MsgMultiSend {
-    const NAME: &'static str = "MsgMultiSend";
-    const PACKAGE: &'static str = PACKAGE_BANK;
-}
-
-impl Name for cosmos::bank::v1beta1::MsgUpdateParams {
+impl Name for cosmos::auth::v1beta1::MsgUpdateParams {
     const NAME: &'static str = "MsgUpdateParams";
-    const PACKAGE: &'static str = PACKAGE_BANK;
+    const PACKAGE: &'static str = PACKAGE_AUTH;
 }
 
-impl Name for cosmos::bank::v1beta1::MsgSetSendEnabled {
-    const NAME: &'static str = "MsgSetSendEnabled";
-    const PACKAGE: &'static str = PACKAGE_BANK;
+// AUTH query
+
+impl Name for cosmos::auth::v1beta1::QueryAccountInfoRequest {
+    const NAME: &'static str = "QueryAccountInfoRequest";
+    const PACKAGE: &'static str = PACKAGE_AUTH;
+}
+
+impl Name for cosmos::auth::v1beta1::QueryAccountRequest {
+    const NAME: &'static str = "QueryAccountRequest";
+    const PACKAGE: &'static str = PACKAGE_AUTH;
+}
+
+impl Name for cosmos::auth::v1beta1::QueryModuleAccountsRequest {
+    const NAME: &'static str = "QueryModuleAccountsRequest";
+    const PACKAGE: &'static str = PACKAGE_AUTH;
+}
+
+impl Name for cosmos::auth::v1beta1::QueryModuleAccountByNameRequest {
+    const NAME: &'static str = "QueryModuleAccountByNameRequest";
+    const PACKAGE: &'static str = PACKAGE_AUTH;
 }
 
 #[cfg(test)]
