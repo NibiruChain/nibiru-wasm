@@ -183,12 +183,11 @@ pub mod tests {
     use crate::{
         msgs::{ExecuteMsg, InitMsg},
         state::OPERATORS,
+        testing::{self as t, TestResult},
     };
 
-    use cosmwasm_std::{coins, testing, Addr};
+    use cosmwasm_std::{coins, testing};
     use std::collections::BTreeSet;
-
-    pub type TestResult = anyhow::Result<()>;
 
     // ---------------------------------------------------------------------------
     // Tests
@@ -204,30 +203,19 @@ pub mod tests {
             testing::mock_info("addr0000", &coins(2, "token"));
 
         let result = instantiate(deps.as_mut(), testing::mock_env(), info, msg)?;
+
         assert_eq!(result.messages.len(), 0);
         Ok(())
     }
 
     #[test]
     fn test_has_admin_power() -> TestResult {
-        let admin = Addr::unchecked("admin");
-        let msg = &InitMsg {
-            owner: admin.to_string(),
-        };
-
         let sender = "not-admin";
-        let mut deps = testing::mock_dependencies();
-        let info = testing::mock_info(sender, &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), info, msg.clone())?;
+        let (deps, _env, _info) = t::setup_contract()?;
         let perms = Permissions::load(&deps.storage)?;
-        let has: bool = perms.is_owner(sender);
-        assert!(!has);
-
-        let sender = "admin";
-        let mut deps = testing::mock_dependencies();
-        let info = testing::mock_info(sender, &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), info, msg.clone())?;
-        let perms = Permissions::load(&deps.storage)?;
+        let not_has: bool = !perms.is_owner(sender);
+        assert!(not_has);
+        let sender = t::TEST_OWNER;
         let has: bool = perms.is_owner(sender);
         assert!(has);
         Ok(())
@@ -235,15 +223,7 @@ pub mod tests {
 
     #[test]
     fn test_exec_unauthorized() -> TestResult {
-        let mut deps = testing::mock_dependencies();
-        let admin = Addr::unchecked("admin");
-
-        let msg = InitMsg {
-            owner: admin.as_str().to_string(),
-        };
-        let msg_info = testing::mock_info("addr0000", &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), msg_info, msg)?;
-
+        let (mut deps, _env, _info) = t::setup_contract()?;
         let execute_msg =
             ExecuteMsg::EditOpers(operator_perms::Action::AddOper {
                 address: "addr0001".to_string(),
@@ -261,27 +241,19 @@ pub mod tests {
 
     #[test]
     fn test_exec_edit_opers_add() -> TestResult {
-        // Init contract
-        let mut deps = testing::mock_dependencies();
-        let admin = Addr::unchecked("admin");
-
-        let init_msg = InitMsg {
-            owner: admin.as_str().to_string(),
-        };
-        let init_info = testing::mock_info("addr0000", &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), init_info, init_msg)?;
-
+        let (mut deps, _env, _info) = t::setup_contract()?;
         let new_member = "new_member";
         let perms = Permissions::load(&deps.storage)?;
-        let has: bool = perms.is_owner(new_member);
-        assert!(!has);
+        let not_has: bool = !perms.is_owner(new_member);
+        assert!(not_has);
 
         // Add an operator to the permission set
         let execute_msg =
             ExecuteMsg::EditOpers(operator_perms::Action::AddOper {
                 address: new_member.to_string(),
             });
-        let execute_info = testing::mock_info(admin.as_str(), &[]);
+        let sender = t::TEST_OWNER;
+        let execute_info = testing::mock_info(sender, &[]);
 
         let check_resp = |resp: Response| {
             assert_eq!(
@@ -322,16 +294,7 @@ pub mod tests {
 
     #[test]
     fn test_exec_edit_opers_remove() -> TestResult {
-        // Init contract
-        let mut deps = testing::mock_dependencies();
-        let admin = Addr::unchecked("admin");
-
-        let init_msg = InitMsg {
-            owner: admin.as_str().to_string(),
-        };
-        let init_info = testing::mock_info("addr0000", &coins(2, "token"));
-        instantiate(deps.as_mut(), testing::mock_env(), init_info, init_msg)?;
-
+        let (mut deps, _env, _info) = t::setup_contract()?;
         // Set up initial perms
         let opers_start: Vec<String> = ["vitalik", "musk", "satoshi"]
             .iter()
@@ -350,7 +313,8 @@ pub mod tests {
             ExecuteMsg::EditOpers(operator_perms::Action::RemoveOper {
                 address: "satoshi".to_string(),
             });
-        let execute_info = testing::mock_info(admin.as_str(), &[]);
+        let sender = t::TEST_OWNER;
+        let execute_info = testing::mock_info(sender, &[]);
         let check_resp = |resp: Response| {
             assert_eq!(
                 resp.messages.len(),

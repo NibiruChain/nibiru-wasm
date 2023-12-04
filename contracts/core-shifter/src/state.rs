@@ -58,7 +58,7 @@ pub fn instantiate_perms(
 
 #[cfg(test)]
 pub mod tests {
-    use crate::contract::tests::TestResult;
+    use crate::testing::TestResult;
     use cosmwasm_std::testing::MockStorage;
 
     use super::*;

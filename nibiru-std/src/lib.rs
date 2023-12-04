@@ -6,7 +6,6 @@ pub mod wasm;
 
 pub mod errors;
 
-pub mod cosmrs;
 pub mod testing;
 
 pub const VERSION_COSMOS_SDK: &str = "v0.47.5";
