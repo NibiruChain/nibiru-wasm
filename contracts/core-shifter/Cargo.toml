@@ -19,7 +19,6 @@ cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cw-storage-plus = { workspace = true }
 nibiru-std = { workspace = true }
-nibiru-macro = { workspace = true }
 thiserror = { workspace = true }
 schemars = "0.8.15"
 serde = { version = "1.0.188", default-features = false, features = ["derive"] }
