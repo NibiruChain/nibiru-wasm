@@ -8,15 +8,13 @@ use cosmwasm_std::{
     Env, MessageInfo, OwnedDeps,
 };
 
-use crate::{contract::instantiate, msgs::InstantiateMsg};
-
-pub const TEST_OWNER: &str = "owner";
-pub const TEST_DENOM: &str = "testdenom";
+use crate::{contract::instantiate, msgs::InitMsg};
 
 pub type TestResult = anyhow::Result<()>;
 
-pub fn setup_contract(
-    accepted_denoms: Vec<String>,
+pub const TEST_OWNER: &str = "owner";
+
+pub fn setup_contract(// accepted_denoms: Vec<String>,
 ) -> anyhow::Result<(
     OwnedDeps<MockStorage, MockApi, MockQuerier>,
     Env,
@@ -26,9 +24,8 @@ pub fn setup_contract(
     let env = mock_env();
     let info = mock_info(TEST_OWNER, &[]);
 
-    let msg = InstantiateMsg {
+    let msg = InitMsg {
         owner: info.sender.to_string(),
-        accepted_denoms: accepted_denoms.into_iter().collect(),
     };
     let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg)?;
     assert_eq!(0, res.messages.len());
@@ -37,10 +34,4 @@ pub fn setup_contract(
 
 pub fn mock_info_for_sender(sender: &str) -> MessageInfo {
     mock_info(sender, &[])
-}
-
-pub fn mock_env_height(height: u64) -> Env {
-    let mut env = mock_env();
-    env.block.height = height;
-    env
 }

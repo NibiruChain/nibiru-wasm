@@ -1,6 +1,6 @@
 [package]
 name = "nibiru-std"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 description = "Nibiru Chain standard library for CosmWasm smart contracts"
 authors = ["Unique Divine <realuniquedivine@gmail.com>"]
@@ -11,12 +11,9 @@ repository = "https://github.com/NibiruChain/cw-nibiru"
 license-file = "LICENSE"
 # license = "MIT" # only one of license, license-file is needed.
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [features]
 backtraces = ["cosmwasm-std/backtraces"]
-library = []
+default = []
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
@@ -27,7 +24,6 @@ prost-types = "0.12.1"
 serde = "1.0.188"
 anyhow = { workspace = true }
 thiserror = { workspace = true }
-nibiru-macro = { workspace = true }
 serde_json = { workspace = true }
 
 # cargo run --bin script-name

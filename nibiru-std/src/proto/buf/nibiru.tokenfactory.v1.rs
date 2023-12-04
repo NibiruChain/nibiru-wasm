@@ -2,52 +2,51 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventCreateDenom {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub denom: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub creator: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventChangeAdmin {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub denom: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub new_admin: ::prost::alloc::string::String,
-    #[prost(string, tag = "3")]
+    #[prost(string, tag="3")]
     pub old_admin: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventMint {
-    #[prost(message, optional, tag = "1")]
+    #[prost(message, optional, tag="1")]
     pub coin: ::core::option::Option<crate::proto::cosmos::base::v1beta1::Coin>,
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub to_addr: ::prost::alloc::string::String,
-    #[prost(string, tag = "3")]
+    #[prost(string, tag="3")]
     pub caller: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventBurn {
-    #[prost(message, optional, tag = "1")]
+    #[prost(message, optional, tag="1")]
     pub coin: ::core::option::Option<crate::proto::cosmos::base::v1beta1::Coin>,
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub from_addr: ::prost::alloc::string::String,
-    #[prost(string, tag = "3")]
+    #[prost(string, tag="3")]
     pub caller: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventSetDenomMetadata {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub denom: ::prost::alloc::string::String,
     /// Metadata: Official x/bank metadata for the denom. All token factory denoms
     /// are standard, native assets. The "metadata.base" is the denom.
-    #[prost(message, optional, tag = "2")]
-    pub metadata:
-        ::core::option::Option<crate::proto::cosmos::bank::v1beta1::Metadata>,
-    #[prost(string, tag = "3")]
+    #[prost(message, optional, tag="2")]
+    pub metadata: ::core::option::Option<crate::proto::cosmos::bank::v1beta1::Metadata>,
+    #[prost(string, tag="3")]
     pub caller: ::prost::alloc::string::String,
 }
 /// DenomAuthorityMetadata specifies metadata foraddresses that have specific
@@ -58,7 +57,7 @@ pub struct EventSetDenomMetadata {
 pub struct DenomAuthorityMetadata {
     /// Admin: Bech32 address of the admin for the tokefactory denom. Can be empty
     /// for no admin.
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub admin: ::prost::alloc::string::String,
 }
 /// ModuleParams defines the parameters for the tokenfactory module.
@@ -92,7 +91,7 @@ pub struct DenomAuthorityMetadata {
 pub struct ModuleParams {
     /// Adds gas consumption to the execution of `MsgCreateDenom` as a method of
     /// spam prevention. Defaults to 10 NIBI.
-    #[prost(uint64, tag = "1")]
+    #[prost(uint64, tag="1")]
     pub denom_creation_gas_consume: u64,
 }
 /// TFDenom is a token factory (TF) denom. The canonical representation is
@@ -101,11 +100,11 @@ pub struct ModuleParams {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TfDenom {
     /// Creator: Bech32 address of the creator of the denom.
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub creator: ::prost::alloc::string::String,
     /// Subdenom: Unique suffix of a token factory denom. A subdenom is specific
     /// to a given creator. It is the name given during a token factory "Mint".
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub subdenom: ::prost::alloc::string::String,
 }
 // ----------------------------------------------
@@ -116,51 +115,52 @@ pub struct TfDenom {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
-    #[prost(message, optional, tag = "1")]
+    #[prost(message, optional, tag="1")]
     pub params: ::core::option::Option<ModuleParams>,
-    #[prost(message, repeated, tag = "2")]
+    #[prost(message, repeated, tag="2")]
     pub factory_denoms: ::prost::alloc::vec::Vec<GenesisDenom>,
 }
 /// GenesisDenom defines a tokenfactory denoms in the genesis state.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisDenom {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub denom: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
+    #[prost(message, optional, tag="2")]
     pub authority_metadata: ::core::option::Option<DenomAuthorityMetadata>,
 }
 /// QueryParamsRequest is the request type for the Query/Params RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryParamsRequest {}
+pub struct QueryParamsRequest {
+}
 /// QueryParamsResponse is the response type for the Query/Params RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsResponse {
     /// Module parameters stored in state
-    #[prost(message, optional, tag = "1")]
+    #[prost(message, optional, tag="1")]
     pub params: ::core::option::Option<ModuleParams>,
 }
 /// QueryDenomsRequest: gRPC query for all denoms registered for a creator
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDenomsRequest {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub creator: ::prost::alloc::string::String,
 }
 /// QueryDenomsResponse: All registered denoms for a creator
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDenomsResponse {
-    #[prost(string, repeated, tag = "1")]
+    #[prost(string, repeated, tag="1")]
     pub denoms: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 /// QueryDenomInfoRequest: gRPC query for the denom admin and x/bank metadata
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDenomInfoRequest {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub denom: ::prost::alloc::string::String,
 }
 /// QueryDenomInfoResponse: All registered denoms for a creator
@@ -168,13 +168,12 @@ pub struct QueryDenomInfoRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDenomInfoResponse {
     /// Admin of the token factory denom
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub admin: ::prost::alloc::string::String,
     /// Metadata: Official x/bank metadata for the denom. All token factory denoms
     /// are standard, native assets.
-    #[prost(message, optional, tag = "2")]
-    pub metadata:
-        ::core::option::Option<crate::proto::cosmos::bank::v1beta1::Metadata>,
+    #[prost(message, optional, tag="2")]
+    pub metadata: ::core::option::Option<crate::proto::cosmos::bank::v1beta1::Metadata>,
 }
 /// MsgCreateDenom: sdk.Msg that registers an a token factory denom.
 /// A denom has the form "tf/\[creatorAddr]/[subdenom\]".
@@ -185,10 +184,10 @@ pub struct QueryDenomInfoResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreateDenom {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub sender: ::prost::alloc::string::String,
     /// subdenom can be up to 44 "alphanumeric" characters long.
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub subdenom: ::prost::alloc::string::String,
 }
 /// MsgCreateDenomResponse is the return value of MsgCreateDenom
@@ -196,7 +195,7 @@ pub struct MsgCreateDenom {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCreateDenomResponse {
     /// NewTokenDenom: identifier for the newly created token factory denom.
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub new_token_denom: ::prost::alloc::string::String,
 }
 /// MsgChangeAdmin is the sdk.Msg type for allowing an admin account to change
@@ -204,50 +203,52 @@ pub struct MsgCreateDenomResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgChangeAdmin {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub sender: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub denom: ::prost::alloc::string::String,
-    #[prost(string, tag = "3")]
+    #[prost(string, tag="3")]
     pub new_admin: ::prost::alloc::string::String,
 }
 /// MsgChangeAdminResponse is the gRPC response for the MsgChangeAdmin TxMsg.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgChangeAdminResponse {}
+pub struct MsgChangeAdminResponse {
+}
 /// MsgUpdateModuleParams: sdk.Msg for updating the x/tokenfactory module params
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateModuleParams {
     /// Authority: Address of the governance module account.
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub authority: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
+    #[prost(message, optional, tag="2")]
     pub params: ::core::option::Option<ModuleParams>,
 }
 /// MsgUpdateModuleParamsResponse is the gRPC response for the
 /// MsgUpdateModuleParams TxMsg.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateModuleParamsResponse {}
+pub struct MsgUpdateModuleParamsResponse {
+}
 /// MsgMint: sdk.Msg (TxMsg) where an denom admin mints more of the token.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgMint {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub sender: ::prost::alloc::string::String,
     /// coin: The denom identifier and amount to mint.
-    #[prost(message, optional, tag = "2")]
+    #[prost(message, optional, tag="2")]
     pub coin: ::core::option::Option<crate::proto::cosmos::base::v1beta1::Coin>,
     /// mint_to_addr: An address to which tokens will be minted. If blank,
     /// tokens are minted to the "sender".
-    #[prost(string, tag = "3")]
+    #[prost(string, tag="3")]
     pub mint_to: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgMintResponse {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub mint_to: ::prost::alloc::string::String,
 }
 /// MsgBurn: sdk.Msg (TxMsg) where a denom admin burns some of the token.
@@ -258,32 +259,33 @@ pub struct MsgMintResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgBurn {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub sender: ::prost::alloc::string::String,
     /// coin: The denom identifier and amount to burn.
-    #[prost(message, optional, tag = "2")]
+    #[prost(message, optional, tag="2")]
     pub coin: ::core::option::Option<crate::proto::cosmos::base::v1beta1::Coin>,
     /// burn_from: The address from which tokens will be burned.
-    #[prost(string, tag = "3")]
+    #[prost(string, tag="3")]
     pub burn_from: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgBurnResponse {}
+pub struct MsgBurnResponse {
+}
 /// MsgSetDenomMetadata: sdk.Msg (TxMsg) enabling the denom admin to change its
 /// bank metadata.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSetDenomMetadata {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub sender: ::prost::alloc::string::String,
     /// Metadata: Official x/bank metadata for the denom. All token factory denoms
     /// are standard, native assets. The "metadata.base" is the denom.
-    #[prost(message, optional, tag = "2")]
-    pub metadata:
-        ::core::option::Option<crate::proto::cosmos::bank::v1beta1::Metadata>,
+    #[prost(message, optional, tag="2")]
+    pub metadata: ::core::option::Option<crate::proto::cosmos::bank::v1beta1::Metadata>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSetDenomMetadataResponse {}
+pub struct MsgSetDenomMetadataResponse {
+}
 // @@protoc_insertion_point(module)

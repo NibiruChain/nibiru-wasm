@@ -7,6 +7,3 @@
 //! which are written in Rust and compiled to WebAssembly (Wasm).
 
 pub mod msg;
-pub mod querier;
-pub mod query;
-pub mod state;

@@ -28,8 +28,6 @@ pub mod cosmos {
         }
     }
 
-    // TODO cosmos autocli
-
     /// Base functionality.
     pub mod base {
         /// Application BlockChain Interface (ABCI).
@@ -81,36 +79,145 @@ pub mod cosmos {
             }
         }
 
+        /// Defines base data structures like Coin, DecCoin, IntProto, and
+        /// DecProto. These types implement custo method signatures required by
+        /// gogoproto.
         pub mod v1beta1 {
             include!("buf/cosmos.base.v1beta1.rs");
         }
 
+        /// For consensus types related to blocks, block headers, and merkle
+        /// proofs.
         pub mod tendermint {
             pub mod v1beta1 {
                 include!("buf/cosmos.base.tendermint.v1beta1.rs");
             }
         }
     }
-    // TODO cosmso base
-    // TODO cosmos capability
-    // TODO cosmos consensus
-    // TODO cosmos crisis
-    // TODO cosmos crypto
-    // TODO cosmos distribution
-    // TODO cosmos evidence
-    // TODO cosmos feegrant
-    // TODO cosmos genutil
-    // TODO cosmos group
-    // TODO cosmos mint
-    // TODO cosmos nft
-    // TODO cosmos orm
-    // TODO cosmos params
-    // TODO cosmos reflection
-    // TODO cosmos slashing
-    // TODO cosmos staking
-    // TODO cosmos tx
-    // TODO cosmos upgrade
-    // TODO cosmos vesting
+
+    pub mod crisis {
+        pub mod v1beta1 {
+            include!("buf/cosmos.crisis.v1beta1.rs");
+        }
+    }
+
+    pub mod crypto {
+        pub mod v1beta1 {
+            include!("buf/cosmos.crisis.v1beta1.rs");
+        }
+
+        pub mod ed25519 {
+            include!("buf/cosmos.crypto.ed25519.rs");
+        }
+
+        pub mod hd {
+            pub mod v1 {
+                include!("buf/cosmos.crypto.hd.v1.rs");
+            }
+        }
+
+        pub mod keyring {
+            pub mod v1 {
+                include!("buf/cosmos.crypto.keyring.v1.rs");
+            }
+        }
+
+        pub mod multisig {
+            pub mod v1beta1 {
+                include!("buf/cosmos.crypto.multisig.v1beta1.rs");
+            }
+        }
+        pub mod secp256r1 {
+            include!("buf/cosmos.crypto.secp256r1.rs");
+        }
+    }
+
+    pub mod genutil {
+        pub mod v1beta1 {
+            include!("buf/cosmos.genutil.v1beta1.rs");
+        }
+    }
+
+    /// Types related to decentralized governance of the network.
+    pub mod gov {
+        pub mod v1 {
+            include!("buf/cosmos.gov.v1.rs");
+        }
+    }
+
+    pub mod group {
+        pub mod v1 {
+            include!("buf/cosmos.group.v1.rs");
+        }
+    }
+
+    pub mod mint {
+        pub mod v1beta1 {
+            include!("buf/cosmos.mint.v1beta1.rs");
+        }
+    }
+
+    pub mod nft {
+        pub mod v1beta1 {
+            include!("buf/cosmos.nft.v1beta1.rs");
+        }
+    }
+
+    pub mod params {
+        pub mod v1beta1 {
+            include!("buf/cosmos.params.v1beta1.rs");
+        }
+    }
+    pub mod reflection {
+        pub mod v1 {
+            include!("buf/cosmos.reflection.v1.rs");
+        }
+    }
+    pub mod slashing {
+        pub mod v1beta1 {
+            include!("buf/cosmos.slashing.v1beta1.rs");
+        }
+    }
+    pub mod staking {
+        pub mod v1beta1 {
+            include!("buf/cosmos.staking.v1beta1.rs");
+        }
+    }
+    pub mod tx {
+        pub mod config {
+            pub mod v1 {
+                include!("buf/cosmos.tx.config.v1.rs");
+            }
+        }
+        pub mod signing {
+            pub mod v1beta1 {
+                include!("buf/cosmos.tx.signing.v1beta1.rs");
+            }
+        }
+        pub mod v1beta1 {
+            include!("buf/cosmos.tx.v1beta1.rs");
+        }
+    }
+
+    pub mod upgrade {
+        pub mod v1beta1 {
+            include!("buf/cosmos.upgrade.v1beta1.rs");
+        }
+    }
+
+    pub mod vesting {
+        pub mod v1beta1 {
+            include!("buf/cosmos.vesting.v1beta1.rs");
+        }
+    }
+
+    // TODO: protobuf mod for cosmos capability
+    // TODO: protobuf mod for cosmos consensus
+    // TODO: protobuf mod for cosmos crisis
+    // TODO: protobuf mod for cosmos crypto
+    // TODO: protobuf mod for cosmos distribution
+    // TODO: protobuf mod for cosmos evidence
+    // TODO: protobuf mod for cosmos feegrant
 }
 
 pub mod nibiru {

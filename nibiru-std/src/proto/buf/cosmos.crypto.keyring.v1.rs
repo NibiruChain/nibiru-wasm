@@ -28,7 +28,7 @@ pub mod record {
 #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Ledger {
         #[prost(message, optional, tag="1")]
-        pub path: ::core::option::Option<super::super::super::hd::v1::Bip44Params>,
+        pub path: ::core::option::Option<crate::proto::cosmos::crypto::hd::v1::Bip44Params>,
     }
     /// Multi item
     #[allow(clippy::derive_partial_eq_without_eq)]

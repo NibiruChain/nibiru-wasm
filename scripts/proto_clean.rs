@@ -12,6 +12,8 @@
 ///    on the classification.
 /// 4. Write the modified content back to each file.
 
+pub static PROTO_PATH: &str = "../nibiru-std/src/proto/buf";
+
 pub fn main() {
     println!("Running proto_clean.rs...");
 
@@ -21,7 +23,10 @@ pub fn main() {
         .filter_map(|e| e.ok())
         // filter out directories
         .filter(|e| !e.file_type().is_dir())
-        .filter(|e| e.file_name().to_string_lossy().starts_with("cosmos"))
+        .filter(|e| {
+            e.file_name().to_string_lossy().starts_with("cosmos")
+                || e.file_name().to_string_lossy().starts_with("nibiru")
+        })
     {
         // Get the path of the file we're going to clean.
         let path_to_clean = entry.path().to_string_lossy();
@@ -100,14 +105,18 @@ pub fn super_import_to_clean(
 
     let elem = elems[submodule_idx];
     let prefix: &str;
-    if proto_submodules::is_cosmos_submod(elem) {
+    if proto_submodules::is_submod_cosmos(elem) {
         prefix = "crate::proto::cosmos"
-    } else if proto_submodules::is_tendermint_submod(elem) {
+    } else if proto_submodules::is_mod_tendermint(elem)
+        || proto_submodules::is_mod_cosmos(elem)
+    {
         prefix = "crate::proto"
-    } else if proto_submodules::is_cosmos_base_submod(elem) {
+    } else if proto_submodules::is_submod_cosmos_base(elem) {
         prefix = "crate::proto::cosmos::base"
-    } else if proto_submodules::is_cosmos_tx_submod(elem) {
+    } else if proto_submodules::is_submod_cosmos_tx(elem) {
         prefix = "crate::proto::cosmos::tx"
+    } else if proto_submodules::is_submod_cosmos_crypto(elem) {
+        prefix = "crate::proto::cosmos::crypto"
     } else {
         return Err(Box::new(CustomError(format!(
             "Unrecognized import submodule: {}",
@@ -121,20 +130,24 @@ pub fn super_import_to_clean(
 
 mod proto_submodules {
 
-    pub fn is_cosmos_submod(s: &str) -> bool {
+    pub fn is_submod_cosmos(s: &str) -> bool {
         COSMOS.contains(&s)
     }
 
-    pub fn is_tendermint_submod(s: &str) -> bool {
+    pub fn is_mod_tendermint(s: &str) -> bool {
         TENDERMINT.contains(&s)
     }
 
-    pub fn is_cosmos_base_submod(s: &str) -> bool {
+    pub fn is_submod_cosmos_base(s: &str) -> bool {
         matches!(s, "query")
     }
 
-    pub fn is_cosmos_tx_submod(s: &str) -> bool {
+    pub fn is_submod_cosmos_tx(s: &str) -> bool {
         matches!(s, "signing")
+    }
+
+    pub fn is_mod_cosmos(s: &str) -> bool {
+        matches!(s, "cosmos")
     }
 
     pub static COSMOS: [&str; 25] = [
@@ -165,10 +178,22 @@ mod proto_submodules {
         "vesting",
     ];
 
+    /// COSMOS_CRYPTO: Names of the proto packages: cosmos.crypto.*
+    pub static COSMOS_CRYPTO: [&str; 6] = [
+        "ed25519",
+        "hd",
+        "keyring",
+        "multisig",
+        "secp256k1",
+        "secp256r1",
+    ];
+
+    pub fn is_submod_cosmos_crypto(s: &str) -> bool {
+        COSMOS_CRYPTO.contains(&s)
+    }
+
     pub static TENDERMINT: [&str; 1] = ["tendermint"];
 }
-
-pub static PROTO_PATH: &str = "../nibiru-std/src/proto/buf";
 
 #[cfg(test)]
 mod tests {
@@ -198,6 +223,18 @@ mod tests {
                 input: "abcxyz",
                 want_err: true,
                 want_out: None,
+            },
+            TestCase {
+                input: "super::super::super::hd::v1::Bip69Params",
+                want_err: false,
+                want_out: Some(
+                    "crate::proto::cosmos::crypto::hd::v1::Bip69Params",
+                ),
+            },
+            TestCase {
+                input: "super::super::cosmos::base::v1beta1::Coin",
+                want_err: false,
+                want_out: Some("crate::proto::cosmos::base::v1beta1::Coin"),
             },
         ];
 

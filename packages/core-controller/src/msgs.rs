@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Decimal, Uint256, Uint64};
 
@@ -12,14 +13,17 @@ pub struct InitMsg {
 /// ExecuteMsg specifies the args for the execute entry point of the contract.
 #[cw_serde]
 pub enum ExecuteMsg {
+    #[deprecated(note = "Needs MsgServer impl added to NibiruChain/nibiru")]
     SetMarketEnabled {
         pair: String,
         enabled: bool,
     },
+    #[deprecated(note = "Needs MsgServer impl added to NibiruChain/nibiru")]
     InsuranceFundWithdraw {
         amount: Uint256,
         to: String,
     },
+    #[deprecated(note = "Needs MsgServer impl added to NibiruChain/nibiru")]
     EditOracleParams {
         vote_period: Option<Uint64>,
         vote_threshold: Option<Decimal>,
@@ -32,6 +36,7 @@ pub enum ExecuteMsg {
         min_voters: Option<Uint64>,
         validator_fee_ratio: Option<Decimal>,
     },
+    #[deprecated(note = "Needs MsgServer impl added to NibiruChain/nibiru")]
     CreateMarket {
         pair: String,
         peg_mult: Decimal,

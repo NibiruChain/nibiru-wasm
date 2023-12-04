@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Coin, Uint128};
+use cosmwasm_std as cw;
 
 #[cw_ownable::cw_ownable_query]
 #[cw_serde]
@@ -9,14 +9,14 @@ use cosmwasm_std::{Coin, Uint128};
 pub enum QueryMsg {
     /// Mintable: Returns the amount of μNUSD that can be minted in exchange
     /// for the given set of "from_coins".
-    #[returns(Uint128)]
+    #[returns(cw::Uint128)]
     Mintable { from_coins: BTreeSet<String> },
 
     /// Redeemable: Returns the amount of "to_denom"  redeemable
     /// for the given "redeem_amount" of μNUSD.
-    #[returns(Uint128)]
+    #[returns(cw::Uint128)]
     Redeemable {
-        redeem_amount: Uint128,
+        redeem_amount: cw::Uint128,
         to_denom: String,
     },
 
@@ -26,8 +26,8 @@ pub enum QueryMsg {
 
     /// Returns the set of possible redeemable coins that could be received
     /// when redeeming the given "redeem_amount" of μNUSD.
-    #[returns(BTreeSet<Coin>)]
-    RedeemableChoices { redeem_amount: Uint128 },
+    #[returns(BTreeSet<cw::Coin>)]
+    RedeemableChoices { redeem_amount: cw::Uint128 },
 }
 
 #[cw_ownable::cw_ownable_execute]

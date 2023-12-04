@@ -1,94 +1,128 @@
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{Api, Storage};
 use cw_storage_plus::Item;
 
-pub const WHITELIST: Item<Whitelist> = Item::new("whitelist");
+use crate::error::ContractError;
+
+pub const OPERATORS: Item<BTreeSet<String>> = Item::new("operators");
 
 #[cw_serde]
-pub struct Whitelist {
-    pub members: HashSet<String>,
-    pub admin: String,
+pub struct Permissions {
+    pub owner: Option<String>,
+    pub operators: BTreeSet<String>,
 }
 
-impl Whitelist {
+impl Permissions {
     pub fn has(&self, addr: impl AsRef<str>) -> bool {
         let addr = addr.as_ref();
-        self.members.contains(addr) || self.admin == addr
+        self.operators.contains(addr) || self.is_owner(addr)
     }
 
-    pub fn is_admin(&self, addr: impl AsRef<str>) -> bool {
+    pub fn is_owner(&self, addr: impl AsRef<str>) -> bool {
         let addr = addr.as_ref();
-        self.admin == addr
+        if let Some(owner) = &self.owner {
+            owner == addr
+        } else {
+            false
+        }
     }
 
-    pub fn is_member(&self, addr: impl AsRef<str>) -> bool {
+    pub fn is_operator(&self, addr: impl AsRef<str>) -> bool {
         let addr = addr.as_ref();
-        self.members.contains(addr)
+        self.operators.contains(addr)
     }
+
+    pub fn load(storage: &dyn Storage) -> Result<Self, ContractError> {
+        let owner = cw_ownable::get_ownership(storage)?.owner;
+        let opers = OPERATORS.load(storage)?;
+        Ok(Permissions {
+            owner: owner.map(|addr| addr.into_string()),
+            operators: opers,
+        })
+    }
+}
+
+/// Set the given address as the contract owner and initialize the
+/// 'OPERATORS' and 'OWNERSHIP' state. This function is only intended to be used only
+/// during contract instantiation.
+pub fn instantiate_perms(
+    owner: Option<&str>,
+    storage: &mut dyn Storage,
+    api: &dyn Api,
+) -> Result<(), ContractError> {
+    cw_ownable::initialize_owner(storage, api, owner)?;
+    Ok(OPERATORS.save(storage, &BTreeSet::default())?)
 }
 
 #[cfg(test)]
 pub mod tests {
+    use crate::testing::TestResult;
     use cosmwasm_std::testing::MockStorage;
 
     use super::*;
 
-    pub fn init_mock_whitelist() -> Whitelist {
+    pub fn init_mock_perms() -> Permissions {
         let member_names = ["alice", "brock", "david"];
-        let members: HashSet<String> =
+        let members: BTreeSet<String> =
             member_names.iter().map(|&s| s.to_string()).collect();
         let admin: String = "cait".to_string();
-        Whitelist { members, admin }
+        Permissions {
+            operators: members,
+            owner: Some(admin),
+        }
     }
 
     #[test]
-    fn whitelist_is_admin() {
-        let whitelist = init_mock_whitelist();
-        assert!(!whitelist.is_admin("alice"));
-        assert!(whitelist.is_admin("cait"));
-        assert!(!whitelist.is_admin("david"));
-        assert!(!whitelist.is_admin("brock"));
+    fn perms_is_owner() {
+        let perms = init_mock_perms();
+        assert!(!perms.is_owner("alice"));
+        assert!(perms.is_owner("cait"));
+        assert!(!perms.is_owner("david"));
+        assert!(!perms.is_owner("brock"));
     }
 
     #[test]
-    fn whitelist_is_member() {
-        let whitelist = init_mock_whitelist();
-        assert!(whitelist.is_member("alice"));
-        assert!(!whitelist.is_member("cait"));
-        assert!(whitelist.is_member("david"));
-        assert!(whitelist.is_member("brock"));
+    fn perms_is_member() {
+        let perms = init_mock_perms();
+        assert!(perms.is_operator("alice"));
+        assert!(!perms.is_operator("cait"));
+        assert!(perms.is_operator("david"));
+        assert!(perms.is_operator("brock"));
     }
 
     #[test]
-    fn whitelist_has() {
-        let whitelist = init_mock_whitelist();
+    fn perms_has() {
+        let perms = init_mock_perms();
 
-        let whitelisted_names = ["alice", "brock", "cait", "david"];
-        for name in whitelisted_names.iter() {
-            assert!(whitelist.has(name));
+        let permsed_names = ["alice", "brock", "cait", "david"];
+        for name in permsed_names.iter() {
+            assert!(perms.has(name));
         }
 
-        let other_names = ["xxx", "not-whitelisted"];
+        let other_names = ["xxx", "not-permsed"];
         for name in other_names.iter() {
-            assert!(!whitelist.has(name));
+            assert!(!perms.has(name));
         }
     }
 
     #[test]
-    fn save_and_load() {
+    fn save_and_load() -> TestResult {
         let mut store = MockStorage::new();
 
         // Store should start out empty
-        assert!(WHITELIST.load(&store).is_err());
-        assert_eq!(WHITELIST.may_load(&store).unwrap(), None);
+        assert!(OPERATORS.load(&store).is_err());
+        assert_eq!(OPERATORS.may_load(&store)?, None);
 
         // save to store
-        let whitelist = init_mock_whitelist();
-        let res = WHITELIST.save(&mut store, &whitelist);
+        let perms = init_mock_perms();
+        let opers = perms.operators;
+        let res = OPERATORS.save(&mut store, &opers);
         assert!(res.is_ok());
 
         // load from store
-        assert_eq!(whitelist, WHITELIST.load(&store).unwrap());
+        assert_eq!(opers, OPERATORS.load(&store)?);
+        Ok(())
     }
 }
