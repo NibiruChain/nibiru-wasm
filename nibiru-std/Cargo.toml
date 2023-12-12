@@ -1,6 +1,6 @@
 [package]
 name = "nibiru-std"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2021"
 description = "Nibiru Chain standard library for CosmWasm smart contracts"
 authors = ["Unique Divine <realuniquedivine@gmail.com>"]
