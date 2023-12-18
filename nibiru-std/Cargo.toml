@@ -1,6 +1,6 @@
 [package]
 name = "nibiru-std"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2021"
 description = "Nibiru Chain standard library for CosmWasm smart contracts"
 authors = ["Unique Divine <realuniquedivine@gmail.com>"]
@@ -17,14 +17,14 @@ default = []
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-cosmwasm-std = { version = "1.4.1", features = ["stargate"] }
+cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
-prost = "0.12.1"
-prost-types = "0.12.1"
-serde = "1.0.188"
+prost = { workspace = true }
+prost-types = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
-serde_json = { workspace = true }
 
 # cargo run --bin script-name
 # [[bin]]
