@@ -12,6 +12,9 @@ coverage:
         threshold: 1% # Allow coverage to drop by X%, posting a success status.
         # removed_code_behavior: Takes values [off, removals_only, adjust_base]
         removed_code_behavior: adjust_base
+    patch:
+      default:
+        threshold: 7%
 
 # See https://docs.codecov.com/docs/pull-request-comments
 comment:

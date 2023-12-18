@@ -1,5 +1,6 @@
 use cosmwasm_std::StdError;
 
+use nibiru_std::errors;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -12,4 +13,7 @@ pub enum ContractError {
 
     #[error("insufficient permissions: sender is not a contract operator ({sender:?})")]
     NoOperatorPerms { sender: String },
+
+    #[error("{0}")]
+    MathError(#[from] errors::MathError),
 }

@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal, Uint256};
+use cosmwasm_std::Uint256;
 
 use crate::state::Permissions;
 
@@ -19,7 +19,7 @@ pub enum ExecuteMsg {
     },
     ShiftPegMultiplier {
         pair: String,
-        new_peg_mult: Decimal,
+        new_peg_mult: String,
     },
     EditOpers(operator_perms::Action),
 }
