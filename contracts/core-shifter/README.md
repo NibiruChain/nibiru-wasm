@@ -146,6 +146,51 @@ nibid tx wasm exec $CONTRACT "$(cat shifter-1-exec-shift-peg.json)"  --from=$KEY
 
 
 
+Example successful response (from the `logs.events` field):
+```json
+[
+{
+  "type": "execute",
+  "attributes": [
+    {
+      "key": "_contract_address",
+      "value": "nibi1suhgf5svhu4usrurvxzlgn54ksxmn8gljarjtxqnapv8kjnp4nrs0gfase"
+    }
+  ]
+},
+{
+  "type": "wasm",
+  "attributes": [
+    {
+      "key": "_contract_address",
+      "value": "nibi1suhgf5svhu4usrurvxzlgn54ksxmn8gljarjtxqnapv8kjnp4nrs0gfase"
+    },
+    {
+      "key": "action",
+      "value": "shift_peg_multiplier"
+    }
+  ]
+},
+{
+  "type": "nibiru.perp.v2.EventShiftPegMultiplier",
+  "attributes": [
+    {
+      "key": "cost_paid",
+      "value": "{\"denom\":\"tf/nibi14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9ssa9gcs/unusd\",\"amount\":\"0\"}"
+    },
+    {
+      "key": "new_peg_multiplier",
+      "value": "\"400001.000000000000000000\""
+    },
+    {
+      "key": "old_peg_multiplier",
+      "value": "\"41450.000000000000000000\""
+    }
+  ]
+}
+]
+```
+
 
 
 <!-- ```bash -->
