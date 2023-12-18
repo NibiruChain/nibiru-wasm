@@ -1,3 +1,4 @@
+use crate::errors::MathError;
 use std::{
     fmt,
     ops::{Add, Div, Mul, Sub},
@@ -94,12 +95,10 @@ impl DecimalExt {
         DecimalExt { sign, dec }
     }
 
-    // TODO: test sign_dec_quo
-    pub fn quo(&self, other: Self) -> anyhow::Result<Self> {
+    pub fn quo(&self, other: Self) -> Result<Self, MathError> {
         let sign = match (self.sign, other.sign) {
             (Sign::Zero, _) => Sign::Zero,
-            // TODO: type error for zero division
-            (_, Sign::Zero) => return Err(anyhow::anyhow!("divizion by zero")),
+            (_, Sign::Zero) => return Err(MathError::DivisionByZero),
             (Sign::Positive, Sign::Positive)
             | (Sign::Negative, Sign::Negative) => Sign::Positive,
             (Sign::Positive, Sign::Negative)
@@ -123,7 +122,7 @@ impl From<cw::Decimal> for DecimalExt {
 }
 
 impl FromStr for DecimalExt {
-    type Err = cw::StdError;
+    type Err = MathError;
 
     /// Converts the decimal string to a `DecimalExt`
     /// Possible inputs: "-69", "-420.69", "1.23", "1", "0012", "1.123000",
@@ -141,7 +140,13 @@ impl FromStr for DecimalExt {
             s
         };
 
-        let cw_dec = cw::Decimal::from_str(abs_value)?;
+        let cw_dec: cw::Decimal =
+            cw::Decimal::from_str(abs_value).map_err(|cw_std_err| {
+                MathError::CwDecParseError {
+                    dec_str: s.to_string(),
+                    err: cw_std_err,
+                }
+            })?;
         let sign = if cw_dec.is_zero() {
             Sign::Zero
         } else {
@@ -166,9 +171,9 @@ pub struct SdkDec {
 }
 
 impl SdkDec {
-    pub fn new(dec: &DecimalExt) -> anyhow::Result<Self> {
+    pub fn new(dec: &DecimalExt) -> Result<Self, MathError> {
         Ok(Self {
-            protobuf_repr: dec.to_sdk_dec_str()?,
+            protobuf_repr: dec.to_sdk_dec_pb_repr()?,
         })
     }
 
@@ -177,17 +182,17 @@ impl SdkDec {
         self.protobuf_repr.to_string()
     }
 
-    pub fn from_dec(dec: DecimalExt) -> anyhow::Result<Self> {
+    pub fn from_dec(dec: DecimalExt) -> Result<Self, MathError> {
         Self::new(&dec)
     }
 
-    pub fn from_cw_dec(cw_dec: cw::Decimal) -> anyhow::Result<Self> {
+    pub fn from_cw_dec(cw_dec: cw::Decimal) -> Result<Self, MathError> {
         Self::new(&DecimalExt::from(cw_dec))
     }
 }
 
 impl FromStr for SdkDec {
-    type Err = anyhow::Error;
+    type Err = MathError;
 
     /// Converts the decimal string to an `SdkDec` compatible for use with
     /// protobuf strings corresponding to `"cosmossdk.io/math".LegacyDec`
@@ -218,11 +223,15 @@ impl DecimalExt {
         18
     }
 
-    pub fn to_sdk_dec(&self) -> anyhow::Result<SdkDec> {
+    /// to_sdk_dec_pb_repr: Encodes the `DecimalExt` from the human readable
+    /// form to the corresponding SdkDec (`cosmossdk.io/math.LegacyDec`).
+    pub fn to_sdk_dec(&self) -> Result<SdkDec, MathError> {
         SdkDec::new(self)
     }
 
-    pub fn to_sdk_dec_str(&self) -> anyhow::Result<String> {
+    /// to_sdk_dec_pb_repr: Encodes the `DecimalExt` its SdkDec
+    /// (`cosmossdk.io/math.LegacyDec`) protobuf representation.
+    pub fn to_sdk_dec_pb_repr(&self) -> Result<String, MathError> {
         if self.dec.is_zero() {
             return Ok("0".repeat(DecimalExt::precision_digits()));
         }
@@ -238,12 +247,20 @@ impl DecimalExt {
         let (int_part, frac_part) = match parts.as_slice() {
             [int_part, frac_part] => (*int_part, *frac_part),
             [int_part] => (*int_part, ""),
-            _ => anyhow::bail!("Invalid decimal format: {}", abs_str),
+            _ => {
+                return Err(MathError::SdkDecError(format!(
+                    "Invalid decimal format: {}",
+                    abs_str
+                )))
+            }
         };
 
         // Check for valid number format
         if int_part.is_empty() || (parts.len() == 2 && frac_part.is_empty()) {
-            anyhow::bail!("Expected decimal string but got: {}", abs_str);
+            return Err(MathError::SdkDecError(format!(
+                "Expected decimal string but got: {}",
+                abs_str
+            )));
         }
 
         // ----- Build the `sdk_dec` now that validation is complete. -----
@@ -253,7 +270,10 @@ impl DecimalExt {
         // Add trailing zeros to match precision
         let precision_digits = DecimalExt::precision_digits();
         if frac_part.len() > precision_digits {
-            anyhow::bail!("Value exceeds max precision: {}", abs_str);
+            return Err(MathError::SdkDecError(format!(
+                "Value exceeds max precision digits ({}): {}",
+                precision_digits, abs_str
+            )));
         }
         for _ in 0..(precision_digits - frac_part.len()) {
             sdk_dec.push('0');
@@ -267,14 +287,17 @@ impl DecimalExt {
         Ok(sdk_dec)
     }
 
-    pub fn from_sdk_dec(sdk_dec_str: &str) -> anyhow::Result<DecimalExt> {
+    pub fn from_sdk_dec(sdk_dec_str: &str) -> Result<DecimalExt, MathError> {
         let precision_digits = DecimalExt::precision_digits();
         if sdk_dec_str.is_empty() {
             return Ok(DecimalExt::zero());
         }
 
         if sdk_dec_str.contains('.') {
-            anyhow::bail!("Expected a decimal string but got '{}'", sdk_dec_str);
+            return Err(MathError::SdkDecError(format!(
+                "Expected a decimal string but got '{}'",
+                sdk_dec_str
+            )));
         }
 
         // Check if negative and remove the '-' prefix if present
@@ -286,7 +309,10 @@ impl DecimalExt {
             };
 
         if abs_str.is_empty() || abs_str.chars().any(|c| !c.is_ascii_digit()) {
-            anyhow::bail!("Invalid decimal format: {}", sdk_dec_str);
+            return Err(MathError::SdkDecError(format!(
+                "Invalid decimal format: {}",
+                sdk_dec_str
+            )));
         }
 
         let input_size = abs_str.len();
@@ -454,7 +480,7 @@ mod test_sign_dec {
         for tc in test_cases.iter() {
             let (arg, want_sdk_dec) = tc;
             let want_dec: DecimalExt = DecimalExt::from_str(arg)?;
-            let got_sdk_dec: String = want_dec.to_sdk_dec_str()?;
+            let got_sdk_dec: String = want_dec.to_sdk_dec_pb_repr()?;
             assert_eq!(want_sdk_dec.to_owned(), got_sdk_dec);
 
             let got_dec = DecimalExt::from_sdk_dec(&got_sdk_dec)?;
@@ -480,7 +506,7 @@ mod test_sign_dec {
         for tc in test_cases.iter() {
             let (arg, want_sdk_dec) = tc;
             let want_dec: DecimalExt = DecimalExt::from_str(arg)?;
-            let got_sdk_dec: String = want_dec.to_sdk_dec_str()?;
+            let got_sdk_dec: String = want_dec.to_sdk_dec_pb_repr()?;
             assert_eq!(want_sdk_dec.to_owned(), got_sdk_dec);
 
             let got_dec = DecimalExt::from_sdk_dec(&got_sdk_dec)?;
