@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     attr, entry_point, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
-    Response,
+    Response, Uint256,
 };
 use cw2::set_contract_version;
 use nibiru_std::proto::{nibiru, NibiruStargateMsg};
@@ -16,6 +16,7 @@ use crate::{
 
 pub const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
 pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const PRECISION: u128 = 1_000_000_000_000;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -54,7 +55,10 @@ pub fn execute(
             let cosmos_msg: CosmosMsg = nibiru::perp::MsgShiftSwapInvariant {
                 sender: contract_addr,
                 pair,
-                new_swap_invariant: new_swap_invariant.to_string(),
+                new_swap_invariant: new_swap_invariant
+                    .checked_div(Uint256::from_u128(PRECISION))
+                    .unwrap()
+                    .to_string(),
             }
             .into_stargate_msg();
             let res = Response::new()
@@ -68,7 +72,10 @@ pub fn execute(
             let cosmos_msg: CosmosMsg = nibiru::perp::MsgShiftPegMultiplier {
                 sender: contract_addr,
                 pair,
-                new_peg_mult: new_peg_mult.to_string(),
+                new_peg_mult: new_peg_mult
+                    .checked_div(Uint256::from_u128(PRECISION))
+                    .unwrap()
+                    .to_string(),
             }
             .into_stargate_msg();
             let res = Response::new()
