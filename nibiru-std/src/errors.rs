@@ -34,7 +34,7 @@ pub enum MathError {
     #[error("could not parse decimal from string \"{}\": {}", dec_str, err)]
     CwDecParseError { dec_str: String, err: cw::StdError },
 
-    #[error("{0}")]
+    #[error("could not parse to cosmosdk.io/math.LegacyDec: {0}")]
     SdkDecError(String),
 }
 

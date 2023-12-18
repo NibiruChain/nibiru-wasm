@@ -1,9 +1,14 @@
+use std::str::FromStr;
+
 use cosmwasm_std::{
     attr, entry_point, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
     Response,
 };
 use cw2::set_contract_version;
-use nibiru_std::proto::{nibiru, NibiruStargateMsg};
+use nibiru_std::{
+    math::SdkDec,
+    proto::{nibiru, NibiruStargateMsg},
+};
 
 use crate::{
     error::ContractError,
@@ -68,7 +73,7 @@ pub fn execute(
             let cosmos_msg: CosmosMsg = nibiru::perp::MsgShiftPegMultiplier {
                 sender: contract_addr,
                 pair,
-                new_peg_mult: new_peg_mult.to_string(),
+                new_peg_mult: SdkDec::from_str(&new_peg_mult)?.pb_repr(),
             }
             .into_stargate_msg();
             let res = Response::new()
