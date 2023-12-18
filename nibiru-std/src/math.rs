@@ -419,6 +419,24 @@ mod test_sign_dec {
     }
 
     #[test]
+    fn quo() -> TestResult {
+        let test_cases: &[(&str, &str, &str)] = &[
+            ("0", "420", "0"),
+            ("256", "16", "16"),
+            ("-15", "5", "-3"),
+            ("-49", "-7", "7"),
+        ];
+        for &(a, b, want_quo) in test_cases.iter() {
+            let a = DecimalExt::from_str(a)?;
+            let b = DecimalExt::from_str(b)?;
+            let want_quo = DecimalExt::from_str(want_quo)?;
+            let got_quo = a.quo(b)?;
+            assert_eq!(want_quo, got_quo);
+        }
+        Ok(())
+    }
+
+    #[test]
     fn sdk_dec_int_only() -> TestResult {
         let test_cases: &[(&str, &str)] = &[
             // Zero cases should all be equal
