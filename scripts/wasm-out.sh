@@ -14,7 +14,7 @@ source "$script_path/bashlib.sh"
 
 # Compiles CosmWasm smart contracts to WebAssembly bytecode (.wasm)
 wasm() {
-  local image_version="0.14.0"
+  local image_version="0.15.0"
   local image="workspace-optimizer"
   docker run --rm -v "$(pwd)":/code \
     --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
