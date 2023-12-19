@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches:
-      - ci/gha/build-artifacts
+      - main
 
 env:
   CARGO_TERM_COLOR: always
