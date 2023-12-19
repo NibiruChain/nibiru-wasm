@@ -1,4 +1,4 @@
-name: Build artifacts
+name: Release
 
 on:
   push:
@@ -9,13 +9,13 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  rust-test:
+  build-artifacts-and-publish-release:
     runs-on: ubuntu-latest
     steps:
-      - name: "Checkout branch"
+      - name: Checkout branch
         uses: actions/checkout@v4
 
-      - name: "Set up Rust caches"
+      - name: Set up Rust caches
         uses: actions/cache@v3
         id: rust-cache
         with:
@@ -30,9 +30,11 @@ jobs:
       - name: Build optimized wasm files
         run: bash scripts/wasm-out.sh
 
-      - name: Archive optimized wasm files
-        uses: actions/upload-artifact@v3
+      - uses: marvinpinto/action-automatic-releases@latest
         with:
-          name: optimized-wasm-files
-          path: |
-            artifacts
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          automatic_release_tag: latest
+          prerelease: true
+          title: CW Nibiru
+          files: |
+            artifacts/*
