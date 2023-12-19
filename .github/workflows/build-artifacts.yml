@@ -1,0 +1,38 @@
+name: Build artifacts
+
+on:
+  push:
+    branches:
+      - ci/gha/build-artifacts
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout branch"
+        uses: actions/checkout@v4
+
+      - name: "Set up Rust caches"
+        uses: actions/cache@v3
+        id: rust-cache
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+
+      - name: Build optimized wasm files
+        run: bash scripts/wasm-out.sh
+
+      - name: Archive optimized wasm files
+        uses: actions/upload-artifact@v3
+        with:
+          name: optimized-wasm-files
+          path: |
+            artifacts
