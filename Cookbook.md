@@ -1,6 +1,6 @@
 # Contracts Cookbook
 
-This files describes the different message that can be sent as query or transaction 
+This file describes the different messages that can be sent as queries or transactions
 to the contracts of this repository with a description of the expected behavior.
 
 ## 1. Core cw3 flex multisig
@@ -9,10 +9,10 @@ This contract is a multisig contract that is backed by a cw4 (group) contract, w
 
 ### 1.1 Instantiate
 
-```json
+```javascript
 {
     "group_addr": "cosmos1...", // this is the group contract that contains the member list
-    "treshold": {
+    "threshold": {
         "absolute_count": {"weight": 2},
         "absolute_percentage": {"percentage": 0.5},
         "threshold_quorum": { "threshold": 0.1, "quorum": 0.2 }
@@ -33,7 +33,7 @@ This contract is a multisig contract that is backed by a cw4 (group) contract, w
 
 - **Propose** creates a message to be executed by the multisig. It can be executed by anyone.
 
-```json
+```javascript
 {
   "propose": {
     "title": "My proposal",
@@ -58,7 +58,7 @@ This contract is a multisig contract that is backed by a cw4 (group) contract, w
 
 - **Vote** adds a vote to an existing proposal. It can be executed by anyone.
 
-```json
+```javascript
 {
   "vote": {
     "proposal_id": 1,
@@ -69,7 +69,7 @@ This contract is a multisig contract that is backed by a cw4 (group) contract, w
 
 - **Execute** executes a passed proposal. It can be executed by anyone.
 
-```json
+```javascript
 {
   "execute": {
     "proposal_id": 1
@@ -79,7 +79,7 @@ This contract is a multisig contract that is backed by a cw4 (group) contract, w
 
 - **Close** closes an expired proposal. It can be executed by anyone.
 
-```json
+```javascript
 {
   "close": {
     "proposal_id": 1
@@ -91,7 +91,7 @@ This contract is a multisig contract that is backed by a cw4 (group) contract, w
 
 - **Threshold** returns the current threshold necessary for a proposal to be executed.
 
-```json
+```javascript
 {
   "threshold": {}
 }
@@ -99,7 +99,7 @@ This contract is a multisig contract that is backed by a cw4 (group) contract, w
 
 - **Proposal** fetches the details of a specific proposal given its ID.
 
-```json
+```javascript
 {
   "proposal": {
     "proposal_id": 1
@@ -109,7 +109,7 @@ This contract is a multisig contract that is backed by a cw4 (group) contract, w
 
 - **ListProposals** lists proposals with optional pagination. `start_after` specifies the ID after which to start listing, and `limit` sets the maximum number of proposals to return.
 
-```json
+```javascript
 {
   "list_proposals": {
     "start_after": 1,
@@ -120,7 +120,7 @@ This contract is a multisig contract that is backed by a cw4 (group) contract, w
 
 - **ReverseProposals** lists proposals in reverse order with optional pagination. `start_before` specifies the ID before which to start listing in reverse, and `limit` sets the maximum number of proposals to return.
 
-```json
+```javascript
 {
   "reverse_proposals": {
     "start_before": 10,
@@ -131,7 +131,7 @@ This contract is a multisig contract that is backed by a cw4 (group) contract, w
 
 - **Vote** retrieves the vote details for a given proposal ID and voter address.
 
-```json
+```javascript
 {
   "vote": {
     "proposal_id": 1,
@@ -142,7 +142,7 @@ This contract is a multisig contract that is backed by a cw4 (group) contract, w
 
 - **ListVotes** lists votes for a given proposal, with optional pagination. `start_after` specifies the address after which to start listing votes, and `limit` sets the maximum number of votes to return.
 
-```json
+```javascript
 {
   "list_votes": {
     "proposal_id": 1,
@@ -154,7 +154,7 @@ This contract is a multisig contract that is backed by a cw4 (group) contract, w
 
 - **Voter** fetches details about a specific voter by their address.
 
-```json
+```javascript
 {
   "voter": {
     "address": "cosmos1..."
@@ -164,7 +164,7 @@ This contract is a multisig contract that is backed by a cw4 (group) contract, w
 
 - **ListVoters** lists voters with optional pagination. `start_after` specifies the address after which to start listing voters, and `limit` sets the maximum number of voters to return.
 
-```json
+```javascript
 {
   "list_voters": {
     "start_after": "cosmos1...",
@@ -175,7 +175,7 @@ This contract is a multisig contract that is backed by a cw4 (group) contract, w
 
 - **Config** retrieves the current configuration of the system.
 
-```json
+```javascript
 {
   "config": {}
 }
@@ -190,7 +190,7 @@ The contract holds a whitelist of addressses that are allowed to execute the shi
 
 The instantiation defines just the onwer of the contract, who wil be able to add and remove addresses from the whitelist, and execute the shifts.
 
-```json
+```javascript
 {"owner": "cosmos1..."}
 ```
 
@@ -198,7 +198,7 @@ The instantiation defines just the onwer of the contract, who wil be able to add
 
 - **ShiftSwapInvariant** executes a depth shift in a market.
 
-```json
+```javascript
 {
   "shift_swap_invariant": {
     "pair": "uusd:usdr",
@@ -209,7 +209,7 @@ The instantiation defines just the onwer of the contract, who wil be able to add
 
 - **ShiftPegMultiplier** executes a depth shift on a market. It can be executed by anyone.
 
-```json
+```javascript
 {
   "shift_peg_multiplier": {
     "pair": "ubtc:unusd",
@@ -220,7 +220,7 @@ The instantiation defines just the onwer of the contract, who wil be able to add
 
 - **EditOpers** adds or removes addresses from the whitelist. It can be executed by the owner.
 
-```json
+```javascript
 {
   "edit_opers": {
     "add_oper": {"addr": "cosmos1..."},
@@ -235,7 +235,7 @@ The queries have to do with checking permissions of addresses.
 
 - **HasPerms** checks if an address has permissions to execute shifts.
 
-```json
+```javascript
 {
   "has_perms": {
     "address": "cosmos1..."
@@ -245,7 +245,7 @@ The queries have to do with checking permissions of addresses.
 
 - **Perms** query the contract owner and set of operators.
 
-```json
+```javascript
 {
   "perms": {},
 }
@@ -259,7 +259,7 @@ This contract implements vesting accounts for the CW20 and native tokens.
 
 There's no instantiation message.
 
-```json
+```javascript
 {}
 ```
 
@@ -267,7 +267,7 @@ There's no instantiation message.
 
 - **Receive** 
 
-```json
+```javascript
 {
   "receive": {
     "sender": "cosmos1...",
@@ -279,9 +279,9 @@ There's no instantiation message.
 
 - **RegisterVestingAccount** registers a vesting account
 
-```json
+```javascript
 {
-  "resgister_vesting_account": {
+  "register_vesting_account": {
     "address": "cosmos1...",
     "master_address": "cosmos1...",
     "vesting_schedule": {
@@ -297,7 +297,7 @@ There's no instantiation message.
 
 - **DeregisterVestingAccount** deregisters a vesting account
 
-```json
+```javascript
 {
   "deregister_vesting_account": {
     "address": "cosmos1...",
@@ -310,7 +310,7 @@ There's no instantiation message.
 
 - **Claim** allows to claim vested tokens
 
-```json
+```javascript
 {
   "claim": {
     "denom": "uusd",
@@ -323,7 +323,7 @@ There's no instantiation message.
 
 - **VestingAccount** returns the vesting account details for a given address.
 
-```json
+```javascript
 {
   "vesting_account": {
     "address": "cosmos1...",
@@ -339,7 +339,7 @@ This smart contract showcases usage examples for certain Nibiru-specific and Cos
 
 There's no instantiation message.
 
-```json
+```javascript
 {}
 ```
 
@@ -347,7 +347,7 @@ There's no instantiation message.
 
 - **CreateDenom** creates a new denom
 
-```json
+```javascript
 {
   "create_denom": { "subdenom": "zzz" }
 }
@@ -355,7 +355,7 @@ There's no instantiation message.
 
 - **Mint** mints tokens
 
-```json
+```javascript
 { 
   "mint": { 
     "coin": { "amount": "[amount]", "denom": "tf/[contract-addr]/[subdenom]" }, 
@@ -366,7 +366,7 @@ There's no instantiation message.
 
 - **Burn** burns tokens
 
-```json
+```javascript
 { 
   "burn": { 
     "coin": { "amount": "[amount]", "denom": "tf/[contract-addr]/[subdenom]" }, 
@@ -377,7 +377,7 @@ There's no instantiation message.
 
 - **ChangeAdmin** changes the admin of a denom
 
-```json
+```javascript
 { 
   "change_admin": { 
     "denom": "tf/[contract-addr]/[subdenom]", 
@@ -394,7 +394,7 @@ This smart contract showcases usage examples for certain Nibiru-specific for the
 
 The instantiation defines the owner of the contract, who will be able to add and remove addresses from the whitelist, and execute the shifts.
 
-```json
+```javascript
 {
   "admin": "cosmos1...",
 }
@@ -403,7 +403,7 @@ The instantiation defines the owner of the contract, who will be able to add and
 
 - **MarketOrder** places a market order for a specified trading pair. `pair` indicates the trading pair, `is_long` determines if it's a long or short order, `quote_amount` is the amount in the quote currency, `leverage` specifies the leverage to apply, and `base_amount_limit` sets a limit for the amount in the base currency.
 
-```json
+```javascript
 {
   "market_order": {
     "pair": "BTC/USDT",
@@ -417,7 +417,7 @@ The instantiation defines the owner of the contract, who will be able to add and
 
 - **ClosePosition** closes an open position for a specified trading pair.
 
-```json
+```javascript
 {
   "close_position": {
     "pair": "BTC/USDT"
@@ -427,7 +427,7 @@ The instantiation defines the owner of the contract, who will be able to add and
 
 - **AddMargin** adds margin to an existing position for a specified trading pair. `margin` is the amount of additional margin to add.
 
-```json
+```javascript
 {
   "add_margin": {
     "pair": "BTC/USDT",
@@ -438,7 +438,7 @@ The instantiation defines the owner of the contract, who will be able to add and
 
 - **RemoveMargin** removes margin from an existing position for a specified trading pair. `margin` is the amount of margin to remove.
 
-```json
+```javascript
 {
   "remove_margin": {
     "pair": "BTC/USDT",
@@ -449,7 +449,7 @@ The instantiation defines the owner of the contract, who will be able to add and
 
 - **MultiLiquidate** triggers multiple liquidations based on the provided arguments. `liquidations` is a list of liquidation arguments specifying the details for each liquidation.
 
-```json
+```javascript
 {
   "multi_liquidate": {
     "liquidations": [
@@ -468,7 +468,7 @@ The instantiation defines the owner of the contract, who will be able to add and
 
 - **DonateToInsuranceFund** allows donation to the insurance fund. `donation` is the coin and amount to donate.
 
-```json
+```javascript
 {
   "donate_to_insurance_fund": {
     "donation": {"denom": "usdt", "amount": "100000"}
@@ -478,7 +478,7 @@ The instantiation defines the owner of the contract, who will be able to add and
 
 - **Claim** facilitates the claiming of funds. `funds` is an optional field specifying a particular coin and amount to claim, `claim_all` is an optional flag to claim all funds, and `to` is the address to which the funds will be sent.
 
-```json
+```javascript
 {
   "claim": {
     "funds": {"denom": "usdt", "amount": "100000"},
@@ -498,7 +498,7 @@ This smart contract is a simple valuator for the nusd token, which takes one col
 
 The owner is the only one who can execute messages in the contract
 
-```json
+```javascript
 {
   "owner": "cosmos1...",
   "accepted_denoms": "uusdc",
@@ -509,7 +509,7 @@ The owner is the only one who can execute messages in the contract
 
 - **ChangeDenom** updates the accepted denoms
 
-```json
+```javascript
 {
   "change_denom": {
     "from: "uusdc",
@@ -520,7 +520,7 @@ The owner is the only one who can execute messages in the contract
 
 - **AddDenom** adds a new accepted denom
 
-```json
+```javascript
 {
   "add_denom": {
     "denom": "uusd",
@@ -530,7 +530,7 @@ The owner is the only one who can execute messages in the contract
 
 - **RemoveDenom** removes an accepted denom
 
-```json
+```javascript
 {
   "remove_denom": {
     "denom": "uusd",
@@ -543,7 +543,7 @@ The owner is the only one who can execute messages in the contract
 
 - **Mintable** queries the amount of μNUSD that can be minted in exchange for the specified set of `from_coins`.
 
-```json
+```javascript
 {
   "mintable": {
     "from_coins": ["BTC", "ETH"]
@@ -553,7 +553,7 @@ The owner is the only one who can execute messages in the contract
 
 - **Redeemable** calculates the amount of a specified `to_denom` currency that is redeemable for a given `redeem_amount` of μNUSD.
 
-```json
+```javascript
 {
   "redeemable": {
     "redeem_amount": "1000000",
@@ -564,7 +564,7 @@ The owner is the only one who can execute messages in the contract
 
 - **AcceptedDenoms** retrieves the set of token denominations that are accepted as collateral.
 
-```json
+```javascript
 {
   "accepted_denoms": {}
 }
@@ -572,7 +572,7 @@ The owner is the only one who can execute messages in the contract
 
 - **RedeemableChoices** provides a set of possible redeemable coin options that could be received when redeeming a specified `redeem_amount` of μNUSD.
 
-```json
+```javascript
 {
   "redeemable_choices": {
     "redeem_amount": "1000000"
