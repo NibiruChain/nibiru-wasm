@@ -230,7 +230,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 pub fn query_campaign(deps: Deps, _env: Env) -> StdResult<Binary> {
     match CAMPAIGN.load(deps.storage) {
         Ok(campaign) => return to_json_binary(&campaign),
-        Err(_) => return Err(StdError::generic_err("Campaign does not exist")),
+        Err(_) => return Err(StdError::generic_err("Failed to load campaign data")),
     }
 }
 
@@ -241,6 +241,6 @@ pub fn query_user_reward(
 ) -> StdResult<Binary> {
     match USER_REWARDS.load(deps.storage, user_address) {
         Ok(user_reward) => return to_json_binary(&user_reward),
-        Err(_) => return Err(StdError::generic_err("User reward does not exist")),
+        Err(_) => return Err(StdError::generic_err("Failed to load user reward data")),
     };
 }
