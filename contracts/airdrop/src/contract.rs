@@ -164,7 +164,7 @@ pub fn claim(
 
     match USER_REWARDS.may_load(deps.storage, info.sender.clone())? {
         Some(user_reward) => {
-            USER_REWARDS.remove(deps.storage, info.sender.clone());
+            USER_REWARDS.remove(deps.storage, info.sender.clone()).map_err(|_| StdError::generic_err("Failed to remove user reward"))?;
 
             Ok(Response::new()
                 .add_attribute("method", "claim")
