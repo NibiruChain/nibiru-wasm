@@ -11,7 +11,6 @@ fn test_instantiate() {
     let info = mock_info("sender", &coins(1000, ""));
     let env = mock_env();
     let msg = InstantiateMsg {
-        owner: Addr::unchecked("sender"),
         campaign_id: "campaign_id".to_string(),
         campaign_name: "campaign_name".to_string(),
         campaign_description: "campaign_description".to_string(),
@@ -38,7 +37,6 @@ fn test_instantiate_with_no_funds() {
     let info = mock_info("sender", &[]);
     let env = mock_env();
     let msg = InstantiateMsg {
-        owner: Addr::unchecked("sender"),
         campaign_id: "campaign_id".to_string(),
         campaign_name: "campaign_name".to_string(),
         campaign_description: "campaign_description".to_string(),
@@ -54,7 +52,6 @@ fn test_instantiate_with_invalid_denom() {
     let info = mock_info("sender", &coins(1000, "foo"));
     let env = mock_env();
     let msg = InstantiateMsg {
-        owner: Addr::unchecked("sender"),
         campaign_id: "campaign_id".to_string(),
         campaign_name: "campaign_name".to_string(),
         campaign_description: "campaign_description".to_string(),
