@@ -197,7 +197,7 @@ pub fn withdraw(
     let own_balance: Uint128 = deps
         .querier
         .query_balance(&env.contract.address, bond_denom.clone())
-        .unwrap_or_default()
+        .map_err(|_| StdError::generic_err("Failed to query contract balance"))?
         .amount;
 
     if amount > own_balance {
