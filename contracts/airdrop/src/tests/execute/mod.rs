@@ -1,3 +1,3 @@
 mod claim;
-mod reward_all;
+mod reward_users;
 mod withdraw;

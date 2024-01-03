@@ -105,7 +105,7 @@ pub fn reward_users(
     for req in requests {
         let mut campaign = CAMPAIGN.load(deps.storage)?;
 
-        if campaign.owner != info.sender {
+        if campaign.owner != info.sender && !campaign.managers.contains(&info.sender) {
             res.push(RewardUserResponse {
                 user_address: req.user_address.clone(),
                 success: false,
