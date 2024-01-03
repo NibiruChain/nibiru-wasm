@@ -11,6 +11,7 @@ pub struct Campaign {
 
     pub unallocated_amount: Uint128,
     pub owner: Addr,
+    pub managers: Vec<Addr>,
 }
 
 pub const CAMPAIGN: Item<Campaign> = Item::new("campaign");

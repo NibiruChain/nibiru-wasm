@@ -18,6 +18,7 @@ fn test_claim() {
             campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
+            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
         },
     )
     .unwrap();

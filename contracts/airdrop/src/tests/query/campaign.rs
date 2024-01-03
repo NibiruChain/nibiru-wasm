@@ -26,6 +26,7 @@ fn test_query_campaign() {
             campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
+            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
         },
     )
     .unwrap();
@@ -40,6 +41,7 @@ fn test_query_campaign() {
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
             owner: Addr::unchecked("owner"),
+            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
             unallocated_amount: Uint128::new(1000),
         }
     );

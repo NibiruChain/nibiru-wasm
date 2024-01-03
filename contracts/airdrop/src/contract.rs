@@ -37,11 +37,13 @@ pub fn instantiate(
     }
 
     let campaign = Campaign {
-        owner: info.sender.clone(),
-        unallocated_amount: coin.amount,
         campaign_id: msg.campaign_id,
         campaign_name: msg.campaign_name,
         campaign_description: msg.campaign_description,
+        owner: info.sender.clone(),
+        managers: msg.managers,
+        unallocated_amount: coin.amount,
+
     };
     CAMPAIGN.save(deps.storage, &campaign)?;
 

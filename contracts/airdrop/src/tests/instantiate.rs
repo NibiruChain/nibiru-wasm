@@ -14,6 +14,7 @@ fn test_instantiate() {
         campaign_id: "campaign_id".to_string(),
         campaign_name: "campaign_name".to_string(),
         campaign_description: "campaign_description".to_string(),
+        managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
     };
 
     instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
@@ -23,6 +24,7 @@ fn test_instantiate() {
         campaign,
         Campaign {
             owner: Addr::unchecked("sender"),
+            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
             unallocated_amount: Uint128::new(1000),
             campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
@@ -40,6 +42,7 @@ fn test_instantiate_with_no_funds() {
         campaign_id: "campaign_id".to_string(),
         campaign_name: "campaign_name".to_string(),
         campaign_description: "campaign_description".to_string(),
+        managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
     };
 
     let resp = instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone());
@@ -55,6 +58,7 @@ fn test_instantiate_with_invalid_denom() {
         campaign_id: "campaign_id".to_string(),
         campaign_name: "campaign_name".to_string(),
         campaign_description: "campaign_description".to_string(),
+        managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
     };
 
     let resp = instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone());

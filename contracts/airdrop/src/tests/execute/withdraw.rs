@@ -3,7 +3,7 @@ use crate::msg::InstantiateMsg;
 use cosmwasm_std::testing::{
     mock_dependencies, mock_dependencies_with_balance, mock_env, mock_info,
 };
-use cosmwasm_std::{coins, BankMsg, CosmosMsg, StdError, SubMsg, Uint128};
+use cosmwasm_std::{coins, BankMsg, CosmosMsg, StdError, SubMsg, Uint128, Addr};
 use std::vec;
 
 #[test]
@@ -19,6 +19,7 @@ fn test_withdraw_ok() {
             campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
+            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
         },
     )
     .unwrap();
@@ -54,6 +55,7 @@ fn test_withdraw_too_much() {
             campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
+            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
         },
     )
     .unwrap();
@@ -85,6 +87,7 @@ fn test_withdraw_unauthorized() {
             campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
+            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
         },
     )
     .unwrap();

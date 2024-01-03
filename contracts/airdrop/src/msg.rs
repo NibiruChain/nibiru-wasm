@@ -6,6 +6,7 @@ pub struct InstantiateMsg {
     pub campaign_id: String,
     pub campaign_name: String,
     pub campaign_description: String,
+    pub managers: Vec<Addr>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
