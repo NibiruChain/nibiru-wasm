@@ -1,3 +1,3 @@
 mod instantiate;
-// mod execute;
+mod execute;
 mod query;
