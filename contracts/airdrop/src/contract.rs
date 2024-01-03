@@ -58,7 +58,7 @@ pub fn migrate(
     _env: Env,
     _msg: Empty,
 ) -> Result<Response, StdError> {
-    let new_version: Version = CONTRACT_VERSION.parse().unwrap();
+    let new_version: Version = CONTRACT_VERSION.parse().map_err(|_| StdError::generic_err("Invalid contract version format"))?;
     let current_version = get_contract_version(deps.storage)?;
 
     if current_version.contract != CONTRACT_NAME {
