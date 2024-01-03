@@ -43,7 +43,6 @@ pub fn instantiate(
         owner: info.sender.clone(),
         managers: msg.managers,
         unallocated_amount: coin.amount,
-
     };
     CAMPAIGN.save(deps.storage, &campaign)?;
 
@@ -58,7 +57,9 @@ pub fn migrate(
     _env: Env,
     _msg: Empty,
 ) -> Result<Response, StdError> {
-    let new_version: Version = CONTRACT_VERSION.parse().map_err(|_| StdError::generic_err("Invalid contract version format"))?;
+    let new_version: Version = CONTRACT_VERSION
+        .parse()
+        .map_err(|_| StdError::generic_err("Invalid contract version format"))?;
     let current_version = get_contract_version(deps.storage)?;
 
     if current_version.contract != CONTRACT_NAME {
@@ -103,9 +104,13 @@ pub fn reward_users(
     let mut res = vec![];
 
     for req in requests {
-        let mut campaign = CAMPAIGN.load(deps.storage)?;
+        let mut campaign = CAMPAIGN.load(deps.storage).map_err(|_| {
+            StdError::generic_err("Failed to load campaign data")
+        })?;
 
-        if campaign.owner != info.sender && !campaign.managers.contains(&info.sender) {
+        if campaign.owner != info.sender
+            && !campaign.managers.contains(&info.sender)
+        {
             res.push(RewardUserResponse {
                 user_address: req.user_address.clone(),
                 success: false,
@@ -164,7 +169,8 @@ pub fn claim(
 
     match USER_REWARDS.may_load(deps.storage, info.sender.clone())? {
         Some(user_reward) => {
-            USER_REWARDS.remove(deps.storage, info.sender.clone()).map_err(|_| StdError::generic_err("Failed to remove user reward"))?;
+            USER_REWARDS
+                .remove(deps.storage, info.sender.clone());
 
             Ok(Response::new()
                 .add_attribute("method", "claim")
@@ -230,7 +236,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 pub fn query_campaign(deps: Deps, _env: Env) -> StdResult<Binary> {
     match CAMPAIGN.load(deps.storage) {
         Ok(campaign) => return to_json_binary(&campaign),
-        Err(_) => return Err(StdError::generic_err("Failed to load campaign data")),
+        Err(_) => {
+            return Err(StdError::generic_err("Failed to load campaign data"))
+        }
     }
 }
 
@@ -241,6 +249,8 @@ pub fn query_user_reward(
 ) -> StdResult<Binary> {
     match USER_REWARDS.load(deps.storage, user_address) {
         Ok(user_reward) => return to_json_binary(&user_reward),
-        Err(_) => return Err(StdError::generic_err("Failed to load user reward data")),
+        Err(_) => {
+            return Err(StdError::generic_err("User reward does not exist"))
+        }
     };
 }
