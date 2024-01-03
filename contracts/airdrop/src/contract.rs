@@ -8,8 +8,8 @@ use crate::{
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Empty, Env,
-    MessageInfo, Response, StdError, StdResult, Uint128, Addr,
+    to_json_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
+    Empty, Env, MessageInfo, Response, StdError, StdResult, Uint128,
 };
 use cw2::{get_contract_version, set_contract_version};
 use semver::Version;
@@ -101,16 +101,6 @@ pub fn reward_users(
     let mut res = vec![];
 
     for req in requests {
-        let sanitized_user_address = deps.api.addr_validate(req.user_address.as_str());
-        if sanitized_user_address.is_err() {
-            res.push(RewardUserResponse {
-                user_address: req.user_address.clone(),
-                success: false,
-                error_msg: "Invalid user address".to_string(),
-            });
-            continue;
-        }
-
         let mut campaign = CAMPAIGN.load(deps.storage)?;
 
         if campaign.owner != info.sender {
@@ -236,8 +226,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 pub fn query_campaign(deps: Deps, _env: Env) -> StdResult<Binary> {
-    let campaign = CAMPAIGN.load(deps.storage)?;
-    return to_json_binary(&campaign);
+    match CAMPAIGN.load(deps.storage) {
+        Ok(campaign) => return to_json_binary(&campaign),
+        Err(_) => return Err(StdError::generic_err("Campaign does not exist")),
+    }
 }
 
 pub fn query_user_reward(
@@ -245,6 +237,8 @@ pub fn query_user_reward(
     _env: Env,
     user_address: Addr,
 ) -> StdResult<Binary> {
-    let user_rewards = USER_REWARDS.load(deps.storage, user_address)?;
-    return to_json_binary(&user_rewards);
+    match USER_REWARDS.load(deps.storage, user_address) {
+        Ok(user_reward) => return to_json_binary(&user_reward),
+        Err(_) => return Err(StdError::generic_err("User reward does not exist")),
+    };
 }
