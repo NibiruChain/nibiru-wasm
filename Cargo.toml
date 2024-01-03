@@ -21,7 +21,7 @@ nibiru-macro = { path = "packages/nibiru-macro" }
 bash-rs = { path = "packages/bash-rs" }
 
 # deps: CosmWasm
-cosmwasm-std = { version = "1.5.0", features = ["stargate"] }
+cosmwasm-std = { version = "1.5.0", features = ["stargate", "staking"] }
 cosmwasm-schema = "1.5.0"
 cw-storage-plus = { version = "1.2.0" }
 cw-multi-test = { version = "0.20.0" }
