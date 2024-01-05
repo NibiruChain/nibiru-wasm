@@ -12,6 +12,7 @@ use cosmwasm_std::{
     Empty, Env, MessageInfo, Response, StdError, StdResult, Uint128,
 };
 use cw2::{get_contract_version, set_contract_version};
+use cw2::VersionError::Std;
 use semver::Version;
 
 pub const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
@@ -103,29 +104,22 @@ pub fn reward_users(
 ) -> Result<Response, StdError> {
     let mut res = vec![];
 
-    for req in requests {
-        let mut campaign = CAMPAIGN.load(deps.storage).map_err(|_| {
-            StdError::generic_err("Failed to load campaign data")
-        })?;
+    let mut campaign = CAMPAIGN.load(deps.storage).map_err(|_| {
+        StdError::generic_err("Failed to load campaign data")
+    })?;
 
-        if campaign.owner != info.sender
-            && !campaign.managers.contains(&info.sender)
-        {
-            res.push(RewardUserResponse {
-                user_address: req.user_address.clone(),
-                success: false,
-                error_msg: "Unauthorized".to_string(),
-            });
-            continue;
-        }
+    if campaign.owner != info.sender
+        && !campaign.managers.contains(&info.sender)
+    {
+        return Err(StdError::generic_err("Unauthorized"));
+    }
+
+    for req in requests {
 
         if campaign.unallocated_amount < req.amount {
-            res.push(RewardUserResponse {
-                user_address: req.user_address.clone(),
-                success: false,
-                error_msg: "Not enough funds in campaign".to_string(),
-            });
-            continue;
+            return Err(StdError::generic_err(
+                "Not enough funds in the campaign",
+            ));
         }
 
         match USER_REWARDS.may_load(deps.storage, req.user_address.clone())? {

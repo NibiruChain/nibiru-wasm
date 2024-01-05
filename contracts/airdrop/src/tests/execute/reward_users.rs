@@ -171,3 +171,8 @@ fn test_reward_users_as_manager() {
         Uint128::new(250)
     );
 }
+
+fn test_fails_when_we_try_to_allocate_more_than_available() {
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+}
