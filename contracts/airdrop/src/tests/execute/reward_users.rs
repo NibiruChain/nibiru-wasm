@@ -2,7 +2,7 @@ use crate::contract::{instantiate, reward_users};
 use crate::msg::{InstantiateMsg, RewardUserRequest, RewardUserResponse};
 use crate::state::{Campaign, CAMPAIGN, USER_REWARDS};
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-use cosmwasm_std::{coins, from_json, Addr, Uint128};
+use cosmwasm_std::{coins, from_json, Addr, Uint128, StdError};
 use std::vec;
 
 #[test]
@@ -172,7 +172,45 @@ fn test_reward_users_as_manager() {
     );
 }
 
+#[test]
 fn test_fails_when_we_try_to_allocate_more_than_available() {
     let mut deps = mock_dependencies();
     let env = mock_env();
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        mock_info("owner", &coins(1000, "")),
+        InstantiateMsg {
+            campaign_id: "campaign_id".to_string(),
+            campaign_name: "campaign_name".to_string(),
+            campaign_description: "campaign_description".to_string(),
+            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
+        },
+    )
+    .unwrap();
+
+    let resp = reward_users(
+        deps.as_mut(),
+        env.clone(),
+        mock_info("manager1", &[]),
+        vec![
+            RewardUserRequest {
+                user_address: Addr::unchecked("user1"),
+                amount: Uint128::new(750),
+            },
+            RewardUserRequest {
+                user_address: Addr::unchecked("user2"),
+                amount: Uint128::new(250),
+            },
+            RewardUserRequest {
+                user_address: Addr::unchecked("user3"),
+                amount: Uint128::new(251),
+            },
+        ],
+    );
+
+    assert_eq!(resp, Err(StdError::generic_err(
+        "Not enough funds in the campaign",
+    )));
 }

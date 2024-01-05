@@ -12,7 +12,6 @@ use cosmwasm_std::{
     Empty, Env, MessageInfo, Response, StdError, StdResult, Uint128,
 };
 use cw2::{get_contract_version, set_contract_version};
-use cw2::VersionError::Std;
 use semver::Version;
 
 pub const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
