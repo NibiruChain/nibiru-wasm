@@ -37,12 +37,12 @@ pub fn instantiate(
     }
 
     let campaign = Campaign {
-        campaign_id: msg.campaign_id,
         campaign_name: msg.campaign_name,
         campaign_description: msg.campaign_description,
         owner: info.sender.clone(),
         managers: msg.managers,
         unallocated_amount: coin.amount,
+        is_active: true,
     };
     CAMPAIGN.save(deps.storage, &campaign)?;
 
@@ -92,6 +92,7 @@ pub fn execute(
         }
         ExecuteMsg::Claim {} => claim(deps, env, info),
         ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
+        ExecuteMsg::DesactivateCampaign {} => desactivate(deps, env, info),
     }
 }
 
@@ -103,18 +104,20 @@ pub fn reward_users(
 ) -> Result<Response, StdError> {
     let mut res = vec![];
 
-    let mut campaign = CAMPAIGN.load(deps.storage).map_err(|_| {
-        StdError::generic_err("Failed to load campaign data")
-    })?;
+    let mut campaign = CAMPAIGN
+        .load(deps.storage)
+        .map_err(|_| StdError::generic_err("Failed to load campaign data"))?;
 
-    if campaign.owner != info.sender
-        && !campaign.managers.contains(&info.sender)
+    if campaign.owner != info.sender && !campaign.managers.contains(&info.sender)
     {
         return Err(StdError::generic_err("Unauthorized"));
     }
 
-    for req in requests {
+    if !campaign.is_active {
+        return Err(StdError::generic_err("Campaign is not active"));
+    }
 
+    for req in requests {
         if campaign.unallocated_amount < req.amount {
             return Err(StdError::generic_err(
                 "Not enough funds in the campaign",
@@ -160,10 +163,15 @@ pub fn claim(
 ) -> Result<Response, StdError> {
     let bond_denom = deps.querier.query_bonded_denom()?;
 
+    let campaign = CAMPAIGN.load(deps.storage)?;
+
+    if !campaign.is_active {
+        return Err(StdError::generic_err("Campaign is not active"));
+    }
+
     match USER_REWARDS.may_load(deps.storage, info.sender.clone())? {
         Some(user_reward) => {
-            USER_REWARDS
-                .remove(deps.storage, info.sender.clone());
+            USER_REWARDS.remove(deps.storage, info.sender.clone());
 
             Ok(Response::new()
                 .add_attribute("method", "claim")
@@ -177,6 +185,37 @@ pub fn claim(
         }
         None => Err(StdError::generic_err("User pool does not exist")),
     }
+}
+
+pub fn desactivate(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, StdError> {
+    let mut campaign = CAMPAIGN
+        .load(deps.storage)
+        .map_err(|_| StdError::generic_err("Failed to load campaign data"))?;
+
+    if campaign.owner != info.sender && !campaign.managers.contains(&info.sender)
+    {
+        return Err(StdError::generic_err("Unauthorized"));
+    }
+
+    if !campaign.is_active {
+        return Err(StdError::generic_err("Campaign is not active"));
+    }
+
+    campaign.is_active = false;
+    CAMPAIGN.save(deps.storage, &campaign)?;
+
+    let bond_denom = deps.querier.query_bonded_denom()?;
+    let own_balance: Uint128 = deps
+        .querier
+        .query_balance(&env.contract.address, bond_denom.clone())
+        .map_err(|_| StdError::generic_err("Failed to query contract balance"))?
+        .amount;
+
+    return withdraw(deps, env, info, own_balance);
 }
 
 pub fn withdraw(
@@ -213,6 +252,25 @@ pub fn withdraw(
             }],
         }));
 
+    // Update campaign unallocated amount
+    if amount > campaign.unallocated_amount {
+        CAMPAIGN.update(
+            deps.storage,
+            |mut campaign| -> StdResult<Campaign> {
+                campaign.unallocated_amount = Uint128::zero();
+                Ok(campaign)
+            },
+        )?;
+    } else {
+        CAMPAIGN.update(
+            deps.storage,
+            |mut campaign| -> StdResult<Campaign> {
+                campaign.unallocated_amount -= amount;
+                Ok(campaign)
+            },
+        )?;
+    }
+
     return Ok(res);
 }
 
@@ -240,6 +298,11 @@ pub fn query_user_reward(
     _env: Env,
     user_address: Addr,
 ) -> StdResult<Binary> {
+    let campaign = CAMPAIGN.load(deps.storage)?;
+    if !campaign.is_active {
+        return Err(StdError::generic_err("Campaign is not active"));
+    }
+
     match USER_REWARDS.load(deps.storage, user_address) {
         Ok(user_reward) => return to_json_binary(&user_reward),
         Err(_) => {

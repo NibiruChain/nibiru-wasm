@@ -1,8 +1,10 @@
-use crate::contract::{instantiate, reward_users};
+use crate::contract::{
+    claim, desactivate, instantiate, query_user_reward, reward_users,
+};
 use crate::msg::{InstantiateMsg, RewardUserRequest, RewardUserResponse};
 use crate::state::{Campaign, CAMPAIGN, USER_REWARDS};
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-use cosmwasm_std::{coins, from_json, Addr, Uint128, StdError};
+use cosmwasm_std::{coins, from_json, Addr, StdError, Uint128};
 use std::vec;
 
 #[test]
@@ -18,7 +20,10 @@ fn test_reward_users_fully_allocated() {
             campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
-            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
+            managers: vec![
+                Addr::unchecked("manager1"),
+                Addr::unchecked("manager2"),
+            ],
         },
     )
     .unwrap();
@@ -66,10 +71,13 @@ fn test_reward_users_fully_allocated() {
         Campaign {
             owner: Addr::unchecked("owner"),
             unallocated_amount: Uint128::zero(),
-            campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
-            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
+            managers: vec![
+                Addr::unchecked("manager1"),
+                Addr::unchecked("manager2")
+            ],
+            is_active: true,
         }
     );
 
@@ -88,7 +96,6 @@ fn test_reward_users_fully_allocated() {
     );
 }
 
-
 #[test]
 fn test_reward_users_as_manager() {
     let mut deps = mock_dependencies();
@@ -102,7 +109,10 @@ fn test_reward_users_as_manager() {
             campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
-            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
+            managers: vec![
+                Addr::unchecked("manager1"),
+                Addr::unchecked("manager2"),
+            ],
         },
     )
     .unwrap();
@@ -150,10 +160,13 @@ fn test_reward_users_as_manager() {
         Campaign {
             owner: Addr::unchecked("owner"),
             unallocated_amount: Uint128::zero(),
-            campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
-            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
+            managers: vec![
+                Addr::unchecked("manager1"),
+                Addr::unchecked("manager2")
+            ],
+            is_active: true,
         }
     );
 
@@ -185,7 +198,10 @@ fn test_fails_when_we_try_to_allocate_more_than_available() {
             campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
-            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
+            managers: vec![
+                Addr::unchecked("manager1"),
+                Addr::unchecked("manager2"),
+            ],
         },
     )
     .unwrap();
@@ -210,7 +226,67 @@ fn test_fails_when_we_try_to_allocate_more_than_available() {
         ],
     );
 
-    assert_eq!(resp, Err(StdError::generic_err(
-        "Not enough funds in the campaign",
-    )));
+    assert_eq!(
+        resp,
+        Err(StdError::generic_err("Not enough funds in the campaign",))
+    );
+}
+
+#[test]
+fn test_fails_we_allocate_inactive() {
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        mock_info("owner", &coins(1000, "")),
+        InstantiateMsg {
+            campaign_id: "campaign_id".to_string(),
+            campaign_name: "campaign_name".to_string(),
+            campaign_description: "campaign_description".to_string(),
+            managers: vec![
+                Addr::unchecked("manager1"),
+                Addr::unchecked("manager2"),
+            ],
+        },
+    )
+    .unwrap();
+
+    reward_users(
+        deps.as_mut(),
+        env.clone(),
+        mock_info("manager1", &[]),
+        vec![RewardUserRequest {
+            user_address: Addr::unchecked("user1"),
+            amount: Uint128::new(1),
+        }],
+    )
+    .unwrap();
+
+    // desactivate campaign -- fail because not owner
+    let resp = desactivate(deps.as_mut(), env.clone(), mock_info("user1", &[]));
+    assert_eq!(resp, Err(StdError::generic_err("Unauthorized")));
+
+    desactivate(deps.as_mut(), env.clone(), mock_info("owner", &[])).unwrap();
+
+    let resp = reward_users(
+        deps.as_mut(),
+        env.clone(),
+        mock_info("manager1", &[]),
+        vec![RewardUserRequest {
+            user_address: Addr::unchecked("user2"),
+            amount: Uint128::new(1),
+        }],
+    );
+    assert_eq!(resp, Err(StdError::generic_err("Campaign is not active",)));
+
+    // user1 should not be able to claim anymore
+    let resp = claim(deps.as_mut(), env.clone(), mock_info("user1", &[]));
+    assert_eq!(resp, Err(StdError::generic_err("Campaign is not active")));
+
+    // user1 query reward says campaign is not active
+    let resp =
+        query_user_reward(deps.as_ref(), env.clone(), Addr::unchecked("user1"));
+    assert_eq!(resp, Err(StdError::generic_err("Campaign is not active")));
 }

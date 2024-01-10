@@ -1,5 +1,5 @@
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-use cosmwasm_std::{Uint128, Addr, coins, StdError};
+use cosmwasm_std::{coins, Addr, StdError, Uint128};
 
 use crate::contract::instantiate;
 use crate::msg::InstantiateMsg;
@@ -24,11 +24,14 @@ fn test_instantiate() {
         campaign,
         Campaign {
             owner: Addr::unchecked("sender"),
-            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
+            managers: vec![
+                Addr::unchecked("manager1"),
+                Addr::unchecked("manager2")
+            ],
             unallocated_amount: Uint128::new(1000),
-            campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
+            is_active: true,
         }
     );
 }
@@ -45,7 +48,8 @@ fn test_instantiate_with_no_funds() {
         managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
     };
 
-    let resp = instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+    let resp =
+        instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(resp, Err(StdError::generic_err("Only one coin is allowed")));
 }
 
@@ -61,6 +65,10 @@ fn test_instantiate_with_invalid_denom() {
         managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
     };
 
-    let resp = instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone());
-    assert_eq!(resp, Err(StdError::generic_err("Only native tokens are allowed")));
+    let resp =
+        instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+    assert_eq!(
+        resp,
+        Err(StdError::generic_err("Only native tokens are allowed"))
+    );
 }
