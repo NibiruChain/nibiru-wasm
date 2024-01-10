@@ -92,7 +92,7 @@ pub fn execute(
         }
         ExecuteMsg::Claim {} => claim(deps, env, info),
         ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
-        ExecuteMsg::DesactivateCampaign {} => desactivate(deps, env, info),
+        ExecuteMsg::DeactivateCampaign {} => deactivate(deps, env, info),
     }
 }
 
@@ -187,7 +187,7 @@ pub fn claim(
     }
 }
 
-pub fn desactivate(
+pub fn deactivate(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,

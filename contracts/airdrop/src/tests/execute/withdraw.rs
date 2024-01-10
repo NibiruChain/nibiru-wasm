@@ -1,4 +1,4 @@
-use crate::contract::{desactivate, instantiate, query_campaign, withdraw};
+use crate::contract::{deactivate, instantiate, query_campaign, withdraw};
 use crate::msg::InstantiateMsg;
 use crate::state::Campaign;
 use cosmwasm_std::testing::{
@@ -97,9 +97,9 @@ fn test_withdraw_less_than_total_amount() {
     let campaign: Campaign = from_slice(&binary_campaign).unwrap();
     assert_eq!(campaign.unallocated_amount, Uint128::new(1000));
 
-    // if i desactivate the campaign, everything should be withdrawn
-    let resp = desactivate(deps.as_mut(), env.clone(), mock_info("owner", &[]))
-        .unwrap();
+    // if i deactivate the campaign, everything should be withdrawn
+    let resp =
+        deactivate(deps.as_mut(), env.clone(), mock_info("owner", &[])).unwrap();
 
     // We sent the remaining 1000 coins to the owner
     assert_eq!(

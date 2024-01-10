@@ -1,5 +1,5 @@
 use crate::contract::{
-    claim, desactivate, instantiate, query_user_reward, reward_users,
+    claim, deactivate, instantiate, query_user_reward, reward_users,
 };
 use crate::msg::{InstantiateMsg, RewardUserRequest, RewardUserResponse};
 use crate::state::{Campaign, CAMPAIGN, USER_REWARDS};
@@ -264,11 +264,11 @@ fn test_fails_we_allocate_inactive() {
     )
     .unwrap();
 
-    // desactivate campaign -- fail because not owner
-    let resp = desactivate(deps.as_mut(), env.clone(), mock_info("user1", &[]));
+    // deactivate campaign -- fail because not owner
+    let resp = deactivate(deps.as_mut(), env.clone(), mock_info("user1", &[]));
     assert_eq!(resp, Err(StdError::generic_err("Unauthorized")));
 
-    desactivate(deps.as_mut(), env.clone(), mock_info("owner", &[])).unwrap();
+    deactivate(deps.as_mut(), env.clone(), mock_info("owner", &[])).unwrap();
 
     let resp = reward_users(
         deps.as_mut(),

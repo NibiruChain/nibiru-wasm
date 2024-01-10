@@ -28,7 +28,7 @@ pub enum ExecuteMsg {
     RewardUsers { requests: Vec<RewardUserRequest> },
     Claim {},
     Withdraw { amount: Uint128 },
-    DesactivateCampaign {},
+    DeactivateCampaign {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
