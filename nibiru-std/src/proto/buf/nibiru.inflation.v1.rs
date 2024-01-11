@@ -1,4 +1,16 @@
 // @generated
+/// EventInflationDistribution: Emitted when NIBI tokens are minted on the
+/// network based on Nibiru's inflation schedule.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventInflationDistribution {
+    #[prost(message, optional, tag="1")]
+    pub staking_rewards: ::core::option::Option<crate::proto::cosmos::base::v1beta1::Coin>,
+    #[prost(message, optional, tag="2")]
+    pub strategic_reserve: ::core::option::Option<crate::proto::cosmos::base::v1beta1::Coin>,
+    #[prost(message, optional, tag="3")]
+    pub community_pool: ::core::option::Option<crate::proto::cosmos::base::v1beta1::Coin>,
+}
 /// InflationDistribution defines the distribution in which inflation is
 /// allocated through minting on each epoch (staking, community, strategic). It
 /// excludes the team vesting distribution.

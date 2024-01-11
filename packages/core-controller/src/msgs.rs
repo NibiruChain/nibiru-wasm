@@ -19,7 +19,7 @@ pub enum ExecuteMsg {
         enabled: bool,
     },
     #[deprecated(note = "Needs MsgServer impl added to NibiruChain/nibiru")]
-    InsuranceFundWithdraw {
+    WithdrawPerpFund {
         amount: Uint256,
         to: String,
     },

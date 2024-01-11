@@ -21,7 +21,7 @@ nibiru-macro = { path = "packages/nibiru-macro" }
 bash-rs = { path = "packages/bash-rs" }
 
 # deps: CosmWasm
-cosmwasm-std = { version = "1.5.0", features = ["stargate"] }
+cosmwasm-std = { version = "1.5.0", features = ["stargate", "staking"] }
 cosmwasm-schema = "1.5.0"
 cw-storage-plus = { version = "1.2.0" }
 cw-multi-test = { version = "0.20.0" }
@@ -53,3 +53,14 @@ clap = { version = "4.4.7", features = ["derive", "cargo", "env", "string"] }
 schemars = "0.8.15"
 home = "0.5"
 toml = "0.8"
+
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+panic = 'abort'
+incremental = false
+overflow-checks = true

@@ -68,6 +68,12 @@ impl Name for nibiru::epochs::QueryCurrentEpochRequest {
 }
 
 // ORACLE tx msg
+
+impl Name for nibiru::oracle::MsgEditOracleParams {
+    const NAME: &'static str = "MsgEditOracleParams";
+    const PACKAGE: &'static str = PACKAGE_ORACLE;
+}
+
 // ORACLE query
 
 impl Name for nibiru::oracle::QueryExchangeRateRequest {
@@ -258,6 +264,14 @@ impl Name for nibiru::perp::MsgShiftPegMultiplier {
 }
 impl Name for nibiru::perp::MsgShiftSwapInvariant {
     const NAME: &'static str = "MsgShiftSwapInvariant";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+impl Name for nibiru::perp::MsgWithdrawFromPerpFund {
+    const NAME: &'static str = "MsgWithdrawFromPerpFund";
+    const PACKAGE: &'static str = PACKAGE_PERP;
+}
+impl Name for nibiru::perp::MsgCloseMarket {
+    const NAME: &'static str = "MsgCloseMarket";
     const PACKAGE: &'static str = PACKAGE_PERP;
 }
 

@@ -5,8 +5,6 @@ mod type_url_cosmos;
 mod type_url_nibiru;
 
 pub use traits::*;
-pub use type_url_cosmos::*;
-pub use type_url_nibiru::*;
 
 pub mod cosmos {
     /// Authentication of accounts and transactions.

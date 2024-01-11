@@ -57,10 +57,10 @@ pub fn execute(
 
     match msg {
         #[allow(unused_variables, deprecated, unreachable_code)]
-        ExecuteMsg::InsuranceFundWithdraw { amount, to } => {
+        ExecuteMsg::WithdrawPerpFund { amount, to } => {
             check_member(check)?;
             todo!();
-            let _cw_msg = ExecuteMsg::InsuranceFundWithdraw { amount, to };
+            let _cw_msg = ExecuteMsg::WithdrawPerpFund { amount, to };
             // let res = Response::new()
             //     .add_message(cw_msg)
             //     .add_attributes(vec![attr("action", "insurance_fund_withdraw")]);
