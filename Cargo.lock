@@ -1801,16 +1801,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nibiru-macro"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "quote",
- "syn 2.0.43",
-]
-
-[[package]]
 name = "nibiru-std"
 version = "0.0.5"
 dependencies = [
