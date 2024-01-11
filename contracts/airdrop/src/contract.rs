@@ -202,7 +202,9 @@ pub fn deactivate(
     }
 
     if !campaign.is_active {
-        return Err(StdError::generic_err("Campaign is not active"));
+        return Ok(Response::new()
+            .add_attribute("method", "deactivate")
+            .add_attribute("message", "Campaign is already deactivated"));
     }
 
     campaign.is_active = false;
