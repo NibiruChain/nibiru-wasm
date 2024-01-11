@@ -53,3 +53,14 @@ clap = { version = "4.4.7", features = ["derive", "cargo", "env", "string"] }
 schemars = "0.8.15"
 home = "0.5"
 toml = "0.8"
+
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+panic = 'abort'
+incremental = false
+overflow-checks = true

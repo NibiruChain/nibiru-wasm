@@ -46,9 +46,9 @@ pub fn instantiate(
     };
     CAMPAIGN.save(deps.storage, &campaign)?;
 
-    return Ok(Response::new()
+    Ok(Response::new()
         .add_attribute("method", "instantiate")
-        .add_attribute("owner", info.sender));
+        .add_attribute("owner", info.sender))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -95,6 +95,12 @@ pub fn execute(
     }
 }
 
+/// Reward a set of users with native tokens from the campaign pool
+///
+/// - Requires sender to be the contract owner or a campaign manager.
+/// - Ensures there are enough unallocated funds in the campaign
+/// - Saves/updates user reward pool balances.
+/// - Reduces the available campaign balance
 pub fn reward_users(
     deps: DepsMut,
     _env: Env,
@@ -103,18 +109,16 @@ pub fn reward_users(
 ) -> Result<Response, StdError> {
     let mut res = vec![];
 
-    let mut campaign = CAMPAIGN.load(deps.storage).map_err(|_| {
-        StdError::generic_err("Failed to load campaign data")
-    })?;
+    let mut campaign = CAMPAIGN
+        .load(deps.storage)
+        .map_err(|_| StdError::generic_err("Failed to load campaign data"))?;
 
-    if campaign.owner != info.sender
-        && !campaign.managers.contains(&info.sender)
+    if campaign.owner != info.sender && !campaign.managers.contains(&info.sender)
     {
         return Err(StdError::generic_err("Unauthorized"));
     }
 
     for req in requests {
-
         if campaign.unallocated_amount < req.amount {
             return Err(StdError::generic_err(
                 "Not enough funds in the campaign",
@@ -148,11 +152,15 @@ pub fn reward_users(
         });
     }
 
-    return Ok(Response::new()
+    Ok(Response::new()
         .add_attribute("method", "reward_users")
-        .set_data(to_json_binary(&res).unwrap()));
+        .set_data(to_json_binary(&res).unwrap()))
 }
 
+/// Allow a user to claim any rewards allocated to them
+///
+/// Transfers the user's full reward balance to their account. Resets their
+/// reward balance to 0.
 pub fn claim(
     deps: DepsMut,
     _env: Env,
@@ -162,8 +170,7 @@ pub fn claim(
 
     match USER_REWARDS.may_load(deps.storage, info.sender.clone())? {
         Some(user_reward) => {
-            USER_REWARDS
-                .remove(deps.storage, info.sender.clone());
+            USER_REWARDS.remove(deps.storage, info.sender.clone());
 
             Ok(Response::new()
                 .add_attribute("method", "claim")
@@ -179,6 +186,10 @@ pub fn claim(
     }
 }
 
+/// Allow the contract owner to withdraw native tokens
+///
+/// Ensures the requested amount is available in the contract balance. Transfers
+/// tokens to the contract owner's account.
 pub fn withdraw(
     deps: DepsMut,
     env: Env,
@@ -195,7 +206,7 @@ pub fn withdraw(
 
     let own_balance: Uint128 = deps
         .querier
-        .query_balance(&env.contract.address, bond_denom.clone())
+        .query_balance(env.contract.address, bond_denom.clone())
         .map_err(|_| StdError::generic_err("Failed to query contract balance"))?
         .amount;
 
@@ -213,7 +224,7 @@ pub fn withdraw(
             }],
         }));
 
-    return Ok(res);
+    Ok(res)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -228,10 +239,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 pub fn query_campaign(deps: Deps, _env: Env) -> StdResult<Binary> {
     match CAMPAIGN.load(deps.storage) {
-        Ok(campaign) => return to_json_binary(&campaign),
-        Err(_) => {
-            return Err(StdError::generic_err("Failed to load campaign data"))
-        }
+        Ok(campaign) => to_json_binary(&campaign),
+        Err(_) => Err(StdError::generic_err("Failed to load campaign data")),
     }
 }
 
@@ -241,9 +250,7 @@ pub fn query_user_reward(
     user_address: Addr,
 ) -> StdResult<Binary> {
     match USER_REWARDS.load(deps.storage, user_address) {
-        Ok(user_reward) => return to_json_binary(&user_reward),
-        Err(_) => {
-            return Err(StdError::generic_err("User reward does not exist"))
-        }
-    };
+        Ok(user_reward) => to_json_binary(&user_reward),
+        Err(_) => Err(StdError::generic_err("User reward does not exist")),
+    }
 }

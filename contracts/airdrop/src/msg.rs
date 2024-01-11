@@ -1,4 +1,4 @@
-use cosmwasm_std::{Uint128, Addr};
+use cosmwasm_std::{Addr, Uint128};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -25,19 +25,14 @@ pub struct RewardUserResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    RewardUsers {
-        requests: Vec<RewardUserRequest>
-    },
+    RewardUsers { requests: Vec<RewardUserRequest> },
     Claim {},
-    Withdraw {
-        amount: Uint128,
-    },
+    Withdraw { amount: Uint128 },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    Campaign { },
+    Campaign {},
     GetUserReward { user_address: Addr },
 }
-

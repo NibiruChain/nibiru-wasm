@@ -9,13 +9,14 @@ pub struct Sudoers {
     #[prost(string, repeated, tag="2")]
     pub contracts: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
-/// GenesisState defines the module's genesis state.
+/// GenesisState: State for migrations and genesis for the x/sudo module.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
     #[prost(message, optional, tag="1")]
     pub sudoers: ::core::option::Option<Sudoers>,
 }
+/// EventUpdateSudoers: ABCI event emitted upon execution of "MsgEditSudoers".
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventUpdateSudoers {

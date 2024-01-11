@@ -94,7 +94,7 @@ impl WasmCompilationScheme {
     );
         // current_dir, current_dir_name, image, IMAGE_VERSION
 
-        run_bash_and_print(cmd).map_err(|bash_err| anyhow::anyhow!(bash_err))
+        run_bash_and_print(&cmd).map_err(|bash_err| anyhow::anyhow!(bash_err))
     }
 
     fn print_run_preamble(&self) {

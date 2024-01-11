@@ -2,7 +2,7 @@ use crate::contract::{instantiate, reward_users};
 use crate::msg::{InstantiateMsg, RewardUserRequest, RewardUserResponse};
 use crate::state::{Campaign, CAMPAIGN, USER_REWARDS};
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-use cosmwasm_std::{coins, from_json, Addr, Uint128, StdError};
+use cosmwasm_std::{coins, from_json, Addr, StdError, Uint128};
 use std::vec;
 
 #[test]
@@ -18,7 +18,10 @@ fn test_reward_users_fully_allocated() {
             campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
-            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
+            managers: vec![
+                Addr::unchecked("manager1"),
+                Addr::unchecked("manager2"),
+            ],
         },
     )
     .unwrap();
@@ -69,7 +72,10 @@ fn test_reward_users_fully_allocated() {
             campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
-            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
+            managers: vec![
+                Addr::unchecked("manager1"),
+                Addr::unchecked("manager2")
+            ],
         }
     );
 
@@ -88,7 +94,6 @@ fn test_reward_users_fully_allocated() {
     );
 }
 
-
 #[test]
 fn test_reward_users_as_manager() {
     let mut deps = mock_dependencies();
@@ -102,7 +107,10 @@ fn test_reward_users_as_manager() {
             campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
-            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
+            managers: vec![
+                Addr::unchecked("manager1"),
+                Addr::unchecked("manager2"),
+            ],
         },
     )
     .unwrap();
@@ -153,7 +161,10 @@ fn test_reward_users_as_manager() {
             campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
-            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
+            managers: vec![
+                Addr::unchecked("manager1"),
+                Addr::unchecked("manager2")
+            ],
         }
     );
 
@@ -185,7 +196,10 @@ fn test_fails_when_we_try_to_allocate_more_than_available() {
             campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
-            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
+            managers: vec![
+                Addr::unchecked("manager1"),
+                Addr::unchecked("manager2"),
+            ],
         },
     )
     .unwrap();
@@ -210,7 +224,8 @@ fn test_fails_when_we_try_to_allocate_more_than_available() {
         ],
     );
 
-    assert_eq!(resp, Err(StdError::generic_err(
-        "Not enough funds in the campaign",
-    )));
+    assert_eq!(
+        resp,
+        Err(StdError::generic_err("Not enough funds in the campaign",))
+    );
 }

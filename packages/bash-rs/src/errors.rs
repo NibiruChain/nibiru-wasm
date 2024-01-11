@@ -12,4 +12,7 @@ pub enum BashError {
 
     #[error("IO error: {0}")]
     IO(#[from] io::Error),
+
+    #[error("which failed: {} is not installed or not in PATH for bin", bin)]
+    WhichBinNotPresent { bin: String },
 }
