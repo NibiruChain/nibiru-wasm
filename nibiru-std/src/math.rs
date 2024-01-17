@@ -51,6 +51,7 @@ impl DecimalExt {
                 dec: self.dec.add(other.dec),
             };
         } else if other.dec.is_zero() {
+            return *self;
         }
 
         let self_dec_gt: bool = self.dec.ge(&other.dec);
@@ -512,11 +513,6 @@ mod test_sign_dec {
             let got_dec = DecimalExt::from_sdk_dec(&got_sdk_dec)?;
             assert_eq!(want_dec, got_dec)
         }
-        Ok(())
-    }
-
-    #[test]
-    fn blank_test() -> TestResult {
         Ok(())
     }
 }

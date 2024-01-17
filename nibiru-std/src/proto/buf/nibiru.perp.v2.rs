@@ -55,6 +55,10 @@ pub struct Market {
     /// position size
     #[prost(string, tag="13")]
     pub max_funding_rate: ::prost::alloc::string::String,
+    /// the pair of the oracle that is used to determine the index price
+    /// for the market
+    #[prost(string, tag="15")]
+    pub oracle_pair: ::prost::alloc::string::String,
 }
 /// MarketLastVersion is used to store the last version of the market
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -899,7 +903,7 @@ pub struct MsgDonateToEcosystemFundResponse {
 // -----------------------  MsgChangeCollateralDenom -----------------------
 
 /// MsgChangeCollateralDenom: Changes the collateral denom for the module.
-/// \[Admin\] Only callable by sudoers.
+/// \[SUDO\] Only callable by sudoers.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgChangeCollateralDenom {
@@ -945,8 +949,8 @@ pub struct MsgWithdrawEpochRebatesResponse {
 }
 // -------------------------- ShiftPegMultiplier --------------------------
 
-/// ShiftPegMultiplier: gRPC tx msg for changing the peg multiplier.
-/// Admin-only.
+/// MsgShiftPegMultiplier: gRPC tx msg for changing the peg multiplier.
+/// \[SUDO\] Only callable sudoers.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgShiftPegMultiplier {
@@ -963,8 +967,8 @@ pub struct MsgShiftPegMultiplierResponse {
 }
 // -------------------------- ShiftSwapInvariant --------------------------
 
-/// ShiftSwapInvariant: gRPC tx msg for changing the swap invariant.
-/// Admin-only.
+/// MsgShiftSwapInvariant: gRPC tx msg for changing the swap invariant.
+/// \[SUDO\] Only callable sudoers.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgShiftSwapInvariant {
@@ -978,5 +982,42 @@ pub struct MsgShiftSwapInvariant {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgShiftSwapInvariantResponse {
+}
+// -------------------------- WithdrawFromPerpFund --------------------------
+
+/// MsgWithdrawFromPerpFund: gRPC tx msg for changing the swap invariant.
+/// \[SUDO\] Only callable sudoers.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgWithdrawFromPerpFund {
+    #[prost(string, tag="1")]
+    pub sender: ::prost::alloc::string::String,
+    #[prost(string, tag="2")]
+    pub amount: ::prost::alloc::string::String,
+    /// Optional denom in case withdrawing assets aside from NUSD.
+    #[prost(string, tag="3")]
+    pub denom: ::prost::alloc::string::String,
+    #[prost(string, tag="4")]
+    pub to_addr: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgWithdrawFromPerpFundResponse {
+}
+// -------------------------- CloseMarket --------------------------
+
+/// CloseMarket: gRPC tx msg for closing a market.
+/// Admin-only.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCloseMarket {
+    #[prost(string, tag="1")]
+    pub sender: ::prost::alloc::string::String,
+    #[prost(string, tag="2")]
+    pub pair: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCloseMarketResponse {
 }
 // @@protoc_insertion_point(module)

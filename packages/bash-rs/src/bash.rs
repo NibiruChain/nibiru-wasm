@@ -9,12 +9,12 @@ use std::thread;
 use crate::errors::BashError;
 
 /// Runs a shell command
-pub fn run_bash(bash_code: String) -> Result<BashOutput, BashError> {
-    let mut bash_cmd = build_bash_cmd(bash_code.clone());
+pub fn run_bash(bash_code: &str) -> Result<BashOutput, BashError> {
+    let mut bash_cmd = build_bash_cmd(bash_code);
     let output = bash_cmd.output().expect("Failed to execute command");
 
     match output.status.success() {
-        true => Ok(BashOutput::new(bash_code, output)),
+        true => Ok(BashOutput::new(bash_code.to_string(), output)),
         false => {
             let error_json = serde_json::to_string_pretty(&BashOutput {
                 status: output
@@ -23,7 +23,7 @@ pub fn run_bash(bash_code: String) -> Result<BashOutput, BashError> {
                     .expect("Failed to parse cmd status code"),
                 stdout: String::from_utf8_lossy(&output.stdout).to_string(),
                 stderr: String::from_utf8_lossy(&output.stderr).to_string(),
-                cmd: bash_code.clone(),
+                cmd: bash_code.to_string(),
             })
             .expect("Failed to parse bash command output as string");
             Err(BashError::BashCmdFailed { err: error_json })
@@ -31,15 +31,19 @@ pub fn run_bash(bash_code: String) -> Result<BashOutput, BashError> {
     }
 }
 
-fn build_bash_cmd(bash_code: String) -> std::process::Command {
+/// build_bash_cmd: Constructs a `process::Command` corresponding to the given `bash_code`.
+pub fn build_bash_cmd(bash_code: &str) -> std::process::Command {
     let mut bash_cmd = std::process::Command::new("bash");
     bash_cmd.arg("-c").arg(bash_code);
     bash_cmd
 }
 
-/// run_cmd_print: Runs a command and prints its output.
-pub fn run_bash_and_print(bash_code: String) -> Result<(), BashError> {
-    let mut bash_cmd = build_bash_cmd(bash_code.clone());
+/// run_bash_and_print: Runs a command and prints its output as it is read into
+/// the buffer. This differs from the default behavior of `run_bash`, which puts
+/// all of the stdout and stderr into aggregate strings at the end of the command
+/// execution.
+pub fn run_bash_and_print(bash_code: &str) -> Result<(), BashError> {
+    let mut bash_cmd = build_bash_cmd(bash_code);
     let mut child: Child = bash_cmd
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -84,15 +88,24 @@ pub fn run_bash_and_print(bash_code: String) -> Result<(), BashError> {
 
     match status.success() {
         true => Ok(()),
-        false => Err(BashError::General { msg: bash_code }),
+        false => Err(BashError::General {
+            msg: bash_code.to_string(),
+        }),
     }
 }
 
+/// BashOutput: Output of a bash command.
 #[derive(Serialize, Debug, Clone)]
 pub struct BashOutput {
+    /// status: Exist status code. 0 for success. Everything else means failure.
     pub status: i32,
+    /// cmd: The input bash command that was run.
     pub cmd: String,
+    /// stdout: Standard output stream. This includes the main data that the
+    /// command sends to the terminal with successful operation.
     pub stdout: String,
+    /// stderr: Standard error output stream. Stderr captures error messages,
+    /// warnings, and other diagnostic information.
     pub stderr: String,
 }
 
@@ -119,7 +132,7 @@ impl From<process::Output> for BashOutput {
 pub fn which_ok(bin: &str) -> bool {
     let err_msg_string = format!("failed to run 'which {}'", bin);
     let err_msg = err_msg_string.as_str();
-    let out = run_bash(format!(
+    let out = run_bash(&format!(
         r#"
 if which {bin} >/dev/null; then
     echo '{bin} is present'
@@ -131,6 +144,37 @@ fi"#,
     out.stdout.contains("is present")
 }
 
+/// which_ok_assert: Validate that the given binary is in PATH. Error if not.
+///
+/// ### Examples
+/// ```
+/// use bash_rs::which_ok_assert;
+///
+/// let result = which_ok_assert("ls");
+/// assert!(result.is_ok());
+///
+/// let result = which_ok_assert("non_existent_binary");
+/// assert!(result.is_err());
+/// ```
+pub fn which_ok_assert(bin: &str) -> Result<(), BashError> {
+    if !which_ok(bin) {
+        return Err(BashError::WhichBinNotPresent {
+            bin: bin.to_string(),
+        });
+    }
+    Ok(())
+}
+
+/// Run multiple bash commands in succession without returning the output.
+pub fn run_bash_multi(cmds: Vec<&str>) -> Result<Vec<BashOutput>, BashError> {
+    let mut outs: Vec<BashOutput> = Vec::new();
+    for cmd in cmds {
+        let out = run_bash(cmd)?;
+        outs.push(out);
+    }
+    Ok(outs)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{run_bash, which_ok};
@@ -139,7 +183,7 @@ mod tests {
     fn test_run_cmd() {
         let cmds: Vec<&str> = vec!["ls -l", "jq"];
         cmds.iter().for_each(|cmd| {
-            let out = run_bash(cmd.to_string());
+            let out = run_bash(cmd);
             assert!(out.is_ok())
         });
     }
@@ -147,7 +191,7 @@ mod tests {
     #[test]
     fn test_bad_command() {
         let cmd = "somecmd that doesn't exist";
-        let out = run_bash(cmd.into());
+        let out = run_bash(cmd);
         assert!(out.is_err());
     }
 
@@ -155,13 +199,13 @@ mod tests {
     fn test_redirection() {
         let content_str = "hello";
         let cmd = format!("echo {} > temp-test.txt", content_str);
-        let mut out = run_bash(cmd);
+        let mut out = run_bash(&cmd);
         assert!(out.is_ok());
         let output = std::fs::read_to_string("temp-test.txt").unwrap();
         assert_eq!(output, format!("{}\n", content_str));
 
         // cleanup
-        out = run_bash("rm temp-test.txt".into());
+        out = run_bash("rm temp-test.txt");
         assert!(out.is_ok())
     }
 

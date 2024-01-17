@@ -1,6 +1,6 @@
 use crate::contract::{claim, instantiate, reward_users};
 use crate::msg::{InstantiateMsg, RewardUserRequest};
-use crate::state::{USER_REWARDS};
+use crate::state::USER_REWARDS;
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 use cosmwasm_std::{coins, Addr, BankMsg, CosmosMsg, StdError, SubMsg, Uint128};
 use std::vec;
@@ -18,7 +18,10 @@ fn test_claim() {
             campaign_id: "campaign_id".to_string(),
             campaign_name: "campaign_name".to_string(),
             campaign_description: "campaign_description".to_string(),
-            managers: vec![Addr::unchecked("manager1"), Addr::unchecked("manager2")],
+            managers: vec![
+                Addr::unchecked("manager1"),
+                Addr::unchecked("manager2"),
+            ],
         },
     )
     .unwrap();
@@ -51,10 +54,7 @@ fn test_claim() {
             amount: coins(750, ""),
         }))]
     );
-    assert_eq!(
-        USER_REWARDS.has(deps.as_ref().storage, Addr::unchecked("user1")),
-        false
-    );
+    assert!(!USER_REWARDS.has(deps.as_ref().storage, Addr::unchecked("user1")));
 
     // try to claim from user2
     let resp =
@@ -67,10 +67,7 @@ fn test_claim() {
             amount: coins(250, ""),
         }))]
     );
-    assert_eq!(
-        USER_REWARDS.has(deps.as_ref().storage, Addr::unchecked("user2")),
-        false
-    );
+    assert!(!USER_REWARDS.has(deps.as_ref().storage, Addr::unchecked("user2")));
 
     // try to claim from user3 who doesn't exist
     let resp = claim(deps.as_mut(), env.clone(), mock_info("user3", &[]));

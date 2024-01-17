@@ -14,25 +14,6 @@ exclude = [
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[profile.release]
-opt-level = 3
-debug = false
-rpath = false
-lto = true
-debug-assertions = false
-codegen-units = 1
-panic = 'abort'
-incremental = false
-overflow-checks = true
-
-[package.metadata.scripts]
-optimize = """docker run --rm -v "$(pwd)":/code \
-  -e CARGO_TERM_COLOR=always \
-  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/target \
-  --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/optimizer:0.15.0
-"""
-
 [features]
 # for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
