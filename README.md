@@ -29,11 +29,11 @@ Smart contract sandbox for Nibiru Chain.
 ## Install Cargo
 
 - Install `cargo` with `curl`
-```console
+```bash
 curl https://sh.rustup.rs -sSf | sh
 ```
 - Check `cargo` version
-```console
+```bash
 cargo version
 ```
 
