@@ -26,6 +26,16 @@ Smart contract sandbox for Nibiru Chain.
 ├── Cargo.lock
 └── README.md
 ```
+## Install Cargo
+
+- Install `cargo` with `curl`
+```console
+curl https://sh.rustup.rs -sSf | sh
+```
+- Check `cargo` version
+```console
+cargo version
+```
 
 ## Hacking
 
