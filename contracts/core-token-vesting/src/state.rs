@@ -1,10 +1,12 @@
 use cosmwasm_schema::cw_serde;
 
 use crate::msg::VestingSchedule;
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{CosmosMsg, Uint128};
 use cw20::Denom;
 use cw_storage_plus::Map;
 
+pub const CAMPAIGN: Map<String, Campaign> = Map::new("campaign");
+pub const USER_REWARDS: Map<String, Uint128> = Map::new("user_rewards");
 pub const VESTING_ACCOUNTS: Map<(&str, &str), VestingAccount> =
     Map::new("vesting_accounts");
 
@@ -16,6 +18,24 @@ pub struct VestingAccount {
     pub vesting_amount: Uint128,
     pub vesting_schedule: VestingSchedule,
     pub claimed_amount: Uint128,
+}
+
+#[cw_serde]
+pub struct Campaign {
+    pub campaign_id: String,
+    pub campaign_name: String,
+    pub campaign_description: String,
+
+    pub unallocated_amount: Uint128,
+    pub owner: String,
+    pub managers: Vec<String>,
+
+    pub is_active: bool,
+}
+
+pub struct DeregisterResult<'a> {
+    pub msgs: Vec<CosmosMsg>,
+    pub attributes: Vec<(&'a str, String)>,
 }
 
 pub fn denom_to_key(denom: Denom) -> String {

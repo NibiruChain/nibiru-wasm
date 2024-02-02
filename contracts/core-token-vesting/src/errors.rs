@@ -13,6 +13,7 @@ pub enum ContractError {
 
     #[error(transparent)]
     Overflow(#[from] cosmwasm_std::OverflowError),
+
 }
 
 #[derive(thiserror::Error, Debug, PartialEq)]

@@ -1,9 +1,9 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_json, to_json_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg,
-    Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult,
-    Storage, Timestamp, Uint128, WasmMsg,
+    from_json, to_json_binary, Addr, Attribute, BankMsg, Binary, Coin,
+    CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError,
+    StdResult, Storage, Timestamp, Uint128, WasmMsg,
 };
 
 use serde_json::to_string;
@@ -13,10 +13,13 @@ use cw_storage_plus::Bound;
 
 use crate::errors::ContractError;
 use crate::msg::{
-    Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, VestingAccountResponse,
-    VestingData, VestingSchedule,
+    Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, RewardUserRequest,
+    RewardUserResponse, VestingAccountResponse, VestingData, VestingSchedule,
 };
-use crate::state::{denom_to_key, VestingAccount, VESTING_ACCOUNTS};
+use crate::state::{
+    denom_to_key, Campaign, DeregisterResult, VestingAccount, CAMPAIGN,
+    USER_REWARDS, VESTING_ACCOUNTS,
+};
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -68,19 +71,226 @@ pub fn execute(
             denom,
             vested_token_recipient,
             left_vesting_token_recipient,
-        } => deregister_vesting_account(
-            deps,
-            env,
-            info,
-            address,
-            denom,
-            vested_token_recipient,
-            left_vesting_token_recipient,
-        ),
+        } => {
+            let response = deregister_vesting_account(
+                deps,
+                &env,
+                &info,
+                address,
+                &denom,
+                vested_token_recipient,
+                left_vesting_token_recipient,
+            );
+
+            if response.is_err() {
+                Err(response.err().unwrap().into())
+            } else {
+                let result = response.unwrap();
+                Ok(Response::new()
+                    .add_messages(result.msgs)
+                    .add_attributes(result.attributes))
+            }
+        }
         ExecuteMsg::Claim { denoms, recipient } => {
             claim(deps, env, info, denoms, recipient)
         }
+        ExecuteMsg::CreateCampaign {
+            vesting_schedule,
+            campaign_id,
+            campaign_name,
+            campaign_description,
+            managers,
+        } => create_campaign(
+            deps,
+            env,
+            info,
+            vesting_schedule,
+            campaign_id,
+            campaign_name,
+            campaign_description,
+            managers,
+        ),
+        ExecuteMsg::RewardUsers {
+            campaign_id,
+            requests,
+        } => reward_users(deps, env, info, campaign_id, requests),
+        ExecuteMsg::ClaimCampaign { campaign_id } => {
+            claim_campaign(deps, env, info, campaign_id)
+        }
+        ExecuteMsg::DeregisterVestingAccounts {
+            addresses,
+            denom,
+            vested_token_recipient,
+            left_vesting_token_recipient,
+        } => deregister_vesting_accounts(
+            deps,
+            env,
+            info,
+            addresses,
+            &denom,
+            vested_token_recipient,
+            left_vesting_token_recipient,
+        ),
+        ExecuteMsg::DeactivateCampaign { campaign_id } => {
+            deactivate_campaign(deps, env, info, campaign_id)
+        }
+        ExecuteMsg::Withdraw {
+            amount,
+            campaign_id,
+        } => withdraw(deps, env, info, amount, campaign_id),
     }
+}
+
+fn deactivate_campaign(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    campaign_id: String,
+) -> Result<Response, ContractError> {
+    let mut campaign = CAMPAIGN
+        .load(deps.storage, campaign_id.clone())
+        .map_err(|_| StdError::generic_err("Failed to load campaign data"))?;
+
+    if campaign.owner != info.sender
+        && !campaign.managers.contains(&info.sender.to_string())
+    {
+        return Err(StdError::generic_err("unauthorized").into());
+    }
+
+    if !campaign.is_active {
+        return Ok(Response::new()
+            .add_attribute("method", "deactivate")
+            .add_attribute("message", "Campaign is already deactivated"));
+    }
+
+    campaign.is_active = false;
+    CAMPAIGN.save(deps.storage, campaign_id.clone(), &campaign)?;
+
+    let bond_denom = deps.querier.query_bonded_denom()?;
+    let own_balance: Uint128 = deps
+        .querier
+        .query_balance(&env.contract.address, bond_denom.clone())
+        .map_err(|_| StdError::generic_err("Failed to query contract balance"))?
+        .amount;
+
+    return withdraw(deps, env, info, own_balance, campaign_id);
+}
+
+fn claim_campaign(
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    _campaign_id: String,
+) -> Result<Response, ContractError> {
+    todo!()
+}
+
+fn reward_users(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    campaign_id: String,
+    requests: Vec<RewardUserRequest>,
+) -> Result<Response, ContractError> {
+    let mut res = vec![];
+
+    let mut campaign = CAMPAIGN
+        .load(deps.storage, campaign_id.clone())
+        .map_err(|_| StdError::generic_err("Failed to load campaign data"))?;
+
+    if campaign.owner != info.sender
+        && !campaign.managers.contains(&info.sender.into_string())
+    {
+        return Err(StdError::generic_err("Unauthorized").into());
+    }
+
+    if !campaign.is_active {
+        return Err(StdError::generic_err("Campaign is not active").into());
+    }
+
+    for req in requests {
+        if campaign.unallocated_amount < req.amount {
+            return Err(StdError::generic_err(
+                "Not enough funds in the campaign",
+            )
+            .into());
+        }
+
+        match USER_REWARDS.may_load(deps.storage, req.user_address.clone())? {
+            Some(mut user_reward) => {
+                user_reward += req.amount;
+                USER_REWARDS.save(
+                    deps.storage,
+                    req.user_address.clone(),
+                    &user_reward,
+                )?;
+            }
+            None => {
+                USER_REWARDS.save(
+                    deps.storage,
+                    req.user_address.clone(),
+                    &req.amount,
+                )?;
+            }
+        };
+        campaign.unallocated_amount -= req.amount;
+        CAMPAIGN.save(deps.storage, campaign_id.clone(), &campaign)?;
+
+        res.push(RewardUserResponse {
+            user_address: req.user_address.clone(),
+            success: true,
+            error_msg: "".to_string(),
+        });
+    }
+
+    Ok(Response::new()
+        .add_attribute("method", "reward_users")
+        .set_data(to_json_binary(&res).unwrap()))
+}
+
+fn create_campaign(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    vesting_schedule: VestingSchedule,
+    campaign_id: String,
+    campaign_name: String,
+    campaign_description: String,
+    managers: Vec<String>,
+) -> Result<Response, ContractError> {
+    if CAMPAIGN
+        .may_load(deps.storage, campaign_id.clone())?
+        .is_some()
+    {
+        return Err(StdError::generic_err("Campaign already exists").into());
+    }
+
+    if info.funds.len() != 1 {
+        return Err(StdError::generic_err("Only one coin is allowed").into());
+    }
+
+    let bond_denom = deps.querier.query_bonded_denom()?;
+    let coin = info.funds.get(0).unwrap();
+    if coin.denom != bond_denom {
+        return Err(
+            StdError::generic_err("Only native tokens are allowed").into()
+        );
+    }
+
+    let campaign = Campaign {
+        campaign_name: campaign_name,
+        campaign_id: campaign_id.clone(),
+        campaign_description: campaign_description,
+        owner: info.sender.into_string(),
+        managers: managers,
+        unallocated_amount: coin.amount,
+        is_active: true,
+    };
+    CAMPAIGN.save(deps.storage, campaign_id.clone(), &campaign)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "create_campaign")
+        .add_attribute("campaign_id", campaign_id))
 }
 
 fn register_vesting_account(
@@ -127,17 +337,56 @@ fn register_vesting_account(
     ]))
 }
 
-fn deregister_vesting_account(
+fn deregister_vesting_accounts(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    address: String,
-    denom: Denom,
+    addresses: Vec<String>,
+    denom: &Denom,
     vested_token_recipient: Option<String>,
     left_vesting_token_recipient: Option<String>,
 ) -> Result<Response, ContractError> {
+    let mut messages: Vec<CosmosMsg> = vec![];
+    let mut attrs: Vec<(&str, String)> = vec![];
+
+    for address in addresses.iter() {
+        let response = deregister_vesting_account(
+            deps.clone(),
+            &env,
+            &info,
+            address.clone(),
+            denom,
+            vested_token_recipient.clone(),
+            left_vesting_token_recipient.clone(),
+        );
+
+        if response.is_err() {
+            let error_message = response.err().unwrap().to_string();
+            attrs.extend(vec![
+                ("action", "deregister_vesting_accounts".to_string()),
+                ("address", address.to_string()),
+                ("error", error_message),
+            ]);
+        } else {
+            let result = response.unwrap();
+            messages.extend(result.msgs);
+            attrs.extend(result.attributes);
+        }
+    }
+    Ok(Response::new().add_messages(messages).add_attributes(attrs))
+}
+
+fn deregister_vesting_account<'a>(
+    deps: DepsMut,
+    env: &Env,
+    info: &MessageInfo,
+    address: String,
+    denom: &Denom,
+    vested_token_recipient: Option<String>,
+    left_vesting_token_recipient: Option<String>,
+) -> Result<DeregisterResult<'a>, ContractError> {
     let denom_key = denom_to_key(denom.clone());
-    let sender = info.sender;
+    let sender = info.sender.clone();
 
     let mut messages: Vec<CosmosMsg> = vec![];
 
@@ -195,14 +444,19 @@ fn deregister_vesting_account(
         messages.push(msg_send);
     }
 
-    Ok(Response::new().add_messages(messages).add_attributes(vec![
-        ("action", "deregister_vesting_account"),
-        ("address", address.as_str()),
-        ("vesting_denom", &to_string(&account.vesting_denom).unwrap()),
-        ("vesting_amount", &account.vesting_amount.to_string()),
-        ("vested_amount", &vested_amount.to_string()),
-        ("left_vesting_amount", &left_vesting_amount.to_string()),
-    ]))
+    let result = DeregisterResult {
+        msgs: messages,
+        attributes: vec![
+            ("action", "deregister_vesting_account".to_string()),
+            ("address", address),
+            ("vesting_denom", to_string(&account.vesting_denom).unwrap()),
+            ("vesting_amount", account.vesting_amount.to_string()),
+            ("vested_amount", vested_amount.to_string()),
+            ("left_vesting_amount", left_vesting_amount.to_string()),
+        ],
+    };
+
+    Ok(result)
 }
 
 fn claim(
@@ -395,6 +649,94 @@ fn vesting_account(
     }
 
     Ok(VestingAccountResponse { address, vestings })
+}
+
+/// Allow the contract owner to withdraw native tokens
+///
+/// Ensures the requested amount is available in the contract balance. Transfers
+/// tokens to the contract owner's account.
+pub fn withdraw(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount: Uint128,
+    campaign_id: String,
+) -> Result<Response, ContractError> {
+    let campaign = CAMPAIGN.load(deps.storage, campaign_id)?;
+
+    if info.sender != campaign.owner {
+        return Err(
+            StdError::generic_err("Only contract owner can withdraw").into()
+        );
+    }
+
+    let bond_denom = deps.querier.query_bonded_denom()?;
+
+    let own_balance: Uint128 = deps
+        .querier
+        .query_balance(env.contract.address, bond_denom.clone())
+        .map_err(|_| {
+            ContractError::Std(StdError::generic_err(
+                "Failed to query contract balance",
+            ))
+        })?
+        .amount;
+
+    if amount > own_balance {
+        return Err(
+            StdError::generic_err("Not enough funds in the contract").into()
+        );
+    }
+
+    let res = Response::new()
+        .add_attribute("method", "withdraw")
+        .add_message(CosmosMsg::Bank(BankMsg::Send {
+            to_address: info.sender.to_string(),
+            amount: vec![Coin {
+                denom: bond_denom.clone(),
+                amount,
+            }],
+        }));
+
+    // Update campaign unallocated amount
+    if amount > campaign.unallocated_amount {
+        let update_result = CAMPAIGN.update(
+            deps.storage,
+            campaign_id,
+            |mut campaign| -> StdResult<Campaign> {
+                if let Some(mut campaign) = campaign {
+                    campaign.unallocated_amount = Uint128::zero();
+                    Ok(campaign)
+                } else {
+                    Err(StdError::generic_err("Campaign not found"))
+                }
+            },
+        );
+
+        if let Err(e) = update_result {
+            return Err(e.into());
+        }
+    } else {
+        let update_result = CAMPAIGN.update(
+            deps.storage,
+            campaign_id,
+            |mut campaign| -> StdResult<Campaign> {
+                if let Some(mut campaign) = campaign {
+                    campaign.unallocated_amount -= amount;
+                    Ok(campaign)
+                } else {
+                    Err(StdError::generic_err("Campaign not found"))
+                }
+            },
+        );
+
+        if let Err(e) = update_result {
+            return Err(e.into());
+        }
+    }
+    Err(StdError::generic_err("Campaign not found"))?;
+
+    return Ok(res);
 }
 
 #[cfg(test)]
