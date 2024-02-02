@@ -72,19 +72,6 @@ pub enum ExecuteMsg {
         requests: Vec<RewardUserRequest>,
     },
 
-    /// Deregister vesting accounts
-    /// Args:
-    /// - address: Vec<String>: The list of addresses of the vesting accounts to be deregistered.
-    /// - denoms: Vec<Denom>: The list of denoms of the vesting accounts to be deregistered.
-    /// - vested_token_recipient: Option<String>: Bech 32 address that will receive the vested
-    ///  tokens after deregistration. If None, tokens are received by the owner address.
-    DeregisterVestingAccounts {
-        addresses: Vec<String>,
-        denom: Denom,
-        vested_token_recipient: Option<String>,
-        left_vesting_token_recipient: Option<String>,
-    },
-
     /// Claim campaign: A user can claim vested tokens from a campaign and this
     /// will register a vesting account for the user.
     /// Args:

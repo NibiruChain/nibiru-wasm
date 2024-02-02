@@ -1,9 +1,9 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_json, to_json_binary, Addr, Attribute, BankMsg, Binary, Coin,
-    CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError,
-    StdResult, Storage, Timestamp, Uint128, WasmMsg,
+    from_json, to_json_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg,
+    Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult,
+    Storage, Timestamp, Uint128, WasmMsg,
 };
 
 use serde_json::to_string;
@@ -17,8 +17,8 @@ use crate::msg::{
     RewardUserResponse, VestingAccountResponse, VestingData, VestingSchedule,
 };
 use crate::state::{
-    denom_to_key, Campaign, DeregisterResult, VestingAccount, CAMPAIGN,
-    USER_REWARDS, VESTING_ACCOUNTS,
+    denom_to_key, Campaign, VestingAccount, CAMPAIGN, USER_REWARDS,
+    VESTING_ACCOUNTS,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -71,26 +71,15 @@ pub fn execute(
             denom,
             vested_token_recipient,
             left_vesting_token_recipient,
-        } => {
-            let response = deregister_vesting_account(
-                deps,
-                &env,
-                &info,
-                address,
-                &denom,
-                vested_token_recipient,
-                left_vesting_token_recipient,
-            );
-
-            if response.is_err() {
-                Err(response.err().unwrap().into())
-            } else {
-                let result = response.unwrap();
-                Ok(Response::new()
-                    .add_messages(result.msgs)
-                    .add_attributes(result.attributes))
-            }
-        }
+        } => deregister_vesting_account(
+            deps,
+            env,
+            info,
+            address,
+            denom,
+            vested_token_recipient,
+            left_vesting_token_recipient,
+        ),
         ExecuteMsg::Claim { denoms, recipient } => {
             claim(deps, env, info, denoms, recipient)
         }
@@ -117,27 +106,13 @@ pub fn execute(
         ExecuteMsg::ClaimCampaign { campaign_id } => {
             claim_campaign(deps, env, info, campaign_id)
         }
-        ExecuteMsg::DeregisterVestingAccounts {
-            addresses,
-            denom,
-            vested_token_recipient,
-            left_vesting_token_recipient,
-        } => deregister_vesting_accounts(
-            deps,
-            env,
-            info,
-            addresses,
-            &denom,
-            vested_token_recipient,
-            left_vesting_token_recipient,
-        ),
         ExecuteMsg::DeactivateCampaign { campaign_id } => {
             deactivate_campaign(deps, env, info, campaign_id)
         }
         ExecuteMsg::Withdraw {
             amount,
             campaign_id,
-        } => withdraw(deps, env, info, amount, campaign_id),
+        } => withdraw(deps, env, info, amount, campaign_id.as_str()),
     }
 }
 
@@ -173,7 +148,7 @@ fn deactivate_campaign(
         .map_err(|_| StdError::generic_err("Failed to query contract balance"))?
         .amount;
 
-    return withdraw(deps, env, info, own_balance, campaign_id);
+    return withdraw(deps, env, info, own_balance, campaign_id.as_str());
 }
 
 fn claim_campaign(
@@ -187,7 +162,7 @@ fn claim_campaign(
 
 fn reward_users(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     campaign_id: String,
     requests: Vec<RewardUserRequest>,
@@ -250,9 +225,9 @@ fn reward_users(
 
 fn create_campaign(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
-    vesting_schedule: VestingSchedule,
+    _vesting_schedule: VestingSchedule,
     campaign_id: String,
     campaign_name: String,
     campaign_description: String,
@@ -337,56 +312,17 @@ fn register_vesting_account(
     ]))
 }
 
-fn deregister_vesting_accounts(
+fn deregister_vesting_account(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    addresses: Vec<String>,
-    denom: &Denom,
+    address: String,
+    denom: Denom,
     vested_token_recipient: Option<String>,
     left_vesting_token_recipient: Option<String>,
 ) -> Result<Response, ContractError> {
-    let mut messages: Vec<CosmosMsg> = vec![];
-    let mut attrs: Vec<(&str, String)> = vec![];
-
-    for address in addresses.iter() {
-        let response = deregister_vesting_account(
-            deps.clone(),
-            &env,
-            &info,
-            address.clone(),
-            denom,
-            vested_token_recipient.clone(),
-            left_vesting_token_recipient.clone(),
-        );
-
-        if response.is_err() {
-            let error_message = response.err().unwrap().to_string();
-            attrs.extend(vec![
-                ("action", "deregister_vesting_accounts".to_string()),
-                ("address", address.to_string()),
-                ("error", error_message),
-            ]);
-        } else {
-            let result = response.unwrap();
-            messages.extend(result.msgs);
-            attrs.extend(result.attributes);
-        }
-    }
-    Ok(Response::new().add_messages(messages).add_attributes(attrs))
-}
-
-fn deregister_vesting_account<'a>(
-    deps: DepsMut,
-    env: &Env,
-    info: &MessageInfo,
-    address: String,
-    denom: &Denom,
-    vested_token_recipient: Option<String>,
-    left_vesting_token_recipient: Option<String>,
-) -> Result<DeregisterResult<'a>, ContractError> {
     let denom_key = denom_to_key(denom.clone());
-    let sender = info.sender.clone();
+    let sender = info.sender;
 
     let mut messages: Vec<CosmosMsg> = vec![];
 
@@ -444,19 +380,14 @@ fn deregister_vesting_account<'a>(
         messages.push(msg_send);
     }
 
-    let result = DeregisterResult {
-        msgs: messages,
-        attributes: vec![
-            ("action", "deregister_vesting_account".to_string()),
-            ("address", address),
-            ("vesting_denom", to_string(&account.vesting_denom).unwrap()),
-            ("vesting_amount", account.vesting_amount.to_string()),
-            ("vested_amount", vested_amount.to_string()),
-            ("left_vesting_amount", left_vesting_amount.to_string()),
-        ],
-    };
-
-    Ok(result)
+    Ok(Response::new().add_messages(messages).add_attributes(vec![
+        ("action", "deregister_vesting_account"),
+        ("address", address.as_str()),
+        ("vesting_denom", &to_string(&account.vesting_denom).unwrap()),
+        ("vesting_amount", &account.vesting_amount.to_string()),
+        ("vested_amount", &vested_amount.to_string()),
+        ("left_vesting_amount", &left_vesting_amount.to_string()),
+    ]))
 }
 
 fn claim(
@@ -660,9 +591,9 @@ pub fn withdraw(
     env: Env,
     info: MessageInfo,
     amount: Uint128,
-    campaign_id: String,
+    campaign_id: &str,
 ) -> Result<Response, ContractError> {
-    let campaign = CAMPAIGN.load(deps.storage, campaign_id)?;
+    let campaign = CAMPAIGN.load(deps.storage, campaign_id.to_string())?;
 
     if info.sender != campaign.owner {
         return Err(
@@ -702,8 +633,8 @@ pub fn withdraw(
     if amount > campaign.unallocated_amount {
         let update_result = CAMPAIGN.update(
             deps.storage,
-            campaign_id,
-            |mut campaign| -> StdResult<Campaign> {
+            campaign_id.to_string(),
+            |campaign| -> StdResult<Campaign> {
                 if let Some(mut campaign) = campaign {
                     campaign.unallocated_amount = Uint128::zero();
                     Ok(campaign)
@@ -719,8 +650,8 @@ pub fn withdraw(
     } else {
         let update_result = CAMPAIGN.update(
             deps.storage,
-            campaign_id,
-            |mut campaign| -> StdResult<Campaign> {
+            campaign_id.to_string(),
+            |campaign| -> StdResult<Campaign> {
                 if let Some(mut campaign) = campaign {
                     campaign.unallocated_amount -= amount;
                     Ok(campaign)
