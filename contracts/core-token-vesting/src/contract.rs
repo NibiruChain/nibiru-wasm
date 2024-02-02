@@ -116,6 +116,9 @@ pub fn execute(
     }
 }
 
+/// Deactivate a campaign and withdraw all unallocated funds
+/// This will also withdraw all unallocated funds from the contract
+/// and send them to the campaign owner.
 fn deactivate_campaign(
     deps: DepsMut,
     env: Env,
@@ -129,7 +132,7 @@ fn deactivate_campaign(
     if campaign.owner != info.sender
         && !campaign.managers.contains(&info.sender.to_string())
     {
-        return Err(StdError::generic_err("unauthorized").into());
+        return Err(StdError::generic_err("Unauthorized. Only the campaign owner or managers can deactivate the campaign").into());
     }
 
     if !campaign.is_active {
@@ -174,7 +177,7 @@ fn reward_users(
         .map_err(|_| StdError::generic_err("Failed to load campaign data"))?;
 
     if campaign.owner != info.sender
-        && !campaign.managers.contains(&info.sender.into_string())
+        && !campaign.managers.contains(&info.sender.into())
     {
         return Err(StdError::generic_err("Unauthorized").into());
     }
@@ -183,8 +186,13 @@ fn reward_users(
         return Err(StdError::generic_err("Campaign is not active").into());
     }
 
+    let mut unallocated_amount = campaign.unallocated_amount;
+
     for req in requests {
-        if campaign.unallocated_amount < req.amount {
+        if unallocated_amount < req.amount {
+            // We fail on the first request that cannot be fulfilled
+            // This is to ensure that we do not partially fulfill requests
+            // and leave the campaign in an inconsistent state.
             return Err(StdError::generic_err(
                 "Not enough funds in the campaign",
             )
@@ -208,8 +216,7 @@ fn reward_users(
                 )?;
             }
         };
-        campaign.unallocated_amount -= req.amount;
-        CAMPAIGN.save(deps.storage, campaign_id.clone(), &campaign)?;
+        unallocated_amount -= req.amount;
 
         res.push(RewardUserResponse {
             user_address: req.user_address.clone(),
@@ -217,6 +224,9 @@ fn reward_users(
             error_msg: "".to_string(),
         });
     }
+
+    campaign.unallocated_amount = unallocated_amount;
+    CAMPAIGN.save(deps.storage, campaign_id.clone(), &campaign)?;
 
     Ok(Response::new()
         .add_attribute("method", "reward_users")
@@ -265,7 +275,9 @@ fn create_campaign(
 
     Ok(Response::new()
         .add_attribute("method", "create_campaign")
-        .add_attribute("campaign_id", campaign_id))
+        .add_attribute("campaign_id", campaign_id)
+        .add_attribute("campaign_name", &campaign.campaign_name)
+        .add_attribute("initial_unallocated_amount", &coin.amount.to_string()))
 }
 
 fn register_vesting_account(
@@ -665,7 +677,6 @@ pub fn withdraw(
             return Err(e.into());
         }
     }
-    Err(StdError::generic_err("Campaign not found"))?;
 
     return Ok(res);
 }
