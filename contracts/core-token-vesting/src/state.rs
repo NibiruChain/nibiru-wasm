@@ -27,6 +27,7 @@ pub struct Campaign {
     pub campaign_description: String,
 
     pub unallocated_amount: Uint128,
+    pub denom: Denom,
     pub owner: String,
     pub managers: Vec<String>,
 

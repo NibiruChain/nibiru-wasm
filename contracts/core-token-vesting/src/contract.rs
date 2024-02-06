@@ -144,10 +144,10 @@ fn deactivate_campaign(
     campaign.is_active = false;
     CAMPAIGN.save(deps.storage, campaign_id.clone(), &campaign)?;
 
-    let bond_denom = deps.querier.query_bonded_denom()?;
+    let denom = to_string(&campaign.denom).unwrap();
     let own_balance: Uint128 = deps
         .querier
-        .query_balance(&env.contract.address, bond_denom.clone())
+        .query_balance(&env.contract.address, denom)
         .map_err(|_| StdError::generic_err("Failed to query contract balance"))?
         .amount;
 
@@ -263,6 +263,7 @@ fn create_campaign(
         owner: info.sender.into_string(),
         managers: managers,
         unallocated_amount: coin.amount,
+        denom: Denom::Native(coin.denom.clone()),
         is_active: true,
     };
     CAMPAIGN.save(deps.storage, campaign_id.clone(), &campaign)?;
@@ -594,7 +595,7 @@ fn vesting_account(
 /// tokens to the contract owner's account.
 pub fn withdraw(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     amount: Uint128,
     campaign_id: &str,
@@ -606,34 +607,6 @@ pub fn withdraw(
             StdError::generic_err("Only contract owner can withdraw").into()
         );
     }
-
-    let bond_denom = deps.querier.query_bonded_denom()?;
-
-    let own_balance: Uint128 = deps
-        .querier
-        .query_balance(env.contract.address, bond_denom.clone())
-        .map_err(|_| {
-            ContractError::Std(StdError::generic_err(
-                "Failed to query contract balance",
-            ))
-        })?
-        .amount;
-
-    if amount > own_balance {
-        return Err(
-            StdError::generic_err("Not enough funds in the contract").into()
-        );
-    }
-
-    let res = Response::new()
-        .add_attribute("method", "withdraw")
-        .add_message(CosmosMsg::Bank(BankMsg::Send {
-            to_address: info.sender.to_string(),
-            amount: vec![Coin {
-                denom: bond_denom.clone(),
-                amount,
-            }],
-        }));
 
     // Update campaign unallocated amount
     if amount > campaign.unallocated_amount {
@@ -672,5 +645,9 @@ pub fn withdraw(
         }
     }
 
-    return Ok(res);
+    Ok(Response::new().add_messages(vec![build_send_msg(
+        campaign.denom,
+        amount,
+        info.sender.to_string(),
+    )?]))
 }

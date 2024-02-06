@@ -142,7 +142,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
     Ok(())
 }
 
-fn require_error(
+pub fn require_error(
     deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>,
     env: &Env,
     info: MessageInfo,

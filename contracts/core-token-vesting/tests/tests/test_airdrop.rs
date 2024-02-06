@@ -2,225 +2,17 @@ use anyhow::anyhow;
 use cosmwasm_std::{
     coin,
     testing::{mock_env, mock_info, MockApi, MockQuerier, MockStorage},
-    Empty, Env, OwnedDeps, StdError, Uint128, Uint64,
+    Addr, Empty, Env, OwnedDeps, StdError, Uint128, Uint64,
 };
 use cw20::Denom;
 use token_vesting::{
     contract::execute,
     errors::ContractError,
     msg::{ExecuteMsg, RewardUserRequest, VestingSchedule},
-    state::{denom_to_key, CAMPAIGN, USER_REWARDS, VESTING_ACCOUNTS},
+    state::{CAMPAIGN, USER_REWARDS},
 };
 
 use super::{helpers::TestResult, test_manager::setup_with_block_time};
-
-#[test]
-fn execute_register_vesting_account_valid() -> TestResult {
-    let (mut deps, env) = setup_with_block_time(100)?;
-
-    let register_msg = ExecuteMsg::RegisterVestingAccount {
-        master_address: Some("master".to_string()),
-        address: "addr_valid".to_string(),
-        vesting_schedule: VestingSchedule::LinearVesting {
-            start_time: Uint64::new(100),
-            end_time: Uint64::new(200),
-            vesting_amount: Uint128::new(1000),
-        },
-    };
-
-    let res = execute(
-        deps.as_mut(),
-        env,
-        mock_info("sender", &[coin(1000, "token")]),
-        register_msg,
-    );
-
-    assert!(
-        res.is_ok(),
-        "Expected successful registration, got: {:?}",
-        res.err()
-    );
-
-    // Verify the vesting account is correctly registered in the contract's state
-    let vesting_account = VESTING_ACCOUNTS.load(
-        deps.as_ref().storage,
-        (
-            "addr_valid",
-            &denom_to_key(Denom::Native("token".to_string())),
-        ),
-    )?;
-    assert_eq!(
-        vesting_account.vesting_amount,
-        Uint128::new(1000),
-        "Vesting amount mismatch"
-    );
-
-    Ok(())
-}
-
-#[test]
-fn execute_register_vesting_account_duplicate() -> TestResult {
-    let (mut deps, env) = setup_with_block_time(100)?;
-
-    let register_msg_first = ExecuteMsg::RegisterVestingAccount {
-        master_address: Some("master".to_string()),
-        address: "addr_duplicate".to_string(),
-        vesting_schedule: VestingSchedule::LinearVesting {
-            start_time: Uint64::new(100),
-            end_time: Uint64::new(200),
-            vesting_amount: Uint128::new(1000),
-        },
-    };
-
-    // First registration should succeed
-    let _ = execute(
-        deps.as_mut(),
-        env.clone(),
-        mock_info("sender", &[coin(1000, "token")]),
-        register_msg_first.clone(),
-    )?;
-
-    // Attempt to register again with the same address and token denomination
-    let register_msg_second = register_msg_first.clone();
-    let res = execute(
-        deps.as_mut(),
-        env,
-        mock_info("sender", &[coin(1000, "token")]),
-        register_msg_second,
-    );
-
-    assert!(
-        matches!(res, Err(ContractError::Std(StdError::GenericErr { .. }))),
-        "Expected duplicate registration error, got: {:?}",
-        res
-    );
-
-    Ok(())
-}
-
-#[test]
-fn execute_register_vesting_account_invalid_deposit() -> TestResult {
-    let (mut deps, env) = setup_with_block_time(100)?;
-
-    // Attempt registration with invalid deposit details
-    let res = execute(
-        deps.as_mut(),
-        env,
-        mock_info("addr_sender", &[coin(500, "invalid_token")]), // Incorrect token denomination
-        ExecuteMsg::RegisterVestingAccount {
-            master_address: Some("addr_master".to_string()),
-            address: "addr_vesting".to_string(),
-            vesting_schedule: VestingSchedule::LinearVesting {
-                start_time: Uint64::new(100),
-                end_time: Uint64::new(200),
-                vesting_amount: Uint128::new(1000u128),
-            },
-        },
-    );
-
-    assert!(
-        matches!(res, Err(ContractError::Std(StdError::GenericErr { msg, .. })) if msg.contains("Only native tokens are allowed"))
-    );
-
-    Ok(())
-}
-
-#[test]
-fn execute_deregister_vesting_account_authorized() -> TestResult {
-    let (mut deps, env) = setup_with_block_time(100)?;
-
-    // Simulate registering a vesting account first
-    let vesting_account_address = "vesting_account";
-    let master_address = "master_address";
-    let register_msg = ExecuteMsg::RegisterVestingAccount {
-        master_address: Some(master_address.to_string()),
-        address: vesting_account_address.to_string(),
-        vesting_schedule: VestingSchedule::LinearVesting {
-            start_time: Uint64::new(50),
-            end_time: Uint64::new(150),
-            vesting_amount: Uint128::new(1000),
-        },
-    };
-    execute(
-        deps.as_mut(),
-        env.clone(),
-        mock_info("creator", &[coin(1000, "token")]),
-        register_msg,
-    )?;
-
-    // Attempt to deregister the vesting account by the master address
-    let deregister_msg = ExecuteMsg::DeregisterVestingAccount {
-        address: vesting_account_address.to_string(),
-        denom: Denom::Native("token".to_string()),
-        vested_token_recipient: Some("recipient1".to_string()),
-        left_vesting_token_recipient: Some("recipient2".to_string()),
-    };
-    let res = execute(
-        deps.as_mut(),
-        env,
-        mock_info(master_address, &[]),
-        deregister_msg,
-    )?;
-
-    // Assertions to verify the expected state changes and messages
-    assert_eq!(
-        res.messages.len(),
-        2,
-        "Expected two bank send messages for token transfer"
-    );
-    assert!(
-        res.attributes.iter().any(|attr| attr.key == "action"
-            && attr.value == "deregister_vesting_account"),
-        "Expected 'deregister_vesting_account' action in response attributes"
-    );
-
-    Ok(())
-}
-
-#[test]
-fn execute_deregister_vesting_account_unauthorized() -> TestResult {
-    let (mut deps, env) = setup_with_block_time(100)?;
-
-    // Simulate registering a vesting account first
-    let vesting_account_address = "vesting_account";
-    let master_address = "master_address";
-    let register_msg = ExecuteMsg::RegisterVestingAccount {
-        master_address: Some(master_address.to_string()),
-        address: vesting_account_address.to_string(),
-        vesting_schedule: VestingSchedule::LinearVesting {
-            start_time: Uint64::new(50),
-            end_time: Uint64::new(150),
-            vesting_amount: Uint128::new(1000),
-        },
-    };
-    execute(
-        deps.as_mut(),
-        env.clone(),
-        mock_info("creator", &[coin(1000, "token")]),
-        register_msg,
-    )?;
-
-    // Attempt to deregister the vesting account by an unauthorized user
-    let deregister_msg = ExecuteMsg::DeregisterVestingAccount {
-        address: vesting_account_address.to_string(),
-        denom: Denom::Native("token".to_string()),
-        vested_token_recipient: None,
-        left_vesting_token_recipient: None,
-    };
-    let res = execute(
-        deps.as_mut(),
-        env,
-        mock_info("unauthorized_user", &[]),
-        deregister_msg,
-    );
-
-    assert!(
-        matches!(res, Err(ContractError::Std(StdError::GenericErr { msg, .. })) if msg.contains("unauthorized")),
-        "Expected an unauthorized error"
-    );
-
-    Ok(())
-}
 
 #[test]
 fn execute_create_campaign_valid() -> TestResult {
@@ -281,7 +73,7 @@ fn execute_create_campaign_duplicate_id() -> TestResult {
     execute(
         deps.as_mut(),
         mock_env(),
-        mock_info("creator", &[]),
+        mock_info("creator", &[coin(5000, "token")]),
         create_campaign_msg.clone(),
     )?;
 
@@ -289,7 +81,7 @@ fn execute_create_campaign_duplicate_id() -> TestResult {
     let res = execute(
         deps.as_mut(),
         mock_env(),
-        mock_info("creator", &[]),
+        mock_info("creator", &[coin(5000, "token")]),
         create_campaign_msg,
     );
 
@@ -428,44 +220,6 @@ fn execute_reward_users_insufficient_funds() -> TestResult {
 }
 
 #[test]
-fn execute_claim_valid() -> TestResult {
-    let (mut deps, env) = setup_with_block_time(0)?;
-
-    // Register a vesting account first
-    let register_msg = ExecuteMsg::RegisterVestingAccount {
-        master_address: Some("owner".to_string()),
-        address: "user1".to_string(),
-        vesting_schedule: VestingSchedule::LinearVesting {
-            start_time: Uint64::new(env.block.time.seconds() - 10), // Vesting started in the past
-            end_time: Uint64::new(env.block.time.seconds() + 10), // Ends in the future
-            vesting_amount: Uint128::new(1000),
-        },
-    };
-    let info = mock_info("owner", &[coin(1000, "token")]);
-    execute(deps.as_mut(), env.clone(), info, register_msg)?;
-
-    // Attempt to claim tokens
-    let claim_msg = ExecuteMsg::Claim {
-        denoms: vec![Denom::Native("token".to_string())],
-        recipient: Some("recipient".to_string()),
-    };
-    let info = mock_info("user1", &[]);
-    let response = execute(deps.as_mut(), env.clone(), info, claim_msg)?;
-
-    // Verify that tokens are transferred
-    assert_eq!(response.messages.len(), 1, "Expected one message");
-    print!("{:?}", response.messages);
-
-    // Verify vesting and user states are updated
-    let account = VESTING_ACCOUNTS
-        .load(&deps.storage, ("user1", "token"))
-        .unwrap();
-    assert_eq!(account.claimed_amount, Uint128::new(500));
-
-    Ok(())
-}
-
-#[test]
 fn execute_claim_no_vesting_account() -> TestResult {
     let (mut deps, env) = setup_with_block_time(0)?;
 
@@ -508,8 +262,14 @@ fn execute_withdraw_valid() -> TestResult {
         campaign_description: "A campaign for testing".to_string(),
         managers: vec!["manager1".to_string()],
     };
-    let info = mock_info("owner", &[coin(1000, "token")]);
+    let info = mock_info("owner", &[coin(1000, "denom")]);
     execute(deps.as_mut(), env.clone(), info, create_campaign_msg)?;
+
+    // fund the contract manually
+    deps.querier.update_balance(
+        Addr::unchecked(&env.contract.address),
+        vec![coin(1000, "denom")],
+    );
 
     // Attempt to withdraw unallocated funds
     let withdraw_msg = ExecuteMsg::Withdraw {
