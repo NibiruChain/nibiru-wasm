@@ -1,20 +1,20 @@
-use crate::contract::tests::TestResult;
-use crate::contract::{execute, instantiate, query};
-use crate::errors::{CliffError, ContractError, VestingError};
-use crate::msg::{
+use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, Denom};
+use token_vesting::contract::{execute, instantiate, query};
+use token_vesting::errors::{CliffError, ContractError, VestingError};
+use token_vesting::msg::{
     Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, VestingAccountResponse,
     VestingData, VestingSchedule,
 };
 
+use super::helpers::TestResult;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cosmwasm_std::MessageInfo;
 use cosmwasm_std::{
     from_json,
     testing::{mock_dependencies, mock_env, mock_info},
-    to_json_binary, Addr, Attribute, BankMsg, Coin, Env, OwnedDeps, Response,
-    StdError, SubMsg, Timestamp, Uint128, Uint64, WasmMsg,
+    to_json_binary, Addr, Attribute, BankMsg, Coin, Response, SubMsg, WasmMsg,
 };
-use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, Denom};
+use cosmwasm_std::{Env, OwnedDeps, StdError, Timestamp, Uint128, Uint64};
 
 #[test]
 fn proper_initialization() -> TestResult {
@@ -871,5 +871,40 @@ fn query_vesting_account() -> TestResult {
             }],
         }
     );
+    Ok(())
+}
+
+#[test]
+fn linear_vesting_vested_amount() -> TestResult {
+    let schedule = VestingSchedule::LinearVesting {
+        start_time: Uint64::new(100),
+        end_time: Uint64::new(110),
+        vesting_amount: Uint128::new(1000000u128),
+    };
+
+    assert_eq!(schedule.vested_amount(100)?, Uint128::zero());
+    assert_eq!(schedule.vested_amount(105)?, Uint128::new(500000u128));
+    assert_eq!(schedule.vested_amount(110)?, Uint128::new(1000000u128));
+    assert_eq!(schedule.vested_amount(115)?, Uint128::new(1000000u128));
+
+    Ok(())
+}
+
+#[test]
+fn linear_vesting_with_cliff_vested_amount() -> TestResult {
+    let schedule = VestingSchedule::LinearVestingWithCliff {
+        start_time: Uint64::new(100),
+        end_time: Uint64::new(110),
+        vesting_amount: Uint128::new(1_000_000_u128),
+        cliff_amount: Uint128::new(100_000_u128),
+        cliff_time: Uint64::new(105),
+    };
+
+    assert_eq!(schedule.vested_amount(100)?, Uint128::zero());
+    assert_eq!(schedule.vested_amount(105)?, Uint128::new(100000u128)); // cliff time then the cliff amount
+    assert_eq!(schedule.vested_amount(120)?, Uint128::new(1000000u128)); // complete vesting
+    assert_eq!(schedule.vested_amount(104)?, Uint128::zero()); // before cliff time
+    assert_eq!(schedule.vested_amount(109)?, Uint128::new(820_000)); // after cliff time but before end time
+
     Ok(())
 }
