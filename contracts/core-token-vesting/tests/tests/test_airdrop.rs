@@ -99,6 +99,196 @@ fn execute_create_campaign_duplicate_id() -> TestResult {
 }
 
 #[test]
+fn execute_create_campaign_invalid_coin_count() -> TestResult {
+    let (mut deps, env) = setup_with_block_time(0)?;
+
+    // Create a campaign with invalid coin count
+    let create_campaign_msg = ExecuteMsg::CreateCampaign {
+        vesting_schedule: VestingSchedule::LinearVesting {
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(200),
+            vesting_amount: Uint128::new(5000),
+        },
+        campaign_id: "campaign1".to_string(),
+        campaign_name: "Test Campaign".to_string(),
+        campaign_description: "A test campaign".to_string(),
+        managers: vec!["manager1".to_string(), "manager2".to_string()],
+    };
+    let res = execute(
+        deps.as_mut(),
+        env,
+        mock_info("creator", &[]),
+        create_campaign_msg,
+    );
+
+    match res {
+        Err(ContractError::Std(StdError::GenericErr { msg, .. }))
+            if msg.contains("one denom sent required") =>
+        {
+            Ok(())
+        }
+        _ => Err(anyhow!(
+            "Expected 'one denom sent required' error, found {:?}",
+            res
+        )),
+    }
+}
+
+#[test]
+fn execute_create_campaign_2_coins() -> TestResult {
+    let (mut deps, env) = setup_with_block_time(0)?;
+
+    // Create a campaign with 2 coins
+    let create_campaign_msg = ExecuteMsg::CreateCampaign {
+        vesting_schedule: VestingSchedule::LinearVesting {
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(200),
+            vesting_amount: Uint128::new(5000),
+        },
+        campaign_id: "campaign2".to_string(),
+        campaign_name: "Test Campaign".to_string(),
+        campaign_description: "A test campaign".to_string(),
+        managers: vec!["manager1".to_string(), "manager2".to_string()],
+    };
+    let res = execute(
+        deps.as_mut(),
+        env,
+        mock_info("creator", &[coin(5000, "token"), coin(5000, "token")]),
+        create_campaign_msg,
+    );
+
+    match res {
+        Err(ContractError::Std(StdError::GenericErr { msg, .. }))
+            if msg.contains("one denom sent required") =>
+        {
+            Ok(())
+        }
+        _ => Err(anyhow!(
+            "Expected 'one denom sent required' error, found {:?}",
+            res
+        )),
+    }
+}
+
+#[test]
+fn execute_reward_users_unactive_campaign() -> TestResult {
+    let (mut deps, env) = setup_with_block_time(0)?;
+
+    // Create a campaign
+    let campaign_id = "campaign1".to_string();
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        mock_info("creator", &[coin(10000, "token")]),
+        ExecuteMsg::CreateCampaign {
+            campaign_id: campaign_id.clone(),
+            campaign_name: "Campaign One".to_string(),
+            campaign_description: "The first campaign".to_string(),
+            managers: vec!["manager1".to_string()],
+            vesting_schedule: VestingSchedule::LinearVesting {
+                start_time: Uint64::new(100),
+                end_time: Uint64::new(200),
+                vesting_amount: Uint128::new(10000),
+            },
+        },
+    )?;
+
+    // Deactivate the campaign
+    let msg = ExecuteMsg::DeactivateCampaign {
+        campaign_id: campaign_id.clone(),
+    };
+    let info = mock_info("creator", &[]);
+    execute(deps.as_mut(), env.clone(), info, msg)?;
+
+    // Reward users
+    let reward_users_msg = ExecuteMsg::RewardUsers {
+        campaign_id: campaign_id.clone(),
+        requests: vec![
+            RewardUserRequest {
+                user_address: "user1".to_string(),
+                amount: Uint128::new(500),
+            },
+            RewardUserRequest {
+                user_address: "user2".to_string(),
+                amount: Uint128::new(1500),
+            },
+        ],
+    };
+    let res = execute(
+        deps.as_mut(),
+        env,
+        mock_info("creator", &[]),
+        reward_users_msg,
+    );
+
+    match res {
+        Err(ContractError::Std(StdError::GenericErr { msg, .. }))
+            if msg.contains("Campaign is not active") =>
+        {
+            Ok(())
+        }
+        _ => Err(anyhow!(
+            "Expected 'Campaign is not active' error, found {:?}",
+            res
+        )),
+    }
+}
+
+#[test]
+fn execute_reward_users_unauthorized() -> TestResult {
+    let (mut deps, env) = setup_with_block_time(0)?;
+
+    // Create a campaign
+    let campaign_id = "campaign1".to_string();
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        mock_info("creator", &[coin(10000, "token")]),
+        ExecuteMsg::CreateCampaign {
+            campaign_id: campaign_id.clone(),
+            campaign_name: "Campaign One".to_string(),
+            campaign_description: "The first campaign".to_string(),
+            managers: vec!["manager1".to_string()],
+            vesting_schedule: VestingSchedule::LinearVesting {
+                start_time: Uint64::new(100),
+                end_time: Uint64::new(200),
+                vesting_amount: Uint128::new(10000),
+            },
+        },
+    )?;
+
+    // Reward users
+    let reward_users_msg = ExecuteMsg::RewardUsers {
+        campaign_id: campaign_id.clone(),
+        requests: vec![
+            RewardUserRequest {
+                user_address: "user1".to_string(),
+                amount: Uint128::new(500),
+            },
+            RewardUserRequest {
+                user_address: "user2".to_string(),
+                amount: Uint128::new(1500),
+            },
+        ],
+    };
+    let res = execute(
+        deps.as_mut(),
+        env,
+        mock_info("unauthorized_user", &[]),
+        reward_users_msg,
+    );
+
+    match res {
+        Err(ContractError::Std(StdError::GenericErr { msg, .. }))
+            if msg.contains("Unauthorized") =>
+        {
+            Ok(())
+        }
+        _ => Err(anyhow!("Expected 'Unauthorized' error, found {:?}", res)),
+    }
+}
+
+#[test]
 fn execute_reward_users_valid() -> TestResult {
     let (mut deps, env) = setup_with_block_time(0)?;
 
@@ -137,7 +327,7 @@ fn execute_reward_users_valid() -> TestResult {
     };
     execute(
         deps.as_mut(),
-        env,
+        env.clone(),
         mock_info("creator", &[]),
         reward_users_msg,
     )?;
@@ -159,11 +349,36 @@ fn execute_reward_users_valid() -> TestResult {
         "User2 rewards do not match."
     );
 
-    let updated_campaign = CAMPAIGN.load(deps.as_ref().storage, campaign_id)?;
+    let updated_campaign =
+        CAMPAIGN.load(deps.as_ref().storage, campaign_id.clone())?;
     assert_eq!(
         updated_campaign.unallocated_amount,
         Uint128::new(8000),
         "Campaign unallocated amount does not match expected."
+    );
+
+    // Additional reward
+    let reward_users_msg = ExecuteMsg::RewardUsers {
+        campaign_id: campaign_id.clone(),
+        requests: vec![RewardUserRequest {
+            user_address: "user1".to_string(),
+            amount: Uint128::new(1000),
+        }],
+    };
+    execute(
+        deps.as_mut(),
+        env,
+        mock_info("creator", &[]),
+        reward_users_msg,
+    )?;
+
+    // Verify user rewards and campaign state
+    let user1_rewards =
+        USER_REWARDS.load(deps.as_ref().storage, "user1".to_string())?;
+    assert_eq!(
+        user1_rewards,
+        Uint128::new(1500),
+        "User1 rewards do not match."
     );
 
     Ok(())
@@ -208,12 +423,12 @@ fn execute_reward_users_insufficient_funds() -> TestResult {
 
     match res {
         Err(ContractError::Std(StdError::GenericErr { msg, .. }))
-            if msg.contains("Not enough funds in the campaign") =>
+            if msg.contains("Insufficient funds for all rewards") =>
         {
             Ok(())
         }
         _ => Err(anyhow!(
-            "Expected 'Not enough funds in the campaign' error, found {:?}",
+            "Expected 'Insufficient funds for all rewards' error, found {:?}",
             res
         )),
     }

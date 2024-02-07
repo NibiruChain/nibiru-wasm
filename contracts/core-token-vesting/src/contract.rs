@@ -186,19 +186,13 @@ fn reward_users(
         return Err(StdError::generic_err("Campaign is not active").into());
     }
 
-    let mut unallocated_amount = campaign.unallocated_amount;
-
+    let total_requested: Uint128 = requests.iter().map(|req| req.amount).sum();
+    if total_requested > campaign.unallocated_amount {
+        return Err(
+            StdError::generic_err("Insufficient funds for all rewards").into()
+        );
+    }
     for req in requests {
-        if unallocated_amount < req.amount {
-            // We fail on the first request that cannot be fulfilled
-            // This is to ensure that we do not partially fulfill requests
-            // and leave the campaign in an inconsistent state.
-            return Err(StdError::generic_err(
-                "Not enough funds in the campaign",
-            )
-            .into());
-        }
-
         match USER_REWARDS.may_load(deps.storage, req.user_address.clone())? {
             Some(mut user_reward) => {
                 user_reward += req.amount;
@@ -216,8 +210,6 @@ fn reward_users(
                 )?;
             }
         };
-        unallocated_amount -= req.amount;
-
         res.push(RewardUserResponse {
             user_address: req.user_address.clone(),
             success: true,
@@ -225,7 +217,7 @@ fn reward_users(
         });
     }
 
-    campaign.unallocated_amount = unallocated_amount;
+    campaign.unallocated_amount = campaign.unallocated_amount - total_requested;
     CAMPAIGN.save(deps.storage, campaign_id.clone(), &campaign)?;
 
     Ok(Response::new()
@@ -251,7 +243,7 @@ fn create_campaign(
     }
 
     if info.funds.len() != 1 {
-        return Err(StdError::generic_err("Only one coin is allowed").into());
+        return Err(StdError::generic_err("one denom sent required").into());
     }
 
     let coin = info.funds.get(0).unwrap();
@@ -645,9 +637,15 @@ pub fn withdraw(
         }
     }
 
-    Ok(Response::new().add_messages(vec![build_send_msg(
-        campaign.denom,
-        amount,
-        info.sender.to_string(),
-    )?]))
+    Ok(Response::new()
+        .add_messages(vec![build_send_msg(
+            campaign.denom,
+            amount,
+            info.sender.to_string(),
+        )?])
+        .add_attribute("withdraw", &amount.to_string())
+        .add_attribute(
+            "campaign_unallocated_amount",
+            &campaign.unallocated_amount.to_string(),
+        ))
 }
