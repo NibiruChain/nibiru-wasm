@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -155,12 +157,29 @@ fn deactivate_campaign(
 }
 
 fn claim_campaign(
-    _deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
-    _campaign_id: String,
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    campaign_id: String,
 ) -> Result<Response, ContractError> {
-    todo!()
+    let user_reward =
+        USER_REWARDS
+            .load(deps.storage, info.sender.to_string())
+            .map_err(|_| StdError::generic_err("Failed to load user rewards"))?;
+
+    let campaign = CAMPAIGN
+        .load(deps.storage, campaign_id.clone())
+        .map_err(|_| StdError::generic_err("Failed to load campaign data"))?;
+
+    register_vesting_account(
+        deps.storage,
+        env.block.time,
+        Some(campaign.owner),
+        info.sender.into_string(),
+        campaign.denom,
+        user_reward,
+        campaign.vesting_schedule,
+    )
 }
 
 fn reward_users(
@@ -229,7 +248,7 @@ fn create_campaign(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    _vesting_schedule: VestingSchedule,
+    vesting_schedule: VestingSchedule,
     campaign_id: String,
     campaign_name: String,
     campaign_description: String,
@@ -256,6 +275,7 @@ fn create_campaign(
         managers: managers,
         unallocated_amount: coin.amount,
         denom: Denom::Native(coin.denom.clone()),
+        vesting_schedule: vesting_schedule,
         is_active: true,
     };
     CAMPAIGN.save(deps.storage, campaign_id.clone(), &campaign)?;
@@ -264,6 +284,7 @@ fn create_campaign(
         .add_attribute("method", "create_campaign")
         .add_attribute("campaign_id", campaign_id)
         .add_attribute("campaign_name", &campaign.campaign_name)
+        .add_attribute("campaign_description", &campaign.campaign_description)
         .add_attribute("initial_unallocated_amount", &coin.amount.to_string()))
 }
 
@@ -353,11 +374,6 @@ fn deregister_vesting_account(
 
     // transfer already vested but not claimed amount to
     // a account address or the given `vested_token_recipient` address
-    print!(
-        "claimed_amount: {}",
-        vested_amount.checked_sub(claimed_amount)?
-    );
-
     let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
     if !claimable_amount.is_zero() {
         let recipient =
@@ -395,6 +411,7 @@ fn deregister_vesting_account(
     ]))
 }
 
+/// Claim funds from the vesting accounts
 fn claim(
     deps: DepsMut,
     env: Env,
@@ -468,6 +485,7 @@ fn claim(
         .add_attributes(attrs))
 }
 
+/// Build a send message for the given denom and amount
 fn build_send_msg(
     denom: Denom,
     amount: Uint128,
@@ -587,7 +605,7 @@ fn vesting_account(
     Ok(VestingAccountResponse { address, vestings })
 }
 
-/// Allow the contract owner to withdraw the funds of the campaign
+/// Allow the contract owner to withdraw the funds of the campaigngg
 ///
 /// Ensures the requested amount is available in the contract balance. Transfers
 /// tokens to the contract owner's account.
@@ -646,12 +664,13 @@ pub fn withdraw(
     Ok(Response::new()
         .add_messages(vec![build_send_msg(
             campaign.denom,
-            amount,
+            min(amount, campaign.unallocated_amount),
             info.sender.to_string(),
         )?])
         .add_attribute("withdraw", &amount.to_string())
         .add_attribute(
             "campaign_unallocated_amount",
             &campaign.unallocated_amount.to_string(),
-        ))
+        )
+        .add_attribute("is_campaign_inactive", &campaign.is_active.to_string()))
 }

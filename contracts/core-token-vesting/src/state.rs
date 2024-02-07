@@ -28,8 +28,11 @@ pub struct Campaign {
 
     pub unallocated_amount: Uint128,
     pub denom: Denom,
+
     pub owner: String,
     pub managers: Vec<String>,
+
+    pub vesting_schedule: VestingSchedule,
 
     pub is_active: bool,
 }
