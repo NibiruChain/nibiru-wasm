@@ -285,18 +285,19 @@ fn register_vesting_account(
 
     // validate vesting schedule
     vesting_schedule.validate(block_time, deposit_amount)?;
+    let vesting_account = VestingAccount {
+        master_address: master_address.clone(),
+        address: address.to_string(),
+        vesting_denom: deposit_denom.clone(),
+        vesting_amount: deposit_amount,
+        vesting_schedule,
+        claimed_amount: Uint128::zero(),
+    };
 
     VESTING_ACCOUNTS.save(
         storage,
         (address.as_str(), &denom_key),
-        &VestingAccount {
-            master_address: master_address.clone(),
-            address: address.to_string(),
-            vesting_denom: deposit_denom.clone(),
-            vesting_amount: deposit_amount,
-            vesting_schedule,
-            claimed_amount: Uint128::zero(),
-        },
+        &vesting_account,
     )?;
 
     Ok(Response::new().add_attributes(vec![
@@ -352,6 +353,11 @@ fn deregister_vesting_account(
 
     // transfer already vested but not claimed amount to
     // a account address or the given `vested_token_recipient` address
+    print!(
+        "claimed_amount: {}",
+        vested_amount.checked_sub(claimed_amount)?
+    );
+
     let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
     if !claimable_amount.is_zero() {
         let recipient =
@@ -581,7 +587,7 @@ fn vesting_account(
     Ok(VestingAccountResponse { address, vestings })
 }
 
-/// Allow the contract owner to withdraw native tokens
+/// Allow the contract owner to withdraw the funds of the campaign
 ///
 /// Ensures the requested amount is available in the contract balance. Transfers
 /// tokens to the contract owner's account.

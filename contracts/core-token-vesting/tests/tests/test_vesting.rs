@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, Denom};
 use token_vesting::contract::{execute, instantiate, query};
 use token_vesting::errors::{CliffError, ContractError, VestingError};
@@ -282,6 +283,59 @@ fn register_vesting_account_with_native_token() -> TestResult {
         }
     );
     Ok(())
+}
+
+#[test]
+fn register_same_address_twice_error() -> TestResult {
+    let mut deps = mock_dependencies();
+    let _res = instantiate(
+        deps.as_mut(),
+        mock_env(),
+        mock_info("addr0000", &[]),
+        InstantiateMsg {},
+    )?;
+
+    let mut env = mock_env();
+    env.block.time = Timestamp::from_seconds(100);
+
+    // valid amount
+    let msg = ExecuteMsg::RegisterVestingAccount {
+        master_address: None,
+        address: "addr0001".to_string(),
+        vesting_schedule: VestingSchedule::LinearVesting {
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(110),
+            vesting_amount: Uint128::new(1000000u128),
+        },
+    };
+
+    let info = mock_info("addr0000", &[Coin::new(1000000u128, "uusd")]);
+    let _ = execute(deps.as_mut(), env.clone(), info, msg)?;
+
+    // make time to half claimable
+    env.block.time = Timestamp::from_seconds(105);
+
+    // valid amount
+    let msg = ExecuteMsg::RegisterVestingAccount {
+        master_address: None,
+        address: "addr0001".to_string(),
+        vesting_schedule: VestingSchedule::LinearVesting {
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(110),
+            vesting_amount: Uint128::new(1000000u128),
+        },
+    };
+
+    let info = mock_info("addr0000", &[Coin::new(1000000u128, "uusd")]);
+    let res = execute(deps.as_mut(), env.clone(), info, msg);
+    match res {
+        Err(ContractError::Std(StdError::GenericErr { msg, .. }))
+            if msg.contains("already exists") =>
+        {
+            Ok(())
+        }
+        _ => Err(anyhow!("Expected 'already exits' error, found {:?}", res)),
+    }
 }
 
 #[test]

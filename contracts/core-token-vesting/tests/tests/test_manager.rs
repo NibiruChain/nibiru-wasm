@@ -147,3 +147,43 @@ fn deregister_successful() -> TestResult {
 
     Ok(())
 }
+
+#[test]
+fn deregister_successful_with_funds() -> TestResult {
+    // Set up the environment with a block time before the vesting start time
+    let (mut deps, env) = setup_with_block_time(50)?;
+
+    let register_msg = ExecuteMsg::RegisterVestingAccount {
+        master_address: Some("addr0002".to_string()),
+        address: "addr0001".to_string(),
+        vesting_schedule: VestingSchedule::LinearVesting {
+            start_time: Uint64::new(10),
+            end_time: Uint64::new(1100000),
+            vesting_amount: Uint128::new(1000000u128),
+        },
+    };
+
+    execute(
+        deps.as_mut(),
+        env.clone(), // Use the custom environment with the adjusted block time
+        testing::mock_info("admin-sender", &[coin(1000000, "token")]),
+        register_msg,
+    )?;
+
+    // Deregister with the master address
+    let msg = ExecuteMsg::DeregisterVestingAccount {
+        address: "addr0001".to_string(),
+        denom: Denom::Native("token".to_string()),
+        vested_token_recipient: None,
+        left_vesting_token_recipient: None,
+    };
+
+    let _res = execute(
+        deps.as_mut(),
+        env, // Use the custom environment with the adjusted block time
+        testing::mock_info("addr0002", &[]),
+        msg,
+    )?;
+
+    Ok(())
+}
