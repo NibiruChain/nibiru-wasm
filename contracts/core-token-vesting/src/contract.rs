@@ -19,8 +19,7 @@ use crate::msg::{
     RewardUserResponse, VestingAccountResponse, VestingData, VestingSchedule,
 };
 use crate::state::{
-    denom_to_key, Campaign, VestingAccount, CAMPAIGN, USER_REWARDS,
-    VESTING_ACCOUNTS,
+    denom_to_key, Campaign, VestingAccount, CAMPAIGN, VESTING_ACCOUNTS,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -87,7 +86,6 @@ pub fn execute(
         }
         ExecuteMsg::CreateCampaign {
             vesting_schedule,
-            campaign_id,
             campaign_name,
             campaign_description,
             managers,
@@ -96,25 +94,17 @@ pub fn execute(
             env,
             info,
             vesting_schedule,
-            campaign_id,
             campaign_name,
             campaign_description,
             managers,
         ),
-        ExecuteMsg::RewardUsers {
-            campaign_id,
-            requests,
-        } => reward_users(deps, env, info, campaign_id, requests),
-        ExecuteMsg::ClaimCampaign { campaign_id } => {
-            claim_campaign(deps, env, info, campaign_id)
+        ExecuteMsg::RewardUsers { requests } => {
+            reward_users(deps, env, info, requests)
         }
-        ExecuteMsg::DeactivateCampaign { campaign_id } => {
-            deactivate_campaign(deps, env, info, campaign_id)
+        ExecuteMsg::DeactivateCampaign {} => {
+            deactivate_campaign(deps, env, info)
         }
-        ExecuteMsg::Withdraw {
-            amount,
-            campaign_id,
-        } => withdraw(deps, env, info, amount, campaign_id.as_str()),
+        ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
     }
 }
 
@@ -125,10 +115,9 @@ fn deactivate_campaign(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    campaign_id: String,
 ) -> Result<Response, ContractError> {
     let mut campaign = CAMPAIGN
-        .load(deps.storage, campaign_id.clone())
+        .load(deps.storage)
         .map_err(|_| StdError::generic_err("Failed to load campaign data"))?;
 
     if campaign.owner != info.sender
@@ -144,55 +133,21 @@ fn deactivate_campaign(
     }
 
     campaign.is_active = false;
-    CAMPAIGN.save(deps.storage, campaign_id.clone(), &campaign)?;
+    CAMPAIGN.save(deps.storage, &campaign)?;
 
-    let denom = to_string(&campaign.denom).unwrap();
-    let own_balance: Uint128 = deps
-        .querier
-        .query_balance(&env.contract.address, denom)
-        .map_err(|_| StdError::generic_err("Failed to query contract balance"))?
-        .amount;
-
-    return withdraw(deps, env, info, own_balance, campaign_id.as_str());
-}
-
-fn claim_campaign(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    campaign_id: String,
-) -> Result<Response, ContractError> {
-    let user_reward =
-        USER_REWARDS
-            .load(deps.storage, info.sender.to_string())
-            .map_err(|_| StdError::generic_err("Failed to load user rewards"))?;
-
-    let campaign = CAMPAIGN
-        .load(deps.storage, campaign_id.clone())
-        .map_err(|_| StdError::generic_err("Failed to load campaign data"))?;
-
-    register_vesting_account(
-        deps.storage,
-        env.block.time,
-        Some(campaign.owner),
-        info.sender.into_string(),
-        campaign.denom,
-        user_reward,
-        campaign.vesting_schedule,
-    )
+    return withdraw(deps, env, info, campaign.unallocated_amount);
 }
 
 fn reward_users(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
-    campaign_id: String,
     requests: Vec<RewardUserRequest>,
 ) -> Result<Response, ContractError> {
     let mut res = vec![];
 
     let mut campaign = CAMPAIGN
-        .load(deps.storage, campaign_id.clone())
+        .load(deps.storage)
         .map_err(|_| StdError::generic_err("Failed to load campaign data"))?;
 
     if campaign.owner != info.sender
@@ -211,35 +166,55 @@ fn reward_users(
             StdError::generic_err("Insufficient funds for all rewards").into()
         );
     }
+
+    let master_address = Some(campaign.owner.clone());
+    let mut attrs: Vec<Attribute> = vec![];
+
     for req in requests {
-        match USER_REWARDS.may_load(deps.storage, req.user_address.clone())? {
-            Some(mut user_reward) => {
-                user_reward += req.amount;
-                USER_REWARDS.save(
-                    deps.storage,
-                    req.user_address.clone(),
-                    &user_reward,
-                )?;
-            }
-            None => {
-                USER_REWARDS.save(
-                    deps.storage,
-                    req.user_address.clone(),
-                    &req.amount,
-                )?;
-            }
-        };
-        res.push(RewardUserResponse {
-            user_address: req.user_address.clone(),
-            success: true,
-            error_msg: "".to_string(),
-        });
+        // update the vesting amount inside the vesting schedule
+        let mut vesting_schedule = campaign.vesting_schedule.clone();
+
+        if let VestingSchedule::LinearVesting {
+            ref mut vesting_amount,
+            ..
+        } = vesting_schedule
+        {
+            *vesting_amount = req.amount;
+        }
+
+        let result = register_vesting_account(
+            deps.storage,
+            env.block.time,
+            master_address.clone(),
+            req.user_address.clone(),
+            campaign.denom.clone(),
+            req.amount,
+            vesting_schedule,
+        );
+
+        if let Ok(response) = result {
+            attrs.extend(response.attributes);
+            res.push(RewardUserResponse {
+                user_address: req.user_address.clone(),
+                success: true,
+                error_msg: "".to_string(),
+            });
+        } else {
+            let error = result.err().unwrap();
+            res.push(RewardUserResponse {
+                user_address: req.user_address.clone(),
+                success: false,
+                error_msg: "Failed to register vesting account: ".to_string()
+                    + &error.to_string(),
+            });
+        }
     }
 
     campaign.unallocated_amount = campaign.unallocated_amount - total_requested;
-    CAMPAIGN.save(deps.storage, campaign_id.clone(), &campaign)?;
+    CAMPAIGN.save(deps.storage, &campaign)?;
 
     Ok(Response::new()
+        .add_attributes(attrs)
         .add_attribute("method", "reward_users")
         .set_data(to_json_binary(&res).unwrap()))
 }
@@ -249,15 +224,11 @@ fn create_campaign(
     _env: Env,
     info: MessageInfo,
     vesting_schedule: VestingSchedule,
-    campaign_id: String,
     campaign_name: String,
     campaign_description: String,
     managers: Vec<String>,
 ) -> Result<Response, ContractError> {
-    if CAMPAIGN
-        .may_load(deps.storage, campaign_id.clone())?
-        .is_some()
-    {
+    if CAMPAIGN.may_load(deps.storage)?.is_some() {
         return Err(StdError::generic_err("Campaign already exists").into());
     }
 
@@ -269,23 +240,22 @@ fn create_campaign(
 
     let campaign = Campaign {
         campaign_name: campaign_name,
-        campaign_id: campaign_id.clone(),
         campaign_description: campaign_description,
         owner: info.sender.into_string(),
         managers: managers,
         unallocated_amount: coin.amount,
         denom: Denom::Native(coin.denom.clone()),
-        vesting_schedule: vesting_schedule,
+        vesting_schedule: vesting_schedule.clone(),
         is_active: true,
     };
-    CAMPAIGN.save(deps.storage, campaign_id.clone(), &campaign)?;
+    CAMPAIGN.save(deps.storage, &campaign)?;
 
     Ok(Response::new()
         .add_attribute("method", "create_campaign")
-        .add_attribute("campaign_id", campaign_id)
         .add_attribute("campaign_name", &campaign.campaign_name)
         .add_attribute("campaign_description", &campaign.campaign_description)
-        .add_attribute("initial_unallocated_amount", &coin.amount.to_string()))
+        .add_attribute("initial_unallocated_amount", &coin.amount.to_string())
+        .add_attribute("schedule", &to_string(&vesting_schedule).unwrap()))
 }
 
 fn register_vesting_account(
@@ -311,7 +281,7 @@ fn register_vesting_account(
         address: address.to_string(),
         vesting_denom: deposit_denom.clone(),
         vesting_amount: deposit_amount,
-        vesting_schedule,
+        vesting_schedule: vesting_schedule,
         claimed_amount: Uint128::zero(),
     };
 
@@ -605,66 +575,38 @@ fn vesting_account(
     Ok(VestingAccountResponse { address, vestings })
 }
 
-/// Allow the contract owner to withdraw the funds of the campaigngg
+/// Allow the contract owner to withdraw the funds of the campaign
 ///
-/// Ensures the requested amount is available in the contract balance. Transfers
-/// tokens to the contract owner's account.
+/// Ensures the requested amount is available in the contract balance.
+/// Ensures the requested amount is less than or equal to the unallocated amount
 pub fn withdraw(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
     amount: Uint128,
-    campaign_id: &str,
 ) -> Result<Response, ContractError> {
-    let campaign = CAMPAIGN.load(deps.storage, campaign_id.to_string())?;
+    let campaign = CAMPAIGN.load(deps.storage)?;
 
     if info.sender != campaign.owner {
         return Err(
-            StdError::generic_err("Only contract owner can withdraw").into()
+            StdError::generic_err("Only campaign owner can withdraw").into()
         );
     }
 
-    // Update campaign unallocated amount
-    if amount > campaign.unallocated_amount {
-        let update_result = CAMPAIGN.update(
-            deps.storage,
-            campaign_id.to_string(),
-            |campaign| -> StdResult<Campaign> {
-                if let Some(mut campaign) = campaign {
-                    campaign.unallocated_amount = Uint128::zero();
-                    Ok(campaign)
-                } else {
-                    Err(StdError::generic_err("Campaign not found"))
-                }
-            },
-        );
-
-        if let Err(e) = update_result {
-            return Err(e.into());
-        }
-    } else {
-        let update_result = CAMPAIGN.update(
-            deps.storage,
-            campaign_id.to_string(),
-            |campaign| -> StdResult<Campaign> {
-                if let Some(mut campaign) = campaign {
-                    campaign.unallocated_amount -= amount;
-                    Ok(campaign)
-                } else {
-                    Err(StdError::generic_err("Campaign not found"))
-                }
-            },
-        );
-
-        if let Err(e) = update_result {
-            return Err(e.into());
-        }
+    let amount_max = min(amount, campaign.unallocated_amount);
+    if amount_max.is_zero() {
+        return Err(StdError::generic_err("Nothing to withdraw").into());
     }
+
+    CAMPAIGN.update(deps.storage, |mut campaign| -> StdResult<Campaign> {
+        campaign.unallocated_amount = campaign.unallocated_amount - amount_max;
+        Ok(campaign)
+    })?;
 
     Ok(Response::new()
         .add_messages(vec![build_send_msg(
             campaign.denom,
-            min(amount, campaign.unallocated_amount),
+            amount_max,
             info.sender.to_string(),
         )?])
         .add_attribute("withdraw", &amount.to_string())

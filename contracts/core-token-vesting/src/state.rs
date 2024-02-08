@@ -3,10 +3,9 @@ use cosmwasm_schema::cw_serde;
 use crate::msg::VestingSchedule;
 use cosmwasm_std::{CosmosMsg, Uint128};
 use cw20::Denom;
-use cw_storage_plus::Map;
+use cw_storage_plus::{Item, Map};
 
-pub const CAMPAIGN: Map<String, Campaign> = Map::new("campaign");
-pub const USER_REWARDS: Map<String, Uint128> = Map::new("user_rewards");
+pub const CAMPAIGN: Item<Campaign> = Item::new("campaign");
 pub const VESTING_ACCOUNTS: Map<(&str, &str), VestingAccount> =
     Map::new("vesting_accounts");
 
@@ -22,7 +21,6 @@ pub struct VestingAccount {
 
 #[cw_serde]
 pub struct Campaign {
-    pub campaign_id: String,
     pub campaign_name: String,
     pub campaign_description: String,
 

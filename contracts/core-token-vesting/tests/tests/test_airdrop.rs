@@ -9,7 +9,7 @@ use token_vesting::{
     contract::execute,
     errors::ContractError,
     msg::{ExecuteMsg, RewardUserRequest, VestingSchedule},
-    state::{CAMPAIGN, USER_REWARDS},
+    state::{denom_to_key, CAMPAIGN, VESTING_ACCOUNTS},
 };
 
 use super::{helpers::TestResult, test_manager::setup_with_block_time};
@@ -25,7 +25,7 @@ fn execute_create_campaign_valid() -> TestResult {
             end_time: Uint64::new(200),
             vesting_amount: Uint128::new(5000),
         },
-        campaign_id: "campaign1".to_string(),
+
         campaign_name: "Test Campaign".to_string(),
         campaign_description: "A test campaign".to_string(),
         managers: vec!["manager1".to_string(), "manager2".to_string()],
@@ -45,7 +45,7 @@ fn execute_create_campaign_valid() -> TestResult {
         "Expected 'create_campaign' method in response attributes"
     );
     assert!(
-        CAMPAIGN.has(&deps.storage, "campaign1".to_string()),
+        CAMPAIGN.may_load(deps.as_ref().storage)?.is_some(),
         "Campaign should be saved in state"
     );
 
@@ -57,9 +57,7 @@ fn execute_create_campaign_duplicate_id() -> TestResult {
     let (mut deps, _env) = setup_with_block_time(0)?;
 
     // Create a campaign with a unique ID
-    let campaign_id = "unique_campaign_id";
     let create_campaign_msg = ExecuteMsg::CreateCampaign {
-        campaign_id: campaign_id.to_string(),
         campaign_name: "Test Campaign".to_string(),
         campaign_description: "This is a test campaign".to_string(),
         managers: vec![],
@@ -109,7 +107,6 @@ fn execute_create_campaign_invalid_coin_count() -> TestResult {
             end_time: Uint64::new(200),
             vesting_amount: Uint128::new(5000),
         },
-        campaign_id: "campaign1".to_string(),
         campaign_name: "Test Campaign".to_string(),
         campaign_description: "A test campaign".to_string(),
         managers: vec!["manager1".to_string(), "manager2".to_string()],
@@ -145,7 +142,6 @@ fn execute_create_campaign_2_coins() -> TestResult {
             end_time: Uint64::new(200),
             vesting_amount: Uint128::new(5000),
         },
-        campaign_id: "campaign2".to_string(),
         campaign_name: "Test Campaign".to_string(),
         campaign_description: "A test campaign".to_string(),
         managers: vec!["manager1".to_string(), "manager2".to_string()],
@@ -175,13 +171,11 @@ fn execute_reward_users_unactive_campaign() -> TestResult {
     let (mut deps, env) = setup_with_block_time(0)?;
 
     // Create a campaign
-    let campaign_id = "campaign1".to_string();
     execute(
         deps.as_mut(),
         env.clone(),
         mock_info("creator", &[coin(10000, "token")]),
         ExecuteMsg::CreateCampaign {
-            campaign_id: campaign_id.clone(),
             campaign_name: "Campaign One".to_string(),
             campaign_description: "The first campaign".to_string(),
             managers: vec!["manager1".to_string()],
@@ -194,15 +188,12 @@ fn execute_reward_users_unactive_campaign() -> TestResult {
     )?;
 
     // Deactivate the campaign
-    let msg = ExecuteMsg::DeactivateCampaign {
-        campaign_id: campaign_id.clone(),
-    };
+    let msg = ExecuteMsg::DeactivateCampaign {};
     let info = mock_info("creator", &[]);
     execute(deps.as_mut(), env.clone(), info, msg)?;
 
     // Reward users
     let reward_users_msg = ExecuteMsg::RewardUsers {
-        campaign_id: campaign_id.clone(),
         requests: vec![
             RewardUserRequest {
                 user_address: "user1".to_string(),
@@ -239,13 +230,11 @@ fn execute_reward_users_unauthorized() -> TestResult {
     let (mut deps, env) = setup_with_block_time(0)?;
 
     // Create a campaign
-    let campaign_id = "campaign1".to_string();
     execute(
         deps.as_mut(),
         env.clone(),
         mock_info("creator", &[coin(10000, "token")]),
         ExecuteMsg::CreateCampaign {
-            campaign_id: campaign_id.clone(),
             campaign_name: "Campaign One".to_string(),
             campaign_description: "The first campaign".to_string(),
             managers: vec!["manager1".to_string()],
@@ -259,7 +248,6 @@ fn execute_reward_users_unauthorized() -> TestResult {
 
     // Reward users
     let reward_users_msg = ExecuteMsg::RewardUsers {
-        campaign_id: campaign_id.clone(),
         requests: vec![
             RewardUserRequest {
                 user_address: "user1".to_string(),
@@ -293,13 +281,11 @@ fn execute_reward_users_valid() -> TestResult {
     let (mut deps, env) = setup_with_block_time(0)?;
 
     // Create a campaign
-    let campaign_id = "campaign1".to_string();
     execute(
         deps.as_mut(),
         env.clone(),
         mock_info("creator", &[coin(10000, "token")]),
         ExecuteMsg::CreateCampaign {
-            campaign_id: campaign_id.clone(),
             campaign_name: "Campaign One".to_string(),
             campaign_description: "The first campaign".to_string(),
             managers: vec!["manager1".to_string()],
@@ -313,7 +299,6 @@ fn execute_reward_users_valid() -> TestResult {
 
     // Reward users
     let reward_users_msg = ExecuteMsg::RewardUsers {
-        campaign_id: campaign_id.clone(),
         requests: vec![
             RewardUserRequest {
                 user_address: "user1".to_string(),
@@ -325,6 +310,7 @@ fn execute_reward_users_valid() -> TestResult {
             },
         ],
     };
+
     execute(
         deps.as_mut(),
         env.clone(),
@@ -332,53 +318,18 @@ fn execute_reward_users_valid() -> TestResult {
         reward_users_msg,
     )?;
 
-    // Verify user rewards and campaign state
-    let user1_rewards =
-        USER_REWARDS.load(deps.as_ref().storage, "user1".to_string())?;
-    assert_eq!(
-        user1_rewards,
-        Uint128::new(500),
-        "User1 rewards do not match."
-    );
+    // Assert there's a vesting account for each user
+    let campaign = CAMPAIGN.load(deps.as_ref().storage)?;
 
-    let user2_rewards =
-        USER_REWARDS.load(deps.as_ref().storage, "user2".to_string())?;
-    assert_eq!(
-        user2_rewards,
-        Uint128::new(1500),
-        "User2 rewards do not match."
-    );
-
-    let updated_campaign =
-        CAMPAIGN.load(deps.as_ref().storage, campaign_id.clone())?;
-    assert_eq!(
-        updated_campaign.unallocated_amount,
-        Uint128::new(8000),
-        "Campaign unallocated amount does not match expected."
-    );
-
-    // Additional reward
-    let reward_users_msg = ExecuteMsg::RewardUsers {
-        campaign_id: campaign_id.clone(),
-        requests: vec![RewardUserRequest {
-            user_address: "user1".to_string(),
-            amount: Uint128::new(1000),
-        }],
-    };
-    execute(
-        deps.as_mut(),
-        env,
-        mock_info("creator", &[]),
-        reward_users_msg,
+    let vesting_account = VESTING_ACCOUNTS.load(
+        deps.as_ref().storage,
+        ("user1", &denom_to_key(campaign.denom.clone())),
     )?;
 
-    // Verify user rewards and campaign state
-    let user1_rewards =
-        USER_REWARDS.load(deps.as_ref().storage, "user1".to_string())?;
     assert_eq!(
-        user1_rewards,
-        Uint128::new(1500),
-        "User1 rewards do not match."
+        vesting_account.vesting_amount,
+        Uint128::new(500),
+        "Vesting amount not set correctly for user1"
     );
 
     Ok(())
@@ -389,13 +340,11 @@ fn execute_reward_users_insufficient_funds() -> TestResult {
     let (mut deps, _env) = setup_with_block_time(0)?;
 
     // Create a campaign with limited funds
-    let campaign_id = "limited_fund_campaign";
     execute(
         deps.as_mut(),
         mock_env(),
         mock_info("creator", &[coin(500, "token")]),
         ExecuteMsg::CreateCampaign {
-            campaign_id: campaign_id.to_string(),
             campaign_name: "Limited Fund Campaign".to_string(),
             campaign_description: "This campaign has limited funds".to_string(),
             managers: vec![],
@@ -413,7 +362,6 @@ fn execute_reward_users_insufficient_funds() -> TestResult {
         mock_env(),
         mock_info("creator", &[]),
         ExecuteMsg::RewardUsers {
-            campaign_id: campaign_id.to_string(),
             requests: vec![RewardUserRequest {
                 user_address: "user1".to_string(),
                 amount: Uint128::new(600), // More than available
@@ -472,7 +420,6 @@ fn execute_withdraw_valid() -> TestResult {
             end_time: Uint64::new(env.block.time.seconds() + 100),
             vesting_amount: Uint128::new(1000),
         },
-        campaign_id: "campaign1".to_string(),
         campaign_name: "Test Campaign".to_string(),
         campaign_description: "A campaign for testing".to_string(),
         managers: vec!["manager1".to_string()],
@@ -489,15 +436,12 @@ fn execute_withdraw_valid() -> TestResult {
     // Attempt to withdraw unallocated funds
     let withdraw_msg = ExecuteMsg::Withdraw {
         amount: Uint128::new(500),
-        campaign_id: "campaign1".to_string(),
     };
     let info = mock_info("owner", &[]);
     execute(deps.as_mut(), env.clone(), info, withdraw_msg)?;
 
     // Verify campaign unallocated amount is updated
-    let campaign = CAMPAIGN
-        .load(&deps.storage, "campaign1".to_string())
-        .unwrap();
+    let campaign = CAMPAIGN.load(&deps.storage).unwrap();
     assert_eq!(
         campaign.unallocated_amount,
         Uint128::new(500),
@@ -512,19 +456,18 @@ fn execute_withdraw_unauthorized() -> TestResult {
     let (mut deps, env) = setup_with_block_time(100)?;
 
     // Create a campaign with some funds
-    create_test_campaign(&mut deps, &env, "campaign1", "owner");
+    create_test_campaign(&mut deps, &env, "owner");
 
     // Attempt to withdraw funds from the contract by an unauthorized user
     let msg = ExecuteMsg::Withdraw {
         amount: Uint128::new(500),
-        campaign_id: "campaign1".to_string(),
     };
     let info = mock_info("unauthorized_user", &[]);
     let res = execute(deps.as_mut(), env.clone(), info, msg);
 
     match res {
         Err(ContractError::Std(StdError::GenericErr { msg, .. }))
-            if msg.contains("Only contract owner can withdraw") =>
+            if msg.contains("Only campaign owner can withdraw") =>
         {
             Ok(())
         }
@@ -537,18 +480,15 @@ fn execute_deactivate_campaign_authorized() -> TestResult {
     let (mut deps, env) = setup_with_block_time(200)?;
 
     // Create a campaign and mark it active
-    create_test_campaign(&mut deps, &env, "campaign2", "owner");
+    create_test_campaign(&mut deps, &env, "owner");
 
     // Deactivate the campaign by the owner
-    let msg = ExecuteMsg::DeactivateCampaign {
-        campaign_id: "campaign2".to_string(),
-    };
+    let msg = ExecuteMsg::DeactivateCampaign {};
     let info = mock_info("owner", &[]);
     execute(deps.as_mut(), env.clone(), info, msg)?;
 
     // Check if the campaign is deactivated
-    let campaign =
-        CAMPAIGN.load(deps.as_ref().storage, "campaign2".to_string())?;
+    let campaign = CAMPAIGN.load(deps.as_ref().storage)?;
     assert_eq!(campaign.is_active, false, "Campaign should be deactivated");
 
     Ok(())
@@ -559,12 +499,10 @@ fn execute_deactivate_campaign_unauthorized() -> TestResult {
     let (mut deps, env) = setup_with_block_time(300)?;
 
     // Create a campaign and mark it active
-    create_test_campaign(&mut deps, &env, "campaign3", "owner");
+    create_test_campaign(&mut deps, &env, "owner");
 
     // Attempt to deactivate the campaign by an unauthorized user
-    let msg = ExecuteMsg::DeactivateCampaign {
-        campaign_id: "campaign3".to_string(),
-    };
+    let msg = ExecuteMsg::DeactivateCampaign {};
     let info = mock_info("unauthorized_user", &[]);
     let res = execute(deps.as_mut(), env, info, msg);
 
@@ -584,7 +522,6 @@ fn execute_deactivate_campaign_unauthorized() -> TestResult {
 fn create_test_campaign(
     deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier, Empty>,
     env: &Env,
-    campaign_id: &str,
     owner: &str,
 ) {
     let msg = ExecuteMsg::CreateCampaign {
@@ -593,7 +530,6 @@ fn create_test_campaign(
             end_time: Uint64::new(env.block.time.seconds() + 200),
             vesting_amount: Uint128::new(1000),
         },
-        campaign_id: campaign_id.to_string(),
         campaign_name: "Test Campaign".to_string(),
         campaign_description: "A campaign for testing".to_string(),
         managers: vec![owner.to_string()],

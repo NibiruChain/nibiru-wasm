@@ -50,14 +50,12 @@ pub enum ExecuteMsg {
     /// Create campaign to reward users with vested tokens
     /// Args:
     /// - vesting_schedule: VestingSchedule: The vesting schedule of the account.
-    /// - campaign_id: String: The unique identifier of the campaign.
     /// - campaign_name: String: The name of the campaign.
     /// - campaign_description: String: The description of the campaign.
     /// - managers: Vec<String>: The list of addresses that can manage the campaign (reward users).
     CreateCampaign {
         vesting_schedule: VestingSchedule,
 
-        campaign_id: String,
         campaign_name: String,
         campaign_description: String,
         managers: Vec<String>,
@@ -65,35 +63,20 @@ pub enum ExecuteMsg {
 
     /// Reward users with tokens
     /// Args:
-    /// - campaign_id: String: The unique identifier of the campaign.
     /// - requests: Vec<RewardUserRequest>: The list of reward requests.
     RewardUsers {
-        campaign_id: String,
         requests: Vec<RewardUserRequest>,
-    },
-
-    /// Claim campaign: A user can claim vested tokens from a campaign and this
-    /// will register a vesting account for the user.
-    /// Args:
-    /// - campaign_id: String: The unique identifier of the campaign.
-    ClaimCampaign {
-        campaign_id: String,
     },
 
     /// Deactivate campaign: The campaign owner can deactivate the campaign.
     /// All the unallocated tokens will be returned to the owner.
     /// Args:
-    /// - campaign_id: String: The unique identifier of the campaign.
-    DeactivateCampaign {
-        campaign_id: String,
-    },
+    DeactivateCampaign {},
 
     /// Withdraw: The campaign owner can withdraw unallocated tokens from the campaign.
     /// Args:
-    /// - campaign_id: String: The unique identifier of the campaign.
     /// - amount: Uint128: The amount of tokens to be withdrawn.
     Withdraw {
-        campaign_id: String,
         amount: Uint128,
     },
 }
