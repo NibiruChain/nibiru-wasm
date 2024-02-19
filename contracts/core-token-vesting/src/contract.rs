@@ -91,7 +91,6 @@ pub fn execute(
             managers,
         } => create_campaign(
             deps,
-            env,
             info,
             vesting_schedule,
             campaign_name,
@@ -221,7 +220,6 @@ fn reward_users(
 
 fn create_campaign(
     deps: DepsMut,
-    _env: Env,
     info: MessageInfo,
     vesting_schedule: VestingSchedule,
     campaign_name: String,
