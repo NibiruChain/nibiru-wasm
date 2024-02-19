@@ -484,7 +484,6 @@ pub fn receive_cw20(
     cw20_msg: Cw20ReceiveMsg,
 ) -> Result<Response, ContractError> {
     let amount = cw20_msg.amount;
-    let _sender = cw20_msg.sender;
     let contract = info.sender;
 
     match from_json(&cw20_msg.msg) {
