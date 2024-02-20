@@ -266,7 +266,7 @@ fn register_vesting_account(
     deposit_amount: Uint128,
     vesting_schedule: VestingSchedule,
 ) -> Result<Response, ContractError> {
-    let denom_key = denom_to_key(deposit_denom.clone());
+    let denom_key = denom_to_key(&deposit_denom);
 
     // vesting_account existence check
     if VESTING_ACCOUNTS.has(storage, (address.as_str(), &denom_key)) {
@@ -311,7 +311,7 @@ fn deregister_vesting_account(
     vested_token_recipient: Option<String>,
     left_vesting_token_recipient: Option<String>,
 ) -> Result<Response, ContractError> {
-    let denom_key = denom_to_key(denom.clone());
+    let denom_key = denom_to_key(&denom);
     let sender = info.sender;
 
     let mut messages: Vec<CosmosMsg> = vec![];
@@ -394,7 +394,7 @@ fn claim(
     let mut messages: Vec<CosmosMsg> = vec![];
     let mut attrs: Vec<Attribute> = vec![];
     for denom in denoms.iter() {
-        let denom_key = denom_to_key(denom.clone());
+        let denom_key = denom_to_key(&denom);
 
         // vesting_account existence check
         let account = VESTING_ACCOUNTS
