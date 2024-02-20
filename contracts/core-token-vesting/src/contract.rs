@@ -233,7 +233,9 @@ fn create_campaign(
         return Err(StdError::generic_err("one denom sent required").into());
     }
 
-    let coin = info.funds.get(0)?;
+    let coin = info.funds.get(0).ok_or(StdError::generic_err(
+        "one denom sent required, unexpected error",
+    ))?;
 
     let campaign = Campaign {
         campaign_name,
