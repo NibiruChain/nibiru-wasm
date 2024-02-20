@@ -166,7 +166,6 @@ fn reward_users(
         );
     }
 
-    let master_address = Some(campaign.owner.clone());
     let mut attrs: Vec<Attribute> = vec![];
 
     for req in requests {
@@ -184,7 +183,7 @@ fn reward_users(
         let result = register_vesting_account(
             deps.storage,
             env.block.time,
-            master_address.clone(),
+            Some(campaign.owner.clone()),
             req.user_address.clone(),
             campaign.denom.clone(),
             req.amount,
@@ -237,10 +236,10 @@ fn create_campaign(
     let coin = info.funds.get(0).unwrap();
 
     let campaign = Campaign {
-        campaign_name: campaign_name,
-        campaign_description: campaign_description,
+        campaign_name,
+        campaign_description,
         owner: info.sender.into_string(),
-        managers: managers,
+        managers,
         unallocated_amount: coin.amount,
         denom: Denom::Native(coin.denom.clone()),
         vesting_schedule: vesting_schedule.clone(),
