@@ -234,13 +234,13 @@ fn create_campaign(
         return Err(StdError::generic_err("one denom sent required").into());
     }
 
-    let coin = info.funds.get(0).unwrap();
+    let coin = info.funds.get(0)?;
 
     let campaign = Campaign {
-        campaign_name: campaign_name,
-        campaign_description: campaign_description,
+        campaign_name,
+        campaign_description,
         owner: info.sender.into_string(),
-        managers: managers,
+        managers,
         unallocated_amount: coin.amount,
         denom: Denom::Native(coin.denom.clone()),
         vesting_schedule: vesting_schedule.clone(),
@@ -279,7 +279,7 @@ fn register_vesting_account(
         address: address.to_string(),
         vesting_denom: deposit_denom.clone(),
         vesting_amount: deposit_amount,
-        vesting_schedule: vesting_schedule,
+        vesting_schedule,
         claimed_amount: Uint128::zero(),
     };
 
