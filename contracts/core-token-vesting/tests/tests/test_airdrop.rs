@@ -53,6 +53,43 @@ fn execute_create_campaign_valid() -> TestResult {
 }
 
 #[test]
+fn execute_create_campaign_invalid_manager() -> TestResult {
+    let (mut deps, env) = setup_with_block_time(0)?;
+
+    // Create a campaign with valid parameters
+    let create_campaign_msg = ExecuteMsg::CreateCampaign {
+        vesting_schedule: VestingSchedule::LinearVesting {
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(200),
+            vesting_amount: Uint128::new(5000),
+        },
+
+        campaign_name: "Test Campaign".to_string(),
+        campaign_description: "A test campaign".to_string(),
+        managers: vec!["".to_string(), "manager2".to_string()],
+    };
+    let res = execute(
+        deps.as_mut(),
+        env,
+        mock_info("creator", &[coin(5000, "token")]),
+        create_campaign_msg,
+    );
+
+    // Assertions that res has error with "human address too short for this mock implementation"
+    match res {
+        Err(ContractError::Std(StdError::GenericErr { msg, .. }))
+            if msg.contains("human address too short for this mock implementation") =>
+        {
+            Ok(())
+        }
+        _ => Err(anyhow!(
+            "Expected 'human address too short for this mock implementation' error, found {:?}",
+            res
+        )),
+    }
+}
+
+#[test]
 fn execute_create_campaign_duplicate_id() -> TestResult {
     let (mut deps, _env) = setup_with_block_time(0)?;
 

@@ -119,9 +119,7 @@ fn deactivate_campaign(
         .load(deps.storage)
         .map_err(|_| StdError::generic_err("Failed to load campaign data"))?;
 
-    if campaign.owner != info.sender
-        && !campaign.managers.contains(&info.sender.to_string())
-    {
+    if campaign.owner != info.sender {
         return Err(StdError::generic_err("Unauthorized. Only the campaign owner or managers can deactivate the campaign").into());
     }
 
@@ -237,6 +235,10 @@ fn create_campaign(
         "one denom sent required, unexpected error",
     ))?;
 
+    for manager in managers.iter() {
+        let _ = deps.api.addr_validate(manager)?;
+    }
+
     let campaign = Campaign {
         campaign_name,
         campaign_description,
@@ -266,7 +268,7 @@ fn register_vesting_account(
     deposit_amount: Uint128,
     vesting_schedule: VestingSchedule,
 ) -> Result<Response, ContractError> {
-    let denom_key = denom_to_key(&deposit_denom);
+    let denom_key = denom_to_key(deposit_denom.clone());
 
     // vesting_account existence check
     if VESTING_ACCOUNTS.has(storage, (address.as_str(), &denom_key)) {
@@ -311,7 +313,7 @@ fn deregister_vesting_account(
     vested_token_recipient: Option<String>,
     left_vesting_token_recipient: Option<String>,
 ) -> Result<Response, ContractError> {
-    let denom_key = denom_to_key(&denom);
+    let denom_key = denom_to_key(denom.clone());
     let sender = info.sender;
 
     let mut messages: Vec<CosmosMsg> = vec![];
@@ -394,7 +396,7 @@ fn claim(
     let mut messages: Vec<CosmosMsg> = vec![];
     let mut attrs: Vec<Attribute> = vec![];
     for denom in denoms.iter() {
-        let denom_key = denom_to_key(&denom);
+        let denom_key = denom_to_key(denom.clone());
 
         // vesting_account existence check
         let account = VESTING_ACCOUNTS
