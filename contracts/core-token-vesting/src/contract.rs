@@ -235,6 +235,7 @@ fn create_campaign(
         "one denom sent required, unexpected error",
     ))?;
 
+    // validate managers
     for manager in managers.iter() {
         let _ = deps.api.addr_validate(manager)?;
     }
