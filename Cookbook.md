@@ -260,12 +260,13 @@ This contract implements vesting accounts for the CW20 and native tokens.
 There's no instantiation message.
 
 ```javascript
-{}
+{
+}
 ```
 
 ### 3.2 Execute
 
-- **Receive** 
+- **Receive**
 
 ```javascript
 {
@@ -340,7 +341,8 @@ This smart contract showcases usage examples for certain Nibiru-specific and Cos
 There's no instantiation message.
 
 ```javascript
-{}
+{
+}
 ```
 
 ### 4.2 Execute
@@ -356,33 +358,33 @@ There's no instantiation message.
 - **Mint** mints tokens
 
 ```javascript
-{ 
-  "mint": { 
-    "coin": { "amount": "[amount]", "denom": "tf/[contract-addr]/[subdenom]" }, 
-    "mint_to": "[mint-to-addr]" 
-  } 
+{
+  "mint": {
+    "coin": { "amount": "[amount]", "denom": "tf/[contract-addr]/[subdenom]" },
+    "mint_to": "[mint-to-addr]"
+  }
 }
 ```
 
 - **Burn** burns tokens
 
 ```javascript
-{ 
-  "burn": { 
-    "coin": { "amount": "[amount]", "denom": "tf/[contract-addr]/[subdenom]" }, 
-    "burn_from": "[burn-from-addr]" 
-  } 
+{
+  "burn": {
+    "coin": { "amount": "[amount]", "denom": "tf/[contract-addr]/[subdenom]" },
+    "burn_from": "[burn-from-addr]"
+  }
 }
 ```
 
 - **ChangeAdmin** changes the admin of a denom
 
 ```javascript
-{ 
-  "change_admin": { 
-    "denom": "tf/[contract-addr]/[subdenom]", 
-    "new_admin": "[ADDR]" 
-  } 
+{
+  "change_admin": {
+    "denom": "tf/[contract-addr]/[subdenom]",
+    "new_admin": "[ADDR]"
+  }
 }
 ```
 
@@ -399,6 +401,7 @@ The instantiation defines the owner of the contract, who will be able to add and
   "admin": "cosmos1...",
 }
 ```
+
 ### 5.2 Execute
 
 - **MarketOrder** places a market order for a specified trading pair. `pair` indicates the trading pair, `is_long` determines if it's a long or short order, `quote_amount` is the amount in the quote currency, `leverage` specifies the leverage to apply, and `base_amount_limit` sets a limit for the amount in the base currency.
@@ -540,7 +543,6 @@ The owner is the only one who can execute messages in the contract
 
 ### 6.3 Query
 
-
 - **Mintable** queries the amount of μNUSD that can be minted in exchange for the specified set of `from_coins`.
 
 ```javascript
@@ -579,44 +581,42 @@ The owner is the only one who can execute messages in the contract
   }
 }
 ```
+
 ## 7. Core token vesting
 
 This contract implements vesting accounts for the CW20 and native tokens.
 
 ### 7.1 Instantiate
 
-There's no instantiation message.
+We need to specify admin and managers
 
 ```javascript
-{}
+{
+  "admin": "cosmos1...",
+  "managers": ["cosmos1...", "cosmos1..."]
+}
 ```
 
 ### 7.2 Execute
 
-- **Receive** 
-
-```javascript
-{
-  "receive": {
-    "sender": "cosmos1...",
-    "amount": "1000000",
-    "msg": "eyJ2ZXN0X2lkIjoxLCJ2ZXN0X3R5cGUiOiJ2ZXN0In0=",
-  }
-}
-```
-
-- **RegisterVestingAccount** registers a vesting account
+- **RewardUsers** registers several vesting contracts
 
 ```javascript
 {
   "register_vesting_account": {
-    "address": "cosmos1...",
     "master_address": "cosmos1...",
+    "rewards": [
+      {
+        "user_address": "cosmos1...",
+        "vesting_amount": "1000000",
+        "cliff_amount": "100000", // Only needed if vesting schedule is linear with cliff
+      }
+    ],
     "vesting_schedule": {
       "linear_vesting": {
         "start_time": "1703772805",
         "end_time": "1703872805",
-        "vesting_amount": "1000000"
+        "vesting_amount": "0" // This amount does not matter
       }
     }
   }
