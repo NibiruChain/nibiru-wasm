@@ -38,23 +38,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "airdrop"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-ownable",
- "cw-storage-plus",
- "cw2",
- "nibiru-std",
- "schemars",
- "semver",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "airdrop-token-vesting"
 version = "0.2.0"
 dependencies = [
