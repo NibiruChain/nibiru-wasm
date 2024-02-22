@@ -579,3 +579,82 @@ The owner is the only one who can execute messages in the contract
   }
 }
 ```
+## 7. Core token vesting
+
+This contract implements vesting accounts for the CW20 and native tokens.
+
+### 7.1 Instantiate
+
+There's no instantiation message.
+
+```javascript
+{}
+```
+
+### 7.2 Execute
+
+- **Receive** 
+
+```javascript
+{
+  "receive": {
+    "sender": "cosmos1...",
+    "amount": "1000000",
+    "msg": "eyJ2ZXN0X2lkIjoxLCJ2ZXN0X3R5cGUiOiJ2ZXN0In0=",
+  }
+}
+```
+
+- **RegisterVestingAccount** registers a vesting account
+
+```javascript
+{
+  "register_vesting_account": {
+    "address": "cosmos1...",
+    "master_address": "cosmos1...",
+    "vesting_schedule": {
+      "linear_vesting": {
+        "start_time": "1703772805",
+        "end_time": "1703872805",
+        "vesting_amount": "1000000"
+      }
+    }
+  }
+}
+```
+
+- **DeregisterVestingAccount** deregisters a vesting account
+
+```javascript
+{
+  "deregister_vesting_account": {
+    "address": "cosmos1...",
+    "denom": "uusd",
+    "vested_token_recipient": "cosmos1...", // address that will receive the vested tokens after deregistration. If None, tokens are received by the owner address.
+    "left_vested_token_recipient": "cosmos1...", // address that will receive the left vesting tokens after deregistration.
+  }
+}
+```
+
+- **Claim** allows to claim vested tokens
+
+```javascript
+{
+  "claim": {
+    "denom": "uusd",
+    "recipient": "cosmos1...",
+  }
+}
+```
+
+### 7.3 Query
+
+- **VestingAccount** returns the vesting account details for a given address.
+
+```javascript
+{
+  "vesting_account": {
+    "address": "cosmos1...",
+  }
+}
+```
