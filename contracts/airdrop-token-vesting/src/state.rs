@@ -20,11 +20,6 @@ pub struct Whitelist {
 }
 
 impl Whitelist {
-    pub fn has(&self, addr: impl AsRef<str>) -> bool {
-        let addr = addr.as_ref();
-        self.members.contains(addr) || self.admin == addr
-    }
-
     pub fn is_admin(&self, addr: impl AsRef<str>) -> bool {
         let addr = addr.as_ref();
         self.admin == addr

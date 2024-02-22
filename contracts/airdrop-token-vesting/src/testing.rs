@@ -64,7 +64,7 @@ fn invalid_coin_sent_instantiation() -> TestResult {
         deps.as_mut(),
         mock_env(),
         mock_info("addr0000", &[coin(1000, "nibi"), coin(1000, "usd")]),
-        msg,
+        msg.clone(),
     );
     match res {
         Err(err) => {
@@ -72,6 +72,25 @@ fn invalid_coin_sent_instantiation() -> TestResult {
                 err,
                 StdError::GenericErr {
                     msg: "must deposit exactly one type of token".to_string(),
+                }
+            )
+        }
+        Ok(_) => panic!("Expected error but got success: {res:?}"),
+    }
+
+    // 0 amount coins sent
+    let res = instantiate(
+        deps.as_mut(),
+        mock_env(),
+        mock_info("addr0000", &[coin(0, "nibi")]),
+        msg,
+    );
+    match res {
+        Err(err) => {
+            assert_eq!(
+                err,
+                StdError::GenericErr {
+                    msg: "must deposit some token".to_string(),
                 }
             )
         }
@@ -215,7 +234,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
     let _res = instantiate(
         deps.as_mut(),
         mock_env(),
-        mock_info("addr0000", &[coin(1000, "uusd")]),
+        mock_info("addr0000", &[coin(2000, "uusd")]),
         InstantiateMsg {
             admin: "addr0000".to_string(),
             managers: vec!["admin-sender".to_string()],
@@ -247,6 +266,16 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
             },
         }
     };
+
+    // unauthorized sender
+    let msg = create_msg(100, 110, 0, Some(1000), 105);
+    require_error(
+        &mut deps,
+        &env,
+        mock_info("addr0042", &[]),
+        msg,
+        StdError::generic_err("Unauthorized").into(),
+    );
 
     // zero amount vesting token
     let msg = create_msg(100, 110, 0, Some(1000), 105);
@@ -332,6 +361,105 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
         mock_info("addr0000", &[Coin::new(999u128, "uusd")]),
         msg,
         StdError::generic_err("Insufficient funds for all rewards").into(),
+    );
+
+    // valid amount
+    let (vesting_amount, cliff_amount, cliff_time) = (1000, 250, 105);
+    let msg =
+        create_msg(100, 110, vesting_amount, Some(cliff_amount), cliff_time);
+
+    let res =
+        execute(deps.as_mut(), env.clone(), mock_info("addr0000", &[]), msg)?;
+
+    assert_eq!(
+        res.attributes,
+        vec![
+            Attribute {
+                key: "action".to_string(),
+                value: "register_vesting_account".to_string()
+            },
+            Attribute {
+                key: "master_address".to_string(),
+                value: "".to_string(),
+            },
+            Attribute {
+                key: "address".to_string(),
+                value: "addr0001".to_string()
+            },
+            Attribute {
+                key: "vesting_denom".to_string(),
+                value: "{\"native\":\"uusd\"}".to_string()
+            },
+            Attribute {
+                key: "vesting_amount".to_string(),
+                value: "1000".to_string()
+            },
+            Attribute {
+                key: "method".to_string(),
+                value: "reward_users".to_string()
+            }
+        ]
+    );
+
+    // valid amount - one failed because duplicate
+    let vesting_amount = 500u128;
+    let cliff_amount = 250u128;
+    let cliff_time = 105u64;
+
+    let msg = ExecuteMsg::RewardUsers {
+        master_address: None,
+        rewards: vec![
+            RewardUserRequest {
+                user_address: "addr0002".to_string(),
+                vesting_amount: Uint128::new(vesting_amount),
+                cliff_amount: Some(Uint128::new(cliff_amount)),
+            },
+            RewardUserRequest {
+                user_address: "addr0002".to_string(),
+                vesting_amount: Uint128::new(vesting_amount),
+                cliff_amount: Some(Uint128::new(cliff_amount)),
+            },
+        ],
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(110),
+            vesting_amount: Uint128::zero(),
+            cliff_amount: Uint128::zero(),
+            cliff_time: Uint64::new(cliff_time),
+        },
+    };
+
+    let res =
+        execute(deps.as_mut(), env.clone(), mock_info("addr0000", &[]), msg)?;
+
+    assert_eq!(
+        res.attributes,
+        vec![
+            Attribute {
+                key: "action".to_string(),
+                value: "register_vesting_account".to_string()
+            },
+            Attribute {
+                key: "master_address".to_string(),
+                value: "".to_string(),
+            },
+            Attribute {
+                key: "address".to_string(),
+                value: "addr0002".to_string()
+            },
+            Attribute {
+                key: "vesting_denom".to_string(),
+                value: "{\"native\":\"uusd\"}".to_string()
+            },
+            Attribute {
+                key: "vesting_amount".to_string(),
+                value: "500".to_string()
+            },
+            Attribute {
+                key: "method".to_string(),
+                value: "reward_users".to_string()
+            }
+        ]
     );
 
     Ok(())
