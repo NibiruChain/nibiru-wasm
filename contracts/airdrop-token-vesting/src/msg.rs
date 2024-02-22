@@ -47,6 +47,12 @@ pub enum ExecuteMsg {
         denoms: Vec<Denom>,
         recipient: Option<String>,
     },
+
+    // Withdraw allows the admin to withdraw the funds from the contract
+    Withdraw {
+        amount: Uint128,
+        recipient: String,
+    },
 }
 
 #[cw_serde]

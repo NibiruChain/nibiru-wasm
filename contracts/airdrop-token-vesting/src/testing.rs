@@ -465,6 +465,114 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn test_withdraw() -> TestResult {
+    let mut deps = mock_dependencies();
+    let _res = instantiate(
+        deps.as_mut(),
+        mock_env(),
+        mock_info("addr0000", &[coin(2000, "uusd")]),
+        InstantiateMsg {
+            admin: "addr0000".to_string(),
+            managers: vec!["admin-sender".to_string()],
+        },
+    )?;
+
+    let mut env = mock_env();
+    env.block.time = Timestamp::from_seconds(100);
+
+    let create_msg = |start_time: u64,
+                      end_time: u64,
+                      vesting_amount: u128,
+                      cliff_amount: Option<u128>,
+                      cliff_time: u64|
+     -> ExecuteMsg {
+        ExecuteMsg::RewardUsers {
+            master_address: None,
+            rewards: vec![RewardUserRequest {
+                user_address: "addr0001".to_string(),
+                vesting_amount: Uint128::new(vesting_amount),
+                cliff_amount: cliff_amount.map(Uint128::new),
+            }],
+            vesting_schedule: VestingSchedule::LinearVestingWithCliff {
+                start_time: Uint64::new(start_time),
+                end_time: Uint64::new(end_time),
+                vesting_amount: Uint128::zero(),
+                cliff_amount: Uint128::zero(),
+                cliff_time: Uint64::new(cliff_time),
+            },
+        }
+    };
+
+    // valid amount
+    let (vesting_amount, cliff_amount, cliff_time) = (1000, 250, 105);
+    let msg =
+        create_msg(100, 110, vesting_amount, Some(cliff_amount), cliff_time);
+
+    let _res =
+        execute(deps.as_mut(), env.clone(), mock_info("addr0000", &[]), msg)?;
+
+    // try to withdraw
+
+    // unauthorized sender
+    let msg = ExecuteMsg::Withdraw {
+        recipient: "addr0000".to_string(),
+        amount: Uint128::new(1000),
+    };
+    require_error(
+        &mut deps,
+        &env,
+        mock_info("addr0042", &[]),
+        msg,
+        StdError::generic_err("Unauthorized").into(),
+    );
+
+    // withdraw more than unallocated
+    let msg = ExecuteMsg::Withdraw {
+        recipient: "addr0000".to_string(),
+        amount: Uint128::new(1001),
+    };
+    let res =
+        execute(deps.as_mut(), env.clone(), mock_info("addr0000", &[]), msg)?;
+
+    assert_eq!(
+        res.attributes,
+        vec![
+            Attribute {
+                key: "action".to_string(),
+                value: "withdraw".to_string()
+            },
+            Attribute {
+                key: "recipient".to_string(),
+                value: "addr0000".to_string()
+            },
+            Attribute {
+                key: "amount".to_string(),
+                value: "1000".to_string()
+            },
+            Attribute {
+                key: "unallocated_amount".to_string(),
+                value: "0".to_string()
+            },
+        ]
+    );
+
+    // withdraw but there's no more unallocated
+    let msg = ExecuteMsg::Withdraw {
+        recipient: "addr0000".to_string(),
+        amount: Uint128::new(1),
+    };
+    require_error(
+        &mut deps,
+        &env,
+        mock_info("addr0000", &[]),
+        msg,
+        StdError::generic_err("Nothing to withdraw").into(),
+    );
+
+    Ok(())
+}
+
 fn require_error(
     deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>,
     env: &Env,

@@ -5,6 +5,7 @@ use cosmwasm_std::{
     Env, MessageInfo, Order, Response, StdError, StdResult, Storage, Timestamp,
     Uint128,
 };
+use std::cmp::min;
 
 use serde_json::to_string;
 
@@ -100,7 +101,51 @@ pub fn execute(
         ExecuteMsg::Claim { denoms, recipient } => {
             claim(deps, env, info, denoms, recipient)
         }
+        ExecuteMsg::Withdraw { amount, recipient } => {
+            withdraw(deps, env, info, amount, recipient)
+        }
     }
+}
+
+/// Allow the contract owner to withdraw the funds of the campaign
+///
+/// Ensures the requested amount is less than or equal to the unallocated amount
+pub fn withdraw(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    amount: Uint128,
+    recipient: String,
+) -> Result<Response, ContractError> {
+    let whitelist = WHITELIST.load(deps.storage)?;
+    let mut unallocated_amount = UNALLOCATED_AMOUNT.load(deps.storage)?;
+    let denom = DENOM.load(deps.storage)?;
+
+    if !whitelist.is_admin(info.sender.clone()) {
+        return Err(StdError::generic_err("Unauthorized").into());
+    }
+
+    let amount_max = min(amount, unallocated_amount);
+    if amount_max.is_zero() {
+        return Err(StdError::generic_err("Nothing to withdraw").into());
+    }
+
+    unallocated_amount = unallocated_amount - amount_max;
+    UNALLOCATED_AMOUNT.save(deps.storage, &unallocated_amount)?;
+
+    // validate recipient address
+    deps.api.addr_validate(&recipient.clone())?;
+
+    Ok(Response::new()
+        .add_messages(vec![build_send_msg(
+            cw20::Denom::Native(denom),
+            amount_max,
+            recipient.clone(),
+        )?])
+        .add_attribute("action", "withdraw")
+        .add_attribute("recipient", &recipient)
+        .add_attribute("amount", &amount_max.to_string())
+        .add_attribute("unallocated_amount", &unallocated_amount.to_string()))
 }
 
 fn reward_users(
@@ -121,13 +166,8 @@ fn reward_users(
         return Err(StdError::generic_err("Unauthorized").into());
     }
 
-    let unallocated_amount =
-        UNALLOCATED_AMOUNT.load(deps.storage).map_err(|_| {
-            StdError::generic_err("Failed to load unallocated amount")
-        })?;
-    let denom = DENOM
-        .load(deps.storage)
-        .map_err(|_| StdError::generic_err("Failed to load denom"))?;
+    let unallocated_amount = UNALLOCATED_AMOUNT.load(deps.storage)?;
+    let denom = DENOM.load(deps.storage)?;
 
     let total_requested: Uint128 =
         rewards.iter().map(|req| req.vesting_amount).sum();
