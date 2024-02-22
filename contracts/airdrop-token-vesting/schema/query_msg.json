@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "QueryMsg",
+  "description": "Enum representing the message types for the query entry point.",
   "oneOf": [
     {
       "type": "object",
