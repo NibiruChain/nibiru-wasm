@@ -39,17 +39,6 @@ pub fn instantiate(
     if info.funds[0].amount.is_zero() {
         return Err(StdError::generic_err("must deposit some token").into());
     }
-    let unallocated_amount = info.funds[0].amount;
-    let denom = info.funds[0].denom.clone();
-
-    UNALLOCATED_AMOUNT.save(deps.storage, &unallocated_amount)?;
-    DENOM.save(deps.storage, &denom)?;
-
-    let whitelist = Whitelist {
-        members: msg.managers.clone().into_iter().collect(),
-        admin: msg.admin.clone(),
-    };
-
     // Managers validation
     if msg.managers.is_empty() {
         return Err(StdError::generic_err("managers cannot be empty").into());
@@ -59,7 +48,19 @@ pub fn instantiate(
     for manager in msg.managers.iter() {
         let _ = deps.api.addr_validate(manager)?;
     }
-    WHITELIST.save(deps.storage, &whitelist)?;
+
+    let unallocated_amount = info.funds[0].amount;
+    let denom = info.funds[0].denom.clone();
+
+    UNALLOCATED_AMOUNT.save(deps.storage, &unallocated_amount)?;
+    DENOM.save(deps.storage, &denom)?;
+    WHITELIST.save(
+        deps.storage,
+        &Whitelist {
+            members: msg.managers.clone().into_iter().collect(),
+            admin: msg.admin.clone(),
+        },
+    )?;
 
     Ok(Response::new())
 }
