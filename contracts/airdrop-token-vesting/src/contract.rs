@@ -2,15 +2,12 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
-    Env, MessageInfo, Order, Response, StdError, StdResult, Storage, Timestamp,
+    Env, MessageInfo, Response, StdError, StdResult, Storage, Timestamp,
     Uint128,
 };
 use std::cmp::min;
 
 use serde_json::to_string;
-
-use cw20::Denom;
-use cw_storage_plus::Bound;
 
 use crate::errors::ContractError;
 use crate::msg::{
@@ -18,8 +15,8 @@ use crate::msg::{
     VestingAccountResponse, VestingData, VestingSchedule,
 };
 use crate::state::{
-    denom_to_key, VestingAccount, Whitelist, DENOM, UNALLOCATED_AMOUNT,
-    VESTING_ACCOUNTS, WHITELIST,
+    VestingAccount, Whitelist, DENOM, UNALLOCATED_AMOUNT, VESTING_ACCOUNTS,
+    WHITELIST,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -87,7 +84,6 @@ pub fn execute(
         ),
         ExecuteMsg::DeregisterVestingAccount {
             address,
-            denom,
             vested_token_recipient,
             left_vesting_token_recipient,
         } => deregister_vesting_account(
@@ -95,13 +91,10 @@ pub fn execute(
             env,
             info,
             address,
-            denom,
             vested_token_recipient,
             left_vesting_token_recipient,
         ),
-        ExecuteMsg::Claim { denoms, recipient } => {
-            claim(deps, env, info, denoms, recipient)
-        }
+        ExecuteMsg::Claim { recipient } => claim(deps, env, info, recipient),
         ExecuteMsg::Withdraw { amount, recipient } => {
             withdraw(deps, env, info, amount, recipient)
         }
@@ -139,7 +132,7 @@ pub fn withdraw(
 
     Ok(Response::new()
         .add_messages(vec![build_send_msg(
-            cw20::Denom::Native(denom),
+            denom,
             amount_max,
             recipient.clone(),
         )?])
@@ -168,7 +161,6 @@ fn reward_users(
     }
 
     let unallocated_amount = UNALLOCATED_AMOUNT.load(deps.storage)?;
-    let denom = DENOM.load(deps.storage)?;
 
     let total_requested: Uint128 =
         rewards.iter().map(|req| req.vesting_amount).sum();
@@ -204,7 +196,6 @@ fn reward_users(
             env.block.time,
             master_address.clone(),
             req.user_address.clone(),
-            Denom::Native(denom.clone()),
             req.vesting_amount,
             vesting_schedule.clone(),
         );
@@ -241,25 +232,21 @@ fn register_vesting_account(
     block_time: Timestamp,
     master_address: Option<String>,
     address: String,
-    deposit_denom: Denom,
     deposit_amount: Uint128,
     vesting_schedule: VestingSchedule,
 ) -> Result<Response, ContractError> {
-    let denom_key = denom_to_key(deposit_denom.clone());
-
     // vesting_account existence check
-    if VESTING_ACCOUNTS.has(storage, (address.as_str(), &denom_key)) {
+    if VESTING_ACCOUNTS.has(storage, address.as_str()) {
         return Err(StdError::generic_err("already exists").into());
     }
     vesting_schedule.validate(block_time)?;
 
     VESTING_ACCOUNTS.save(
         storage,
-        (address.as_str(), &denom_key),
+        address.as_str(),
         &VestingAccount {
             master_address: master_address.clone(),
             address: address.to_string(),
-            vesting_denom: deposit_denom.clone(),
             vesting_amount: deposit_amount,
             vesting_schedule,
             claimed_amount: Uint128::zero(),
@@ -273,7 +260,6 @@ fn register_vesting_account(
             master_address.unwrap_or_default().as_str(),
         ),
         ("address", address.as_str()),
-        ("vesting_denom", &to_string(&deposit_denom).unwrap()),
         ("vesting_amount", &deposit_amount.to_string()),
     ]))
 }
@@ -283,18 +269,17 @@ fn deregister_vesting_account(
     env: Env,
     info: MessageInfo,
     address: String,
-    denom: Denom,
     vested_token_recipient: Option<String>,
     left_vesting_token_recipient: Option<String>,
 ) -> Result<Response, ContractError> {
-    let denom_key = denom_to_key(denom.clone());
     let sender = info.sender;
 
     let mut messages: Vec<CosmosMsg> = vec![];
 
     // vesting_account existence check
-    let account = VESTING_ACCOUNTS
-        .may_load(deps.storage, (address.as_str(), &denom_key))?;
+    let account = VESTING_ACCOUNTS.may_load(deps.storage, address.as_str())?;
+    let denom = DENOM.load(deps.storage)?;
+
     if account.is_none() {
         return Err(ContractError::Std(StdError::generic_err(format!(
             "vesting entry is not found for denom {:?}",
@@ -310,7 +295,7 @@ fn deregister_vesting_account(
     }
 
     // remove vesting account
-    VESTING_ACCOUNTS.remove(deps.storage, (address.as_str(), &denom_key));
+    VESTING_ACCOUNTS.remove(deps.storage, address.as_str());
 
     let vested_amount = account
         .vesting_schedule
@@ -323,11 +308,8 @@ fn deregister_vesting_account(
     if !claimable_amount.is_zero() {
         let recipient =
             vested_token_recipient.unwrap_or_else(|| address.to_string());
-        let msg_send: CosmosMsg = build_send_msg(
-            account.vesting_denom.clone(),
-            claimable_amount,
-            recipient,
-        )?;
+        let msg_send: CosmosMsg =
+            build_send_msg(denom.clone(), claimable_amount, recipient)?;
         messages.push(msg_send);
     }
 
@@ -338,18 +320,14 @@ fn deregister_vesting_account(
     if !left_vesting_amount.is_zero() {
         let recipient =
             left_vesting_token_recipient.unwrap_or_else(|| sender.to_string());
-        let msg_send: CosmosMsg = build_send_msg(
-            account.vesting_denom.clone(),
-            left_vesting_amount,
-            recipient,
-        )?;
+        let msg_send: CosmosMsg =
+            build_send_msg(denom, left_vesting_amount, recipient)?;
         messages.push(msg_send);
     }
 
     Ok(Response::new().add_messages(messages).add_attributes(vec![
         ("action", "deregister_vesting_account"),
         ("address", address.as_str()),
-        ("vesting_denom", &to_string(&account.vesting_denom).unwrap()),
         ("vesting_amount", &account.vesting_amount.to_string()),
         ("vested_amount", &vested_amount.to_string()),
         ("left_vesting_amount", &left_vesting_amount.to_string()),
@@ -360,68 +338,56 @@ fn claim(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    denoms: Vec<Denom>,
     recipient: Option<String>,
 ) -> Result<Response, ContractError> {
     let sender = info.sender;
     let recipient = recipient.unwrap_or_else(|| sender.to_string());
+    let denom = DENOM.load(deps.storage)?;
 
     let mut messages: Vec<CosmosMsg> = vec![];
     let mut attrs: Vec<Attribute> = vec![];
-    for denom in denoms.iter() {
-        let denom_key = denom_to_key(denom.clone());
 
-        // vesting_account existence check
-        let account = VESTING_ACCOUNTS
-            .may_load(deps.storage, (sender.as_str(), &denom_key))?;
-        if account.is_none() {
-            return Err(StdError::generic_err(format!(
-                "vesting entry is not found for denom {}",
-                to_string(&denom).unwrap(),
-            ))
-            .into());
-        }
-
-        let mut account = account.unwrap();
-        let vested_amount = account
-            .vesting_schedule
-            .vested_amount(env.block.time.seconds())?;
-        let claimed_amount = account.claimed_amount;
-
-        let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
-        if claimable_amount.is_zero() {
-            continue;
-        }
-
-        account.claimed_amount = vested_amount;
-        if account.claimed_amount == account.vesting_amount {
-            VESTING_ACCOUNTS.remove(deps.storage, (sender.as_str(), &denom_key));
-        } else {
-            VESTING_ACCOUNTS.save(
-                deps.storage,
-                (sender.as_str(), &denom_key),
-                &account,
-            )?;
-        }
-
-        let msg_send: CosmosMsg = build_send_msg(
-            account.vesting_denom.clone(),
-            claimable_amount,
-            recipient.clone(),
-        )?;
-
-        messages.push(msg_send);
-        attrs.extend(
-            vec![
-                ("vesting_denom", &to_string(&account.vesting_denom).unwrap()),
-                ("vesting_amount", &account.vesting_amount.to_string()),
-                ("vested_amount", &vested_amount.to_string()),
-                ("claim_amount", &claimable_amount.to_string()),
-            ]
-            .into_iter()
-            .map(|(key, val)| Attribute::new(key, val)),
-        );
+    // vesting_account existence check
+    let account = VESTING_ACCOUNTS.may_load(deps.storage, sender.as_str())?;
+    if account.is_none() {
+        return Err(StdError::generic_err(format!(
+            "vesting entry is not found for denom {}",
+            to_string(&denom).unwrap(),
+        ))
+        .into());
     }
+
+    let mut account = account.unwrap();
+    let vested_amount = account
+        .vesting_schedule
+        .vested_amount(env.block.time.seconds())?;
+    let claimed_amount = account.claimed_amount;
+
+    let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
+    if claimable_amount.is_zero() {
+        return Err(StdError::generic_err("nothing left to claim").into());
+    }
+
+    account.claimed_amount = vested_amount;
+    if account.claimed_amount == account.vesting_amount {
+        VESTING_ACCOUNTS.remove(deps.storage, sender.as_str());
+    } else {
+        VESTING_ACCOUNTS.save(deps.storage, sender.as_str(), &account)?;
+    }
+
+    let msg_send: CosmosMsg =
+        build_send_msg(denom, claimable_amount, recipient.clone())?;
+
+    messages.push(msg_send);
+    attrs.extend(
+        vec![
+            ("vesting_amount", &account.vesting_amount.to_string()),
+            ("vested_amount", &vested_amount.to_string()),
+            ("claim_amount", &claimable_amount.to_string()),
+        ]
+        .into_iter()
+        .map(|(key, val)| Attribute::new(key, val)),
+    );
 
     Ok(Response::new()
         .add_messages(messages)
@@ -430,14 +396,14 @@ fn claim(
 }
 
 fn build_send_msg(
-    denom: Denom,
+    denom: String,
     amount: Uint128,
     to: String,
 ) -> StdResult<CosmosMsg> {
     Ok(BankMsg::Send {
         to_address: to,
         amount: vec![Coin {
-            denom: denom_to_key(denom),
+            denom: denom,
             amount,
         }],
     }
@@ -447,22 +413,11 @@ fn build_send_msg(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::VestingAccount {
-            address,
-            start_after,
-            limit,
-        } => to_json_binary(&vesting_account(
-            deps,
-            env,
-            address,
-            start_after,
-            limit,
-        )?),
+        QueryMsg::VestingAccount { address } => {
+            to_json_binary(&vesting_account(deps, env, address)?)
+        }
     }
 }
-
-const MAX_LIMIT: u32 = 30;
-const DEFAULT_LIMIT: u32 = 10;
 
 /// address: Bech 32 address for the owner of the vesting accounts. This will be
 ///   the prefix we filter by in state.
@@ -472,44 +427,26 @@ fn vesting_account(
     deps: Deps,
     env: Env,
     address: String,
-    min_denom: Option<Denom>,
-    limit: Option<u32>,
 ) -> StdResult<VestingAccountResponse> {
-    let mut vestings: Vec<VestingData> = vec![];
-    // Ensure the value of 'limit' does not exceed MAX_LIMIT
-    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
+    let account = VESTING_ACCOUNTS.may_load(deps.storage, address.as_str())?;
 
-    for item in VESTING_ACCOUNTS
-        .prefix(address.as_str())
-        .range(
-            deps.storage,
-            min_denom
-                .map(denom_to_key)
-                .map(|s| s.as_bytes().to_vec())
-                .map(Bound::ExclusiveRaw),
-            None,
-            Order::Ascending,
-        )
-        // limits the number of vesting accounts retrieved
-        .take(limit)
-    {
-        let (_, account) = item?;
-        let vested_amount = account
-            .vesting_schedule
-            .vested_amount(env.block.time.seconds())?;
+    match account {
+        None => Err(StdError::not_found("Vesting account not found")),
+        Some(account) => {
+            let vested_amount = account
+                .vesting_schedule
+                .vested_amount(env.block.time.seconds())?;
 
-        vestings.push(VestingData {
-            master_address: account.master_address,
-            vesting_denom: account.vesting_denom,
-            vesting_amount: account.vesting_amount,
-            vested_amount,
-            vesting_schedule: account.vesting_schedule,
-            claimable_amount: vested_amount
-                .checked_sub(account.claimed_amount)?,
-        })
+            let vesting = VestingData {
+                vesting_account: account.clone(),
+                vested_amount: vested_amount,
+                claimable_amount: vested_amount
+                    .checked_sub(account.claimed_amount)?,
+            };
+
+            Ok(VestingAccountResponse { address, vesting })
+        }
     }
-
-    Ok(VestingAccountResponse { address, vestings })
 }
 
 #[cfg(test)]
@@ -557,7 +494,6 @@ pub mod tests {
 
         let msg = ExecuteMsg::DeregisterVestingAccount {
             address: "nonexistent".to_string(),
-            denom: Denom::Native("token".to_string()),
             vested_token_recipient: None,
             left_vesting_token_recipient: None,
         };
@@ -608,7 +544,6 @@ pub mod tests {
         // Try to deregister with unauthorized sender
         let msg = ExecuteMsg::DeregisterVestingAccount {
             address: "addr0001".to_string(),
-            denom: Denom::Native("token".to_string()),
             vested_token_recipient: None,
             left_vesting_token_recipient: None,
         };
@@ -657,7 +592,6 @@ pub mod tests {
         // Deregister with the master address
         let msg = ExecuteMsg::DeregisterVestingAccount {
             address: "addr0001".to_string(),
-            denom: Denom::Native("token".to_string()),
             vested_token_recipient: None,
             left_vesting_token_recipient: None,
         };

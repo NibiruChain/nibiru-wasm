@@ -1,8 +1,10 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{StdResult, Timestamp, Uint128, Uint64};
-use cw20::Denom;
 
-use crate::errors::{CliffError, ContractError, VestingError};
+use crate::{
+    errors::{CliffError, ContractError, VestingError},
+    state::VestingAccount,
+};
 
 /// Structure for the message that instantiates the smart contract.
 #[cw_serde]
@@ -37,14 +39,12 @@ pub enum ExecuteMsg {
     ///   vesting tokens after deregistration.
     DeregisterVestingAccount {
         address: String,
-        denom: Denom,
         vested_token_recipient: Option<String>,
         left_vesting_token_recipient: Option<String>,
     },
 
     /// Claim is an operation that allows one to claim vested tokens.
     Claim {
-        denoms: Vec<Denom>,
         recipient: Option<String>,
     },
 
@@ -105,26 +105,19 @@ pub struct RewardUserResponse {
 /// Enum representing the message types for the query entry point.
 #[cw_serde]
 pub enum QueryMsg {
-    VestingAccount {
-        address: String,
-        start_after: Option<Denom>,
-        limit: Option<u32>,
-    },
+    VestingAccount { address: String },
 }
 
 #[cw_serde]
 pub struct VestingAccountResponse {
     pub address: String,
-    pub vestings: Vec<VestingData>,
+    pub vesting: VestingData,
 }
 
 #[cw_serde]
 pub struct VestingData {
-    pub master_address: Option<String>,
-    pub vesting_denom: Denom,
-    pub vesting_amount: Uint128,
+    pub vesting_account: VestingAccount,
     pub vested_amount: Uint128,
-    pub vesting_schedule: VestingSchedule,
     pub claimable_amount: Uint128,
 }
 

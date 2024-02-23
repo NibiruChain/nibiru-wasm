@@ -14,7 +14,6 @@ use cosmwasm_std::{
     Attribute, BankMsg, Coin, Env, OwnedDeps, Response, StdError, SubMsg,
     Timestamp, Uint128, Uint64,
 };
-use cw20::Denom;
 
 #[test]
 fn proper_initialization() -> TestResult {
@@ -387,10 +386,6 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
                 value: "addr0001".to_string()
             },
             Attribute {
-                key: "vesting_denom".to_string(),
-                value: "{\"native\":\"uusd\"}".to_string()
-            },
-            Attribute {
                 key: "vesting_amount".to_string(),
                 value: "1000".to_string()
             },
@@ -446,10 +441,6 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
             Attribute {
                 key: "address".to_string(),
                 value: "addr0002".to_string()
-            },
-            Attribute {
-                key: "vesting_denom".to_string(),
-                value: "{\"native\":\"uusd\"}".to_string()
             },
             Attribute {
                 key: "vesting_amount".to_string(),
@@ -713,10 +704,6 @@ fn register_vesting_account_with_native_token() -> TestResult {
                 value: "addr0001".to_string()
             },
             Attribute {
-                key: "vesting_denom".to_string(),
-                value: "{\"native\":\"uusd\"}".to_string()
-            },
-            Attribute {
                 key: "vesting_amount".to_string(),
                 value: "100".to_string()
             },
@@ -734,24 +721,25 @@ fn register_vesting_account_with_native_token() -> TestResult {
             env,
             QueryMsg::VestingAccount {
                 address: "addr0001".to_string(),
-                start_after: None,
-                limit: None,
             },
         )?)?,
         VestingAccountResponse {
             address: "addr0001".to_string(),
-            vestings: vec![VestingData {
-                master_address: None,
-                vesting_denom: Denom::Native("uusd".to_string()),
-                vesting_amount: Uint128::new(100),
-                vested_amount: Uint128::zero(),
-                vesting_schedule: VestingSchedule::LinearVesting {
-                    start_time: Uint64::new(100),
-                    end_time: Uint64::new(110),
+            vesting: VestingData {
+                vesting_account: crate::state::VestingAccount {
+                    master_address: None,
+                    address: "addr0001".to_string(),
                     vesting_amount: Uint128::new(100u128),
+                    vesting_schedule: VestingSchedule::LinearVesting {
+                        start_time: Uint64::new(100),
+                        end_time: Uint64::new(110),
+                        vesting_amount: Uint128::new(100u128),
+                    },
+                    claimed_amount: Uint128::zero(),
                 },
+                vested_amount: Uint128::zero(),
                 claimable_amount: Uint128::zero(),
-            }],
+            },
         }
     );
     Ok(())
@@ -795,30 +783,9 @@ fn claim_native() -> TestResult {
     // make time to half claimable
     env.block.time = Timestamp::from_seconds(105);
 
-    // claim not found denom
-    let msg = ExecuteMsg::Claim {
-        denoms: vec![
-            Denom::Native("ukrw".to_string()),
-            Denom::Native("uusd".to_string()),
-        ],
-        recipient: None,
-    };
-
-    let info = mock_info("addr0001", &[]);
-    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
-    match res {
-        Err(ContractError::Std(StdError::GenericErr { msg, .. })) => assert_eq!(
-            msg,
-            "vesting entry is not found for denom {\"native\":\"ukrw\"}"
-        ),
-        _ => panic!("should not enter. got result: {res:?}"),
-    }
-
     // valid claim
-    let msg = ExecuteMsg::Claim {
-        denoms: vec![Denom::Native("uusd".to_string())],
-        recipient: None,
-    };
+    let info = mock_info("addr0001", &[]);
+    let msg = ExecuteMsg::Claim { recipient: None };
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
     assert_eq!(
@@ -826,7 +793,7 @@ fn claim_native() -> TestResult {
         vec![SubMsg::new(BankMsg::Send {
             to_address: "addr0001".to_string(),
             amount: vec![Coin {
-                denom: "native-uusd".to_string(),
+                denom: "uusd".to_string(),
                 amount: Uint128::new(500000u128),
             }],
         }),]
@@ -836,7 +803,6 @@ fn claim_native() -> TestResult {
         vec![
             Attribute::new("action", "claim"),
             Attribute::new("address", "addr0001"),
-            Attribute::new("vesting_denom", "{\"native\":\"uusd\"}"),
             Attribute::new("vesting_amount", "1000000"),
             Attribute::new("vested_amount", "500000"),
             Attribute::new("claim_amount", "500000"),
@@ -850,24 +816,25 @@ fn claim_native() -> TestResult {
             env.clone(),
             QueryMsg::VestingAccount {
                 address: "addr0001".to_string(),
-                start_after: None,
-                limit: None,
             },
         )?)?,
         VestingAccountResponse {
             address: "addr0001".to_string(),
-            vestings: vec![VestingData {
-                master_address: None,
-                vesting_denom: Denom::Native("uusd".to_string()),
-                vesting_amount: Uint128::new(1000000),
-                vested_amount: Uint128::new(500000),
-                vesting_schedule: VestingSchedule::LinearVesting {
-                    start_time: Uint64::new(100),
-                    end_time: Uint64::new(110),
-                    vesting_amount: Uint128::new(1000000u128),
+            vesting: VestingData {
+                vesting_account: crate::state::VestingAccount {
+                    master_address: None,
+                    address: "addr0001".to_string(),
+                    vesting_amount: Uint128::new(1000000),
+                    vesting_schedule: VestingSchedule::LinearVesting {
+                        start_time: Uint64::new(100),
+                        end_time: Uint64::new(110),
+                        vesting_amount: Uint128::new(1000000u128),
+                    },
+                    claimed_amount: Uint128::new(500000),
                 },
+                vested_amount: Uint128::new(500000),
                 claimable_amount: Uint128::zero(),
-            }],
+            },
         }
     );
 
@@ -880,7 +847,7 @@ fn claim_native() -> TestResult {
         vec![SubMsg::new(BankMsg::Send {
             to_address: "addr0001".to_string(),
             amount: vec![Coin {
-                denom: "native-uusd".to_string(),
+                denom: "uusd".to_string(),
                 amount: Uint128::new(500000u128),
             }],
         }),]
@@ -890,7 +857,6 @@ fn claim_native() -> TestResult {
         vec![
             Attribute::new("action", "claim"),
             Attribute::new("address", "addr0001"),
-            Attribute::new("vesting_denom", "{\"native\":\"uusd\"}"),
             Attribute::new("vesting_amount", "1000000"),
             Attribute::new("vested_amount", "1000000"),
             Attribute::new("claim_amount", "500000"),
@@ -898,20 +864,18 @@ fn claim_native() -> TestResult {
     );
 
     // query vesting account
-    assert_eq!(
-        from_json::<VestingAccountResponse>(&query(
-            deps.as_ref(),
-            env,
-            QueryMsg::VestingAccount {
-                address: "addr0001".to_string(),
-                start_after: None,
-                limit: None,
-            },
-        )?)?,
-        VestingAccountResponse {
+    let res = &query(
+        deps.as_ref(),
+        env,
+        QueryMsg::VestingAccount {
             address: "addr0001".to_string(),
-            vestings: vec![],
-        }
+        },
     );
+    //expect res to be an errro
+    match res {
+        Err(StdError::NotFound { .. }) => {}
+        _ => panic!("should not enter. got result: {res:?}"),
+    }
+
     Ok(())
 }
