@@ -240,6 +240,8 @@ impl VestingSchedule {
     ///    - that the cliff amount is not zero.
     ///    - that the cliff amount is less than or equal to the vesting amount.
     ///
+    /// Also it calls to validate_time
+    ///
     pub fn validate(&self, block_time: Timestamp) -> Result<(), VestingError> {
         self.validate_time(block_time)?;
         match &self {
