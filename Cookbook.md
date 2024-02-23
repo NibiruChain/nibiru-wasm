@@ -582,7 +582,7 @@ The owner is the only one who can execute messages in the contract
 }
 ```
 
-## 7. Core token vesting
+## 7. Airdrop token vesting
 
 This contract implements vesting accounts for the CW20 and native tokens.
 
@@ -603,7 +603,7 @@ We need to specify admin and managers
 
 ```javascript
 {
-  "register_vesting_account": {
+  "reward_users": {
     "master_address": "cosmos1...",
     "rewards": [
       {
