@@ -231,6 +231,15 @@ impl VestingSchedule {
         }
     }
 
+    ///
+    /// Validates the vesting schedule.
+    ///
+    /// - If the VestingSchedule is LinearVesting, it checks that the vesting amount is not zero.
+    /// - If the VestingSchedule is LinearVestingWithCliff, it checks:
+    ///    - that the vesting amount is not zero.
+    ///    - that the cliff amount is not zero.
+    ///    - that the cliff amount is less than or equal to the vesting amount.
+    ///
     pub fn validate(&self, block_time: Timestamp) -> Result<(), VestingError> {
         self.validate_time(block_time)?;
         match &self {
