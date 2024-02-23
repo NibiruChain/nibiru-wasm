@@ -288,7 +288,6 @@ fn deregister_vesting_account(
     left_vesting_token_recipient: Option<String>,
 ) -> Result<Response, ContractError> {
     let denom_key = denom_to_key(denom.clone());
-    let sender = info.sender;
 
     let mut messages: Vec<CosmosMsg> = vec![];
 
@@ -302,9 +301,10 @@ fn deregister_vesting_account(
         ))));
     }
 
+    let master_address = info.sender;
     let account = account.unwrap();
     if account.master_address.is_none()
-        || account.master_address.unwrap() != sender
+        || account.master_address.unwrap() != master_address
     {
         return Err(StdError::generic_err("unauthorized").into());
     }
@@ -317,8 +317,8 @@ fn deregister_vesting_account(
         .vested_amount(env.block.time.seconds())?;
     let claimed_amount = account.claimed_amount;
 
-    // transfer already vested but not claimed amount to
-    // a account address or the given `vested_token_recipient` address
+    // transfer already vested amount to vested_token_recipient and if
+    // it is not provided, transfer it to the address that is the owner of the vesting account
     let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
     send_if_amount_is_not_zero(
         &mut messages,
@@ -328,8 +328,8 @@ fn deregister_vesting_account(
         address.clone(),
     )?;
 
-    // transfer left vesting amount to owner or
-    // the given `left_vesting_token_recipient` address
+    // transfer left vesting amount to left_vesting_token_recipient and if
+    // it is not provided, transfer it to the master_address
     let left_vesting_amount =
         account.vesting_amount.checked_sub(vested_amount)?;
     send_if_amount_is_not_zero(
@@ -337,7 +337,7 @@ fn deregister_vesting_account(
         left_vesting_amount,
         account.vesting_denom.clone(),
         left_vesting_token_recipient,
-        sender.clone().to_string(),
+        master_address.clone().to_string(),
     )?;
 
     Ok(Response::new().add_messages(messages).add_attributes(vec![
