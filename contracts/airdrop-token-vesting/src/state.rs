@@ -32,7 +32,6 @@ impl Whitelist {
 
 #[cw_serde]
 pub struct VestingAccount {
-    pub master_address: Option<String>,
     pub address: String,
     pub vesting_amount: Uint128,
     pub vesting_schedule: VestingSchedule,

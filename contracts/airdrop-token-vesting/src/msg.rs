@@ -20,16 +20,13 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     /// A creator operation that registers a vesting account
     /// address: String: Bech 32 address of the owner of the vesting account.
-    /// master_address: Option<String>: Bech 32 address that can unregister the vesting account.
     /// vesting_schedule: VestingSchedule: The vesting schedule of the account.
     RewardUsers {
         rewards: Vec<RewardUserRequest>,
-        master_address: Option<String>, // if given, the vesting account can be unregistered
         vesting_schedule: VestingSchedule,
     },
 
-    /// A creator operation that unregisters a vesting account. This method is only available only
-    /// available when 'master_address' was set during vesting account registration.
+    /// A creator operation that unregisters a vesting account.
     /// Args:
     /// - address: String: Bech 32 address of the owner of vesting account.
     /// - denom: Denom: The denomination of the tokens vested.
@@ -224,6 +221,17 @@ impl VestingSchedule {
         }
     }
 
+    ///
+    /// Validates the vesting schedule.
+    ///
+    /// - If the VestingSchedule is LinearVesting, it checks that the vesting amount is not zero.
+    /// - If the VestingSchedule is LinearVestingWithCliff, it checks:
+    ///    - that the vesting amount is not zero.
+    ///    - that the cliff amount is not zero.
+    ///    - that the cliff amount is less than or equal to the vesting amount.
+    ///
+    /// Also it calls to validate_time
+    ///
     pub fn validate(&self, block_time: Timestamp) -> Result<(), VestingError> {
         self.validate_time(block_time)?;
         match &self {
@@ -258,6 +266,14 @@ impl VestingSchedule {
         }
     }
 
+    ///
+    /// validate_time checks that the start_time is less than the end_time.
+    /// additionally, if the vesting schedule is LinearVestingWithCliff, it checks that the cliff_time
+    /// is less than the end_time.
+    ///
+    /// Additionally, it the vesting schedule is LinearVestingWithCliff, it checks that the cliff_time
+    /// is bigger or equal to the block_time.
+    ///
     pub fn validate_time(
         &self,
         block_time: Timestamp,

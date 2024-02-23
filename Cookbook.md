@@ -604,7 +604,6 @@ We need to specify admin and managers
 ```javascript
 {
   "reward_users": {
-    "master_address": "cosmos1...",
     "rewards": [
       {
         "user_address": "cosmos1...",
@@ -629,7 +628,6 @@ We need to specify admin and managers
 {
   "deregister_vesting_account": {
     "address": "cosmos1...",
-    "denom": "uusd",
     "vested_token_recipient": "cosmos1...", // address that will receive the vested tokens after deregistration. If None, tokens are received by the owner address.
     "left_vested_token_recipient": "cosmos1...", // address that will receive the left vesting tokens after deregistration.
   }
@@ -641,7 +639,6 @@ We need to specify admin and managers
 ```javascript
 {
   "claim": {
-    "denom": "uusd",
     "recipient": "cosmos1...",
   }
 }

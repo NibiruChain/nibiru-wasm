@@ -250,7 +250,6 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
                       cliff_time: u64|
      -> ExecuteMsg {
         ExecuteMsg::RewardUsers {
-            master_address: None,
             rewards: vec![RewardUserRequest {
                 user_address: "addr0001".to_string(),
                 vesting_amount: Uint128::new(vesting_amount),
@@ -378,10 +377,6 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
                 value: "register_vesting_account".to_string()
             },
             Attribute {
-                key: "master_address".to_string(),
-                value: "".to_string(),
-            },
-            Attribute {
                 key: "address".to_string(),
                 value: "addr0001".to_string()
             },
@@ -402,7 +397,6 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
     let cliff_time = 105u64;
 
     let msg = ExecuteMsg::RewardUsers {
-        master_address: None,
         rewards: vec![
             RewardUserRequest {
                 user_address: "addr0002".to_string(),
@@ -433,10 +427,6 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
             Attribute {
                 key: "action".to_string(),
                 value: "register_vesting_account".to_string()
-            },
-            Attribute {
-                key: "master_address".to_string(),
-                value: "".to_string(),
             },
             Attribute {
                 key: "address".to_string(),
@@ -479,7 +469,6 @@ fn test_withdraw() -> TestResult {
                       cliff_time: u64|
      -> ExecuteMsg {
         ExecuteMsg::RewardUsers {
-            master_address: None,
             rewards: vec![RewardUserRequest {
                 user_address: "addr0001".to_string(),
                 vesting_amount: Uint128::new(vesting_amount),
@@ -598,7 +587,6 @@ fn register_vesting_account_with_native_token() -> TestResult {
 
     // zero amount vesting token
     let msg = ExecuteMsg::RewardUsers {
-        master_address: None,
         rewards: vec![RewardUserRequest {
             user_address: "addr0001".to_string(),
             vesting_amount: Uint128::zero(),
@@ -621,7 +609,6 @@ fn register_vesting_account_with_native_token() -> TestResult {
 
     // too much vesting amount
     let msg = ExecuteMsg::RewardUsers {
-        master_address: None,
         rewards: vec![RewardUserRequest {
             user_address: "addr0001".to_string(),
             vesting_amount: Uint128::new(1000001u128),
@@ -644,7 +631,6 @@ fn register_vesting_account_with_native_token() -> TestResult {
 
     // too much vesting amount in 2 rewards
     let msg = ExecuteMsg::RewardUsers {
-        master_address: None,
         rewards: vec![
             RewardUserRequest {
                 user_address: "addr0001".to_string(),
@@ -674,7 +660,6 @@ fn register_vesting_account_with_native_token() -> TestResult {
 
     // valid amount
     let msg = ExecuteMsg::RewardUsers {
-        master_address: None,
         rewards: vec![RewardUserRequest {
             user_address: "addr0001".to_string(),
             vesting_amount: Uint128::new(100u128),
@@ -694,10 +679,6 @@ fn register_vesting_account_with_native_token() -> TestResult {
             Attribute {
                 key: "action".to_string(),
                 value: "register_vesting_account".to_string()
-            },
-            Attribute {
-                key: "master_address".to_string(),
-                value: "".to_string(),
             },
             Attribute {
                 key: "address".to_string(),
@@ -727,7 +708,6 @@ fn register_vesting_account_with_native_token() -> TestResult {
             address: "addr0001".to_string(),
             vesting: VestingData {
                 vesting_account: crate::state::VestingAccount {
-                    master_address: None,
                     address: "addr0001".to_string(),
                     vesting_amount: Uint128::new(100u128),
                     vesting_schedule: VestingSchedule::LinearVesting {
@@ -764,7 +744,6 @@ fn claim_native() -> TestResult {
 
     // valid amount
     let msg = ExecuteMsg::RewardUsers {
-        master_address: None,
         rewards: vec![RewardUserRequest {
             user_address: "addr0001".to_string(),
             vesting_amount: Uint128::new(1000000u128),
@@ -822,7 +801,6 @@ fn claim_native() -> TestResult {
             address: "addr0001".to_string(),
             vesting: VestingData {
                 vesting_account: crate::state::VestingAccount {
-                    master_address: None,
                     address: "addr0001".to_string(),
                     vesting_amount: Uint128::new(1000000),
                     vesting_schedule: VestingSchedule::LinearVesting {

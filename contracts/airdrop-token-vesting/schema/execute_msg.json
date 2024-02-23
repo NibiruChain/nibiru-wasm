@@ -4,7 +4,7 @@
   "description": "Enum respresenting message types for the execute entry point. These express the different ways in which one can invoke the contract and broadcast tx messages against it.",
   "oneOf": [
     {
-      "description": "A creator operation that registers a vesting account address: String: Bech 32 address of the owner of the vesting account. master_address: Option<String>: Bech 32 address that can unregister the vesting account. vesting_schedule: VestingSchedule: The vesting schedule of the account.",
+      "description": "A creator operation that registers a vesting account address: String: Bech 32 address of the owner of the vesting account. vesting_schedule: VestingSchedule: The vesting schedule of the account.",
       "type": "object",
       "required": [
         "reward_users"
@@ -17,12 +17,6 @@
             "vesting_schedule"
           ],
           "properties": {
-            "master_address": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
             "rewards": {
               "type": "array",
               "items": {
@@ -39,7 +33,7 @@
       "additionalProperties": false
     },
     {
-      "description": "A creator operation that unregisters a vesting account. This method is only available only available when 'master_address' was set during vesting account registration. Args: - address: String: Bech 32 address of the owner of vesting account. - denom: Denom: The denomination of the tokens vested. - vested_token_recipient: Option<String>: Bech 32 address that will receive the vested tokens after deregistration. If None, tokens are received by the owner address. - left_vesting_token_recipient: Option<String>: Bech 32 address that will receive the left vesting tokens after deregistration.",
+      "description": "A creator operation that unregisters a vesting account. Args: - address: String: Bech 32 address of the owner of vesting account. - denom: Denom: The denomination of the tokens vested. - vested_token_recipient: Option<String>: Bech 32 address that will receive the vested tokens after deregistration. If None, tokens are received by the owner address. - left_vesting_token_recipient: Option<String>: Bech 32 address that will receive the left vesting tokens after deregistration.",
       "type": "object",
       "required": [
         "deregister_vesting_account"
@@ -48,15 +42,11 @@
         "deregister_vesting_account": {
           "type": "object",
           "required": [
-            "address",
-            "denom"
+            "address"
           ],
           "properties": {
             "address": {
               "type": "string"
-            },
-            "denom": {
-              "$ref": "#/definitions/Denom"
             },
             "left_vesting_token_recipient": {
               "type": [
@@ -85,16 +75,7 @@
       "properties": {
         "claim": {
           "type": "object",
-          "required": [
-            "denoms"
-          ],
           "properties": {
-            "denoms": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Denom"
-              }
-            },
             "recipient": {
               "type": [
                 "string",
@@ -134,38 +115,6 @@
     }
   ],
   "definitions": {
-    "Addr": {
-      "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
-      "type": "string"
-    },
-    "Denom": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "native"
-          ],
-          "properties": {
-            "native": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "cw20"
-          ],
-          "properties": {
-            "cw20": {
-              "$ref": "#/definitions/Addr"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
     "RewardUserRequest": {
       "type": "object",
       "required": [

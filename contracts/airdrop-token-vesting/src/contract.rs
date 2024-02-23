@@ -72,16 +72,8 @@ pub fn execute(
     match msg {
         ExecuteMsg::RewardUsers {
             rewards,
-            master_address,
             vesting_schedule,
-        } => reward_users(
-            deps,
-            env,
-            info,
-            rewards,
-            master_address,
-            vesting_schedule,
-        ),
+        } => reward_users(deps, env, info, rewards, vesting_schedule),
         ExecuteMsg::DeregisterVestingAccount {
             address,
             vested_token_recipient,
@@ -147,7 +139,6 @@ fn reward_users(
     env: Env,
     info: MessageInfo,
     rewards: Vec<RewardUserRequest>,
-    master_address: Option<String>,
     mut vesting_schedule: VestingSchedule,
 ) -> Result<Response, ContractError> {
     let mut res = vec![];
@@ -194,7 +185,6 @@ fn reward_users(
         let result = register_vesting_account(
             deps.storage,
             env.block.time,
-            master_address.clone(),
             req.user_address.clone(),
             req.vesting_amount,
             vesting_schedule.clone(),
@@ -230,7 +220,6 @@ fn reward_users(
 fn register_vesting_account(
     storage: &mut dyn Storage,
     block_time: Timestamp,
-    master_address: Option<String>,
     address: String,
     deposit_amount: Uint128,
     vesting_schedule: VestingSchedule,
@@ -245,7 +234,6 @@ fn register_vesting_account(
         storage,
         address.as_str(),
         &VestingAccount {
-            master_address: master_address.clone(),
             address: address.to_string(),
             vesting_amount: deposit_amount,
             vesting_schedule,
@@ -255,10 +243,6 @@ fn register_vesting_account(
 
     Ok(Response::new().add_attributes(vec![
         ("action", "register_vesting_account"),
-        (
-            "master_address",
-            master_address.unwrap_or_default().as_str(),
-        ),
         ("address", address.as_str()),
         ("vesting_amount", &deposit_amount.to_string()),
     ]))
@@ -274,6 +258,8 @@ fn deregister_vesting_account(
 ) -> Result<Response, ContractError> {
     let sender = info.sender;
 
+    let whitelist = WHITELIST.load(deps.storage)?;
+
     let mut messages: Vec<CosmosMsg> = vec![];
 
     // vesting_account existence check
@@ -282,15 +268,13 @@ fn deregister_vesting_account(
 
     if account.is_none() {
         return Err(ContractError::Std(StdError::generic_err(format!(
-            "vesting entry is not found for denom {:?}",
-            to_string(&denom).unwrap(),
+            "vesting entry is not found for address {:?}",
+            to_string(&address).unwrap(),
         ))));
     }
-
     let account = account.unwrap();
-    if account.master_address.is_none()
-        || account.master_address.unwrap() != sender
-    {
+
+    if !(whitelist.is_admin(sender.clone()) || whitelist.is_member(sender)) {
         return Err(StdError::generic_err("unauthorized").into());
     }
 
@@ -302,28 +286,28 @@ fn deregister_vesting_account(
         .vested_amount(env.block.time.seconds())?;
     let claimed_amount = account.claimed_amount;
 
-    // transfer already vested but not claimed amount to
-    // a account address or the given `vested_token_recipient` address
+    // transfer already vested amount to vested_token_recipient and if
+    // it is not provided, transfer it to the address that is the owner of the vesting account
     let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
-    if !claimable_amount.is_zero() {
-        let recipient =
-            vested_token_recipient.unwrap_or_else(|| address.to_string());
-        let msg_send: CosmosMsg =
-            build_send_msg(denom.clone(), claimable_amount, recipient)?;
-        messages.push(msg_send);
-    }
+    send_if_amount_is_not_zero(
+        &mut messages,
+        claimable_amount,
+        denom.clone(),
+        vested_token_recipient,
+        address.clone(),
+    )?;
 
-    // transfer left vesting amount to owner or
-    // the given `left_vesting_token_recipient` address
+    // transfer left vesting amount to left_vesting_token_recipient and if
+    // it is not provided, transfer it to the master_address
     let left_vesting_amount =
         account.vesting_amount.checked_sub(vested_amount)?;
-    if !left_vesting_amount.is_zero() {
-        let recipient =
-            left_vesting_token_recipient.unwrap_or_else(|| sender.to_string());
-        let msg_send: CosmosMsg =
-            build_send_msg(denom, left_vesting_amount, recipient)?;
-        messages.push(msg_send);
-    }
+    send_if_amount_is_not_zero(
+        &mut messages,
+        left_vesting_amount,
+        denom,
+        left_vesting_token_recipient,
+        whitelist.admin.clone(),
+    )?;
 
     Ok(Response::new().add_messages(messages).add_attributes(vec![
         ("action", "deregister_vesting_account"),
@@ -332,6 +316,26 @@ fn deregister_vesting_account(
         ("vested_amount", &vested_amount.to_string()),
         ("left_vesting_amount", &left_vesting_amount.to_string()),
     ]))
+}
+
+///
+/// creates a send message if the amount to send is not zero
+///
+/// If we provide a recipient, we use it. Otherwise, we use the default_recipient
+fn send_if_amount_is_not_zero(
+    messages: &mut Vec<CosmosMsg>,
+    amount: Uint128,
+    denom: String,
+    recipient_option: Option<String>,
+    default_recipient: String,
+) -> Result<(), ContractError> {
+    if !amount.is_zero() {
+        let recipient = recipient_option.unwrap_or_else(|| default_recipient);
+        let msg_send: CosmosMsg = build_send_msg(denom, amount, recipient)?;
+        messages.push(msg_send);
+    }
+
+    Ok(())
 }
 
 fn claim(
@@ -482,7 +486,7 @@ pub mod tests {
             testing::mock_info("admin-sender", &[coin(5000, "token")]),
             InstantiateMsg {
                 admin: "admin-sender".to_string(),
-                managers: vec!["admin-sender".to_string()],
+                managers: vec!["manager-sender".to_string()],
             },
         )?;
         Ok((deps, env))
@@ -508,7 +512,7 @@ pub mod tests {
         match res {
             Ok(_) => Err(anyhow!("Unexpected result: {:#?}", res)),
             Err(ContractError::Std(StdError::GenericErr { msg, .. })) => {
-                assert!(msg.contains("vesting entry is not found for denom"));
+                assert!(msg.contains("vesting entry is not found for address"));
                 Ok(())
             }
             Err(err) => Err(anyhow!("Unexpected error: {:#?}", err)),
@@ -521,7 +525,6 @@ pub mod tests {
         let (mut deps, env) = setup_with_block_time(50)?;
 
         let register_msg = ExecuteMsg::RewardUsers {
-            master_address: Some("addr0002".to_string()),
             rewards: vec![RewardUserRequest {
                 user_address: "addr0001".to_string(),
                 vesting_amount: Uint128::new(5000u128),
@@ -569,7 +572,6 @@ pub mod tests {
         let (mut deps, env) = setup_with_block_time(50)?;
 
         let register_msg = ExecuteMsg::RewardUsers {
-            master_address: Some("addr0002".to_string()),
             rewards: vec![RewardUserRequest {
                 user_address: "addr0001".to_string(),
                 vesting_amount: Uint128::new(5000u128),
@@ -585,11 +587,11 @@ pub mod tests {
         execute(
             deps.as_mut(),
             env.clone(), // Use the custom environment with the adjusted block time
-            testing::mock_info("admin-sender", &[coin(1000000, "token")]),
+            testing::mock_info("admin-sender", &[]),
             register_msg,
         )?;
 
-        // Deregister with the master address
+        // Deregister with the manager address
         let msg = ExecuteMsg::DeregisterVestingAccount {
             address: "addr0001".to_string(),
             vested_token_recipient: None,
@@ -599,7 +601,7 @@ pub mod tests {
         let _res = execute(
             deps.as_mut(),
             env, // Use the custom environment with the adjusted block time
-            testing::mock_info("addr0002", &[]),
+            testing::mock_info("manager-sender", &[]),
             msg,
         )?;
 
