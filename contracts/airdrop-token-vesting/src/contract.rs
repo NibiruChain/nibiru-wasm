@@ -320,31 +320,25 @@ fn deregister_vesting_account(
     // transfer already vested but not claimed amount to
     // a account address or the given `vested_token_recipient` address
     let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
-    if !claimable_amount.is_zero() {
-        let recipient =
-            vested_token_recipient.unwrap_or_else(|| address.to_string());
-        let msg_send: CosmosMsg = build_send_msg(
-            account.vesting_denom.clone(),
-            claimable_amount,
-            recipient,
-        )?;
-        messages.push(msg_send);
-    }
+    send_if_amount_is_not_zero(
+        &mut messages,
+        claimable_amount,
+        account.vesting_denom.clone(),
+        vested_token_recipient,
+        address.clone(),
+    )?;
 
     // transfer left vesting amount to owner or
     // the given `left_vesting_token_recipient` address
     let left_vesting_amount =
         account.vesting_amount.checked_sub(vested_amount)?;
-    if !left_vesting_amount.is_zero() {
-        let recipient =
-            left_vesting_token_recipient.unwrap_or_else(|| sender.to_string());
-        let msg_send: CosmosMsg = build_send_msg(
-            account.vesting_denom.clone(),
-            left_vesting_amount,
-            recipient,
-        )?;
-        messages.push(msg_send);
-    }
+    send_if_amount_is_not_zero(
+        &mut messages,
+        left_vesting_amount,
+        account.vesting_denom.clone(),
+        left_vesting_token_recipient,
+        sender.clone().to_string(),
+    )?;
 
     Ok(Response::new().add_messages(messages).add_attributes(vec![
         ("action", "deregister_vesting_account"),
@@ -354,6 +348,26 @@ fn deregister_vesting_account(
         ("vested_amount", &vested_amount.to_string()),
         ("left_vesting_amount", &left_vesting_amount.to_string()),
     ]))
+}
+
+///
+/// creates a send message if the amount to send is not zero
+///
+/// If we provide a recipient, we use it. Otherwise, we use the default_recipient
+fn send_if_amount_is_not_zero(
+    messages: &mut Vec<CosmosMsg>,
+    amount: Uint128,
+    denom: Denom,
+    recipient_option: Option<String>,
+    default_recipient: String,
+) -> Result<(), ContractError> {
+    if !amount.is_zero() {
+        let recipient = recipient_option.unwrap_or_else(|| default_recipient);
+        let msg_send: CosmosMsg = build_send_msg(denom, amount, recipient)?;
+        messages.push(msg_send);
+    }
+
+    Ok(())
 }
 
 fn claim(
