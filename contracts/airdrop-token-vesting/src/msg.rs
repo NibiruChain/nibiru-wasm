@@ -274,6 +274,14 @@ impl VestingSchedule {
         }
     }
 
+    ///
+    /// validate_time checks that the start_time is less than the end_time.
+    /// additionally, if the vesting schedule is LinearVestingWithCliff, it checks that the cliff_time
+    /// is less than the end_time.
+    ///
+    /// Additionally, it the vesting schedule is LinearVestingWithCliff, it checks that the cliff_time
+    /// is bigger or equal to the block_time.
+    ///
     pub fn validate_time(
         &self,
         block_time: Timestamp,
