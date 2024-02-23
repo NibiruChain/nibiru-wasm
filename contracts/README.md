@@ -28,3 +28,5 @@
 
 - [**pricefeed**](./pricefeed): Legacy implementation of the Nibiru Oracle Module in pure
   CosmWasm rather than the Cosmos-SDK.
+
+- [**airdrop-token-vesting**](./airdrop-token-vesting/README.md)
