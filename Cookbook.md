@@ -584,7 +584,7 @@ The owner is the only one who can execute messages in the contract
 
 ## 7. Airdrop token vesting
 
-This contract implements vesting accounts for the CW20 and native tokens.
+This contract implements vesting accounts for the native tokens.
 
 ### 7.1 Instantiate
 
