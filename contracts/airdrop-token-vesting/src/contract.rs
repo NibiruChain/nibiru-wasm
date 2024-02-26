@@ -54,8 +54,8 @@ pub fn instantiate(
     WHITELIST.save(
         deps.storage,
         &Whitelist {
-            members: msg.managers.clone().into_iter().collect(),
-            admin: msg.admin.clone(),
+            members: msg.managers.into_iter().collect(),
+            admin: msg.admin,
         },
     )?;
 
