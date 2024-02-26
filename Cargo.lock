@@ -1741,6 +1741,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
+ "bash-rs",
  "home",
  "lazy_static",
  "reqwest",
