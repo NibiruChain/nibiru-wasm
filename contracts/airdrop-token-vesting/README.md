@@ -19,6 +19,18 @@ the unallocated amount from the contract.
 
 This creates a set of vesting accounts for the given users.
 
+```rust
+  DeregisterVestingAccount {
+address: String,
+vested_token_recipient: Option<String>,
+left_vesting_token_recipient: Option<String>,
+},
+```
+
+- DeregisterVestingAccount - deregister vesting account
+  - It will compute `claimable_amount` and `left_vesting_amount`. Each amount respectively sent to (`vested_token_recipient` or `vesting_account`)
+    and (`left_vesting_token_recipient` or `master_address`).
+
 #### By admin only
 
 ```rust
@@ -30,20 +42,6 @@ This creates a set of vesting accounts for the given users.
 
 This allows to get part or all of the unallocated amount from the contract and sends it to the `recipient`. Unallocated is equal to the
 amount sent on instantiation minus the already rewarded to users.
-
-#### By admin and managers
-
-```rust
-  DeregisterVestingAccount {
-    address: String,
-    vested_token_recipient: Option<String>,
-    left_vesting_token_recipient: Option<String>,
-  },
-```
-
-- DeregisterVestingAccount - deregister vesting account
-  - It will compute `claimable_amount` and `left_vesting_amount`. Each amount respectively sent to (`vested_token_recipient` or `vesting_account`)
-    and (`left_vesting_token_recipient` or `master_address`).
 
 ### Vesting Account Operations
 
