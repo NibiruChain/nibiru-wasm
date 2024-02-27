@@ -1,5 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{StdResult, Timestamp, Uint128, Uint64};
+use cw20::Denom;
 
 use crate::{
     errors::{CliffError, ContractError, VestingError},
@@ -102,7 +103,11 @@ pub struct RewardUserResponse {
 /// Enum representing the message types for the query entry point.
 #[cw_serde]
 pub enum QueryMsg {
-    VestingAccount { address: String },
+    VestingAccount {
+        address: String,
+        start_after: Option<Denom>,
+        limit: Option<u32>,
+    },
 }
 
 #[cw_serde]

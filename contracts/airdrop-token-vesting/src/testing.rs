@@ -702,6 +702,8 @@ fn register_vesting_account_with_native_token() -> TestResult {
             env,
             QueryMsg::VestingAccount {
                 address: "addr0001".to_string(),
+                start_after: None,
+                limit: None,
             },
         )?)?,
         VestingAccountResponse {
@@ -795,6 +797,8 @@ fn claim_native() -> TestResult {
             env.clone(),
             QueryMsg::VestingAccount {
                 address: "addr0001".to_string(),
+                start_after: None,
+                limit: None,
             },
         )?)?,
         VestingAccountResponse {
@@ -847,6 +851,8 @@ fn claim_native() -> TestResult {
         env,
         QueryMsg::VestingAccount {
             address: "addr0001".to_string(),
+            start_after: None,
+            limit: None,
         },
     );
     //expect res to be an errro

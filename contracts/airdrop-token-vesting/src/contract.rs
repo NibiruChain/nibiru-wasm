@@ -417,9 +417,11 @@ fn build_send_msg(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::VestingAccount { address } => {
-            to_json_binary(&vesting_account(deps, env, address)?)
-        }
+        QueryMsg::VestingAccount {
+            address,
+            start_after: _start_after,
+            limit: _limit,
+        } => to_json_binary(&vesting_account(deps, env, address)?),
     }
 }
 
