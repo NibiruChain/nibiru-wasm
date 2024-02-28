@@ -92,7 +92,10 @@ tidy-update: build-update
 gen-schema:
   #!/usr/bin/env bash
   for dir in contracts/*/; do
+    dir_name=$(basename $dir)
+
     echo "Generating schema for $dir"
     cd $dir
     cargo schema
+    mv ./schema ../../schema/$dir_name
   done
