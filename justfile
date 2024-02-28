@@ -88,3 +88,11 @@ tidy:
 # Format, lint, update dependencies, and test
 tidy-update: build-update
   just tidy
+
+gen-schema:
+  #!/usr/bin/env bash
+  for dir in contracts/*/; do
+    echo "Generating schema for $dir"
+    cd $dir
+    cargo schema
+  done
