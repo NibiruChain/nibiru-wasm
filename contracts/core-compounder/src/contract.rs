@@ -34,6 +34,8 @@ pub fn instantiate(
         },
     )?;
 
+    COMPOUNDER_ON.save(deps.storage, &false)?;
+
     Ok(Response::new())
 }
 
@@ -146,6 +148,9 @@ pub fn unstake(
 
     let mut messages: Vec<CosmosMsg> = vec![];
     for msg in unstake_msgs.iter() {
+        if msg.amount.is_zero() {
+            continue;
+        }
         messages.push(build_unstakes_messages(
             msg.amount,
             msg.validator.to_string(),
@@ -173,6 +178,10 @@ pub fn stake(
         return Err(ContractError::Unauthorized {});
     }
 
+    if !COMPOUNDER_ON.load(deps.storage)? {
+        return Err(ContractError::Unauthorized {});
+    }
+
     // sum total amount of shares in the stake msgs
     let total_shares: Uint128 = stake_msgs.iter().map(|m| m.share).sum();
     if total_shares.is_zero() {
@@ -184,6 +193,9 @@ pub fn stake(
         let _ = deps.api.addr_validate(&stake_msg.validator)?;
 
         let amount_to_delegate = amount * stake_msg.share / total_shares;
+        if amount_to_delegate.is_zero() {
+            continue;
+        }
 
         messages.push(build_stake_message(
             amount_to_delegate,
