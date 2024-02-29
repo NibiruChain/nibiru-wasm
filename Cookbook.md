@@ -655,3 +655,112 @@ We need to specify admin and managers
   }
 }
 ```
+
+## 8. Auto compounder
+
+This contract implements vesting accounts for the native tokens.
+
+### 8.1 Instantiate
+
+We need to specify admin and managers
+
+```javascript
+{
+  "admin": "cosmos1...",
+  "managers": ["cosmos1...", "cosmos1..."]
+}
+```
+
+### 8.2 Execute
+
+#### Admin functions
+
+- **SetAutoCompounderMode** sets the auto compounder mode
+
+```javascript
+{
+  "set_auto_compounder_mode": {
+    "mode": "true" // true or false
+  }
+}
+```
+
+- **Withdraw** allows to withdraw the funds from the contract
+
+  ```javascript
+  {
+    "withdraw": {
+      "amount": "1000000"
+      "recipient": "cosmos1..."
+    }
+  }
+  ```
+
+- **unstakes** allows to unstake the funds from the contract
+
+  ```javascript
+  {
+    "unstake": {
+      "unstake_msgs": [
+        {
+          "validator": "cosmosvaloper1...",
+          "amount": "1000000"
+        },
+        {
+          "validator": "cosmosvaloper1...",
+          "amount": "1000000"
+        }
+      ]
+    }
+  }
+  ```
+
+- **update managers** allows to update the managers of the contract
+
+```javascript
+{
+  "update_managers": {
+    "managers": ["cosmos1...", "cosmos1..."]
+  }
+}
+```
+
+#### Manager functions
+
+- **stake** allows to stake the funds from the contract. The shares are normalized
+
+```javascript
+{
+  "stake": {
+    "stake_msgs": [
+      {
+        "validator": "cosmosvaloper1...",
+        "share": "1000000"
+      },
+      {
+        "validator": "cosmosvaloper1...",
+        "share": "1000000"
+      }
+    ]
+  },
+  "amount": "1000000"
+}
+```
+
+### 8.3 Query
+
+- **auto compounder mode** returns wether the auto compounder mode is enabled or not
+
+```javascript
+{
+  "auto_compounder_mode": {}
+}
+```
+
+- **AdminAndManagers** returns the admin and managers of the contract
+
+```javascript
+{
+  "admin_and_managers": {}
+}
+```
