@@ -12,7 +12,7 @@ use serde_json::to_string;
 use crate::errors::ContractError;
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, QueryMsg, RewardUserRequest, RewardUserResponse,
-    VestingAccountResponse, VestingData, VestingSchedule,
+    VestingAccountResponse, VestingData,
 };
 use crate::state::{
     VestingAccount, Whitelist, DENOM, UNALLOCATED_AMOUNT, VESTING_ACCOUNTS,
@@ -70,10 +70,9 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::RewardUsers {
-            rewards,
-            vesting_schedule,
-        } => reward_users(deps, env, info, rewards, vesting_schedule),
+        ExecuteMsg::RewardUsers { rewards } => {
+            reward_users(deps, env, info, rewards)
+        }
         ExecuteMsg::DeregisterVestingAccount {
             address,
             vested_token_recipient,
@@ -139,7 +138,6 @@ fn reward_users(
     env: Env,
     info: MessageInfo,
     rewards: Vec<RewardUserRequest>,
-    mut vesting_schedule: VestingSchedule,
 ) -> Result<Response, ContractError> {
     let mut res = vec![];
 
@@ -160,35 +158,13 @@ fn reward_users(
             StdError::generic_err("Insufficient funds for all rewards").into()
         );
     }
-    vesting_schedule.validate_time(env.block.time)?;
 
     let mut attrs: Vec<Attribute> = vec![];
     for req in rewards {
         // validate amounts and cliff details if there's one
-        req.validate(vesting_schedule.clone())?;
+        req.validate(env.block.time)?;
 
-        // update the vesting schedule to match with the request
-        match &mut vesting_schedule {
-            VestingSchedule::LinearVesting { vesting_amount, .. } => {
-                *vesting_amount = req.vesting_amount;
-            }
-            VestingSchedule::LinearVestingWithCliff {
-                vesting_amount,
-                cliff_amount,
-                ..
-            } => {
-                *vesting_amount = req.vesting_amount;
-                *cliff_amount = req.cliff_amount.unwrap();
-            }
-        }
-
-        let result = register_vesting_account(
-            deps.storage,
-            env.block.time,
-            req.user_address.clone(),
-            req.vesting_amount,
-            vesting_schedule.clone(),
-        );
+        let result = register_vesting_account(deps.storage, req.clone());
 
         if let Ok(response) = result {
             attrs.extend(response.attributes);
@@ -219,32 +195,31 @@ fn reward_users(
 
 fn register_vesting_account(
     storage: &mut dyn Storage,
-    block_time: Timestamp,
-    address: String,
-    deposit_amount: Uint128,
-    vesting_schedule: VestingSchedule,
+    req: RewardUserRequest,
 ) -> Result<Response, ContractError> {
     // vesting_account existence check
-    if VESTING_ACCOUNTS.has(storage, address.as_str()) {
+    if VESTING_ACCOUNTS.has(storage, &req.user_address) {
         return Err(StdError::generic_err("already exists").into());
     }
-    vesting_schedule.validate(block_time)?;
 
     VESTING_ACCOUNTS.save(
         storage,
-        address.as_str(),
+        &req.user_address,
         &VestingAccount {
-            address: address.to_string(),
-            vesting_amount: deposit_amount,
-            vesting_schedule,
+            address: req.user_address.clone(),
+            start_time: req.start_time.clone(),
+            cliff_time: req.cliff_time.clone(),
+            end_time: req.end_time.clone(),
+            cliff_amount: req.cliff_amount.clone(),
+            vesting_amount: req.vesting_amount.clone(),
             claimed_amount: Uint128::zero(),
         },
     )?;
 
     Ok(Response::new().add_attributes(vec![
         ("action", "register_vesting_account"),
-        ("address", address.as_str()),
-        ("vesting_amount", &deposit_amount.to_string()),
+        ("address", &req.user_address),
+        ("vesting_amount", &req.vesting_amount.to_string()),
     ]))
 }
 
@@ -272,7 +247,7 @@ fn deregister_vesting_account(
             to_string(&address).unwrap(),
         ))));
     }
-    let account = account.unwrap();
+    let account: VestingAccount = account.unwrap();
 
     if !(whitelist.is_admin(sender.clone()) || whitelist.is_member(sender)) {
         return Err(StdError::generic_err("unauthorized").into());
@@ -281,9 +256,7 @@ fn deregister_vesting_account(
     // remove vesting account
     VESTING_ACCOUNTS.remove(deps.storage, address.as_str());
 
-    let vested_amount = account
-        .vesting_schedule
-        .vested_amount(env.block.time.seconds())?;
+    let vested_amount = account.vested_amount(env.block.time.seconds())?;
     let claimed_amount = account.claimed_amount;
 
     // transfer already vested amount to vested_token_recipient and if
@@ -362,9 +335,7 @@ fn claim(
     }
 
     let mut account = account.unwrap();
-    let vested_amount = account
-        .vesting_schedule
-        .vested_amount(env.block.time.seconds())?;
+    let vested_amount = account.vested_amount(env.block.time.seconds())?;
     let claimed_amount = account.claimed_amount;
 
     let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
@@ -439,9 +410,8 @@ fn vesting_account(
     match account {
         None => Err(StdError::not_found("Vesting account not found")),
         Some(account) => {
-            let vested_amount = account
-                .vesting_schedule
-                .vested_amount(env.block.time.seconds())?;
+            let vested_amount =
+                account.vested_amount(env.block.time.seconds())?;
 
             let vesting = VestingData {
                 vesting_account: account.clone(),
@@ -530,13 +500,11 @@ pub mod tests {
             rewards: vec![RewardUserRequest {
                 user_address: "addr0001".to_string(),
                 vesting_amount: Uint128::new(5000u128),
-                cliff_amount: None,
-            }],
-            vesting_schedule: VestingSchedule::LinearVesting {
+                cliff_amount: Uint128::new(1000u128),
                 start_time: Uint64::new(100),
+                cliff_time: Uint64::new(105),
                 end_time: Uint64::new(110),
-                vesting_amount: Uint128::new(1000000u128),
-            },
+            }],
         };
 
         execute(
@@ -577,13 +545,11 @@ pub mod tests {
             rewards: vec![RewardUserRequest {
                 user_address: "addr0001".to_string(),
                 vesting_amount: Uint128::new(5000u128),
-                cliff_amount: None,
-            }],
-            vesting_schedule: VestingSchedule::LinearVesting {
+                cliff_amount: Uint128::new(1000u128),
                 start_time: Uint64::new(100),
+                cliff_time: Uint64::new(105),
                 end_time: Uint64::new(110),
-                vesting_amount: Uint128::new(1000000u128),
-            },
+            }],
         };
 
         execute(
