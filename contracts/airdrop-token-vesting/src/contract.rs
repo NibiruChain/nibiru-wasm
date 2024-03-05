@@ -169,9 +169,6 @@ fn reward_users(
 
         // update the vesting schedule to match with the request
         match &mut vesting_schedule {
-            VestingSchedule::LinearVesting { vesting_amount, .. } => {
-                *vesting_amount = req.vesting_amount;
-            }
             VestingSchedule::LinearVestingWithCliff {
                 vesting_amount,
                 cliff_amount,
@@ -532,10 +529,12 @@ pub mod tests {
                 vesting_amount: Uint128::new(5000u128),
                 cliff_amount: Uint128::zero(),
             }],
-            vesting_schedule: VestingSchedule::LinearVesting {
+            vesting_schedule: VestingSchedule::LinearVestingWithCliff {
                 start_time: Uint64::new(100),
                 end_time: Uint64::new(110),
                 vesting_amount: Uint128::new(1000000u128),
+                cliff_amount: Uint128::zero(),
+                cliff_time: Uint64::new(105),
             },
         };
 
@@ -579,10 +578,12 @@ pub mod tests {
                 vesting_amount: Uint128::new(5000u128),
                 cliff_amount: Uint128::zero(),
             }],
-            vesting_schedule: VestingSchedule::LinearVesting {
+            vesting_schedule: VestingSchedule::LinearVestingWithCliff {
                 start_time: Uint64::new(100),
                 end_time: Uint64::new(110),
                 vesting_amount: Uint128::new(1000000u128),
+                cliff_amount: Uint128::zero(),
+                cliff_time: Uint64::new(105),
             },
         };
 

@@ -578,10 +578,12 @@ fn register_vesting_account_with_native_token() -> TestResult {
             vesting_amount: Uint128::zero(),
             cliff_amount: Uint128::zero(),
         }],
-        vesting_schedule: VestingSchedule::LinearVesting {
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
             start_time: Uint64::new(100),
             end_time: Uint64::new(110),
             vesting_amount: Uint128::zero(),
+            cliff_amount: Uint128::zero(),
+            cliff_time: Uint64::new(105),
         },
     };
 
@@ -600,10 +602,12 @@ fn register_vesting_account_with_native_token() -> TestResult {
             vesting_amount: Uint128::new(1000001u128),
             cliff_amount: Uint128::zero(),
         }],
-        vesting_schedule: VestingSchedule::LinearVesting {
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
             start_time: Uint64::new(100),
             end_time: Uint64::new(110),
             vesting_amount: Uint128::new(1000000u128),
+            cliff_amount: Uint128::zero(),
+            cliff_time: Uint64::new(105),
         },
     };
     let info = mock_info("addr0000", &[]);
@@ -629,10 +633,12 @@ fn register_vesting_account_with_native_token() -> TestResult {
                 cliff_amount: Uint128::zero(),
             },
         ],
-        vesting_schedule: VestingSchedule::LinearVesting {
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
             start_time: Uint64::new(100),
             end_time: Uint64::new(110),
             vesting_amount: Uint128::new(1000000u128),
+            cliff_amount: Uint128::zero(),
+            cliff_time: Uint64::new(105),
         },
     };
     let info = mock_info("addr0000", &[]);
@@ -651,10 +657,12 @@ fn register_vesting_account_with_native_token() -> TestResult {
             vesting_amount: Uint128::new(100u128),
             cliff_amount: Uint128::zero(),
         }],
-        vesting_schedule: VestingSchedule::LinearVesting {
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
             start_time: Uint64::new(100),
             end_time: Uint64::new(110),
             vesting_amount: Uint128::new(100u128),
+            cliff_amount: Uint128::zero(),
+            cliff_time: Uint64::new(105),
         },
     };
     let info = mock_info("addr0000", &[Coin::new(1000u128, "uusd")]);
@@ -698,10 +706,12 @@ fn register_vesting_account_with_native_token() -> TestResult {
                 vesting_account: crate::state::VestingAccount {
                     address: "addr0001".to_string(),
                     vesting_amount: Uint128::new(100u128),
-                    vesting_schedule: VestingSchedule::LinearVesting {
+                    vesting_schedule: VestingSchedule::LinearVestingWithCliff {
                         start_time: Uint64::new(100),
                         end_time: Uint64::new(110),
                         vesting_amount: Uint128::new(100u128),
+                        cliff_amount: Uint128::zero(),
+                        cliff_time: Uint64::new(105),
                     },
                     claimed_amount: Uint128::zero(),
                 },
@@ -737,10 +747,12 @@ fn claim_native() -> TestResult {
             vesting_amount: Uint128::new(1000000u128),
             cliff_amount: Uint128::zero(),
         }],
-        vesting_schedule: VestingSchedule::LinearVesting {
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
             start_time: Uint64::new(100),
+            cliff_time: Uint64::new(105),
             end_time: Uint64::new(110),
             vesting_amount: Uint128::new(1000000u128),
+            cliff_amount: Uint128::zero(),
         },
     };
 
@@ -793,10 +805,12 @@ fn claim_native() -> TestResult {
                 vesting_account: crate::state::VestingAccount {
                     address: "addr0001".to_string(),
                     vesting_amount: Uint128::new(1000000),
-                    vesting_schedule: VestingSchedule::LinearVesting {
+                    vesting_schedule: VestingSchedule::LinearVestingWithCliff {
                         start_time: Uint64::new(100),
                         end_time: Uint64::new(110),
                         vesting_amount: Uint128::new(1000000u128),
+                        cliff_amount: Uint128::zero(),
+                        cliff_time: Uint64::new(105),
                     },
                     claimed_amount: Uint128::new(500000),
                 },

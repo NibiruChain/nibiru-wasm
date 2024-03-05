@@ -123,13 +123,6 @@ pub struct VestingData {
 
 #[cw_serde]
 pub enum VestingSchedule {
-    /// LinearVesting is used to vest tokens linearly during a time period.
-    /// The total_amount will be vested during this period.
-    LinearVesting {
-        start_time: Uint64,      // vesting start time in second unit
-        end_time: Uint64,        // vesting end time in second unit
-        vesting_amount: Uint128, // total vesting amount
-    },
     LinearVestingWithCliff {
         start_time: Uint64,      // vesting start time in second unit
         end_time: Uint64,        // vesting end time in second unit
@@ -175,25 +168,6 @@ impl Cliff {
 impl VestingSchedule {
     pub fn vested_amount(&self, block_time: u64) -> StdResult<Uint128> {
         match self {
-            VestingSchedule::LinearVesting {
-                start_time,
-                end_time,
-                vesting_amount,
-            } => {
-                if block_time <= start_time.u64() {
-                    return Ok(Uint128::zero());
-                }
-
-                if block_time >= end_time.u64() {
-                    return Ok(*vesting_amount);
-                }
-
-                let vested_token = vesting_amount
-                    .checked_mul(Uint128::from(block_time - start_time.u64()))?
-                    .checked_div(Uint128::from(end_time - start_time))?;
-
-                Ok(vested_token)
-            }
             VestingSchedule::LinearVestingWithCliff {
                 start_time: _start_time,
                 end_time,
@@ -238,17 +212,6 @@ impl VestingSchedule {
     pub fn validate(&self, block_time: Timestamp) -> Result<(), VestingError> {
         self.validate_time(block_time)?;
         match &self {
-            VestingSchedule::LinearVesting {
-                start_time: _,
-                end_time: _,
-                vesting_amount,
-            } => {
-                if vesting_amount.is_zero() {
-                    return Err(VestingError::ZeroVestingAmount);
-                }
-                Ok(())
-            }
-
             VestingSchedule::LinearVestingWithCliff {
                 start_time: _,
                 end_time: _,
@@ -282,19 +245,6 @@ impl VestingSchedule {
         block_time: Timestamp,
     ) -> Result<(), VestingError> {
         match self {
-            VestingSchedule::LinearVesting {
-                start_time,
-                end_time,
-                ..
-            } => {
-                if end_time <= start_time {
-                    return Err(VestingError::InvalidTimeRange {
-                        start_time: start_time.u64(),
-                        end_time: end_time.u64(),
-                    });
-                }
-                Ok(())
-            }
             VestingSchedule::LinearVestingWithCliff {
                 start_time,
                 end_time,
@@ -322,22 +272,6 @@ impl VestingSchedule {
 pub mod tests {
     use super::*;
     use crate::contract::tests::TestResult;
-
-    #[test]
-    fn linear_vesting_vested_amount() -> TestResult {
-        let schedule = VestingSchedule::LinearVesting {
-            start_time: Uint64::new(100),
-            end_time: Uint64::new(110),
-            vesting_amount: Uint128::new(1000000u128),
-        };
-
-        assert_eq!(schedule.vested_amount(100)?, Uint128::zero());
-        assert_eq!(schedule.vested_amount(105)?, Uint128::new(500000u128));
-        assert_eq!(schedule.vested_amount(110)?, Uint128::new(1000000u128));
-        assert_eq!(schedule.vested_amount(115)?, Uint128::new(1000000u128));
-
-        Ok(())
-    }
 
     #[test]
     fn linear_vesting_with_cliff_vested_amount() -> TestResult {
