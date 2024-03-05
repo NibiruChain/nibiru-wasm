@@ -165,7 +165,7 @@ fn reward_users(
     let mut attrs: Vec<Attribute> = vec![];
     for req in rewards {
         // validate amounts and cliff details if there's one
-        req.validate(vesting_schedule.clone())?;
+        req.validate()?;
 
         // update the vesting schedule to match with the request
         match &mut vesting_schedule {
@@ -538,12 +538,33 @@ pub mod tests {
             },
         };
 
-        execute(
+        let res = execute(
             deps.as_mut(),
             env.clone(), // Use the custom environment with the adjusted block time
             testing::mock_info("admin-sender", &[coin(1000000, "token")]),
             register_msg,
         )?;
+        assert_eq!(
+            res.attributes,
+            vec![
+                Attribute {
+                    key: "action".to_string(),
+                    value: "register_vesting_account".to_string()
+                },
+                Attribute {
+                    key: "address".to_string(),
+                    value: "addr0001".to_string()
+                },
+                Attribute {
+                    key: "vesting_amount".to_string(),
+                    value: "5000".to_string()
+                },
+                Attribute {
+                    key: "method".to_string(),
+                    value: "reward_users".to_string()
+                }
+            ]
+        );
 
         // Try to deregister with unauthorized sender
         let msg = ExecuteMsg::DeregisterVestingAccount {

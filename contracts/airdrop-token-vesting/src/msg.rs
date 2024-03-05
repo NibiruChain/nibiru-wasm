@@ -61,30 +61,18 @@ pub struct RewardUserRequest {
 }
 
 impl RewardUserRequest {
-    pub fn validate(
-        &self,
-        vesting_schedule: VestingSchedule,
-    ) -> Result<(), ContractError> {
+    pub fn validate(&self) -> Result<(), ContractError> {
         if self.vesting_amount.is_zero() {
             return Err(ContractError::Vesting(VestingError::ZeroVestingAmount));
         }
 
-        if let VestingSchedule::LinearVestingWithCliff { .. } = vesting_schedule
-        {
-            if self.cliff_amount.is_zero() {
-                return Err(ContractError::Vesting(VestingError::Cliff(
-                    CliffError::ZeroAmount,
-                )));
-            }
-
-            if self.cliff_amount > self.vesting_amount {
-                return Err(ContractError::Vesting(VestingError::Cliff(
-                    CliffError::ExcessiveAmount {
-                        cliff_amount: self.cliff_amount.into(),
-                        vesting_amount: self.vesting_amount.into(),
-                    },
-                )));
-            }
+        if self.cliff_amount > self.vesting_amount {
+            return Err(ContractError::Vesting(VestingError::Cliff(
+                CliffError::ExcessiveAmount {
+                    cliff_amount: self.cliff_amount.into(),
+                    vesting_amount: self.vesting_amount.into(),
+                },
+            )));
         }
 
         Ok(())
@@ -150,10 +138,6 @@ impl Cliff {
     }
 
     pub fn ok_amount(&self, vesting_amount: Uint128) -> Result<(), CliffError> {
-        if self.amount.is_zero() {
-            return Err(CliffError::ZeroAmount);
-        }
-
         let cliff_amount = self.amount.u128();
         if cliff_amount > vesting_amount.u128() {
             return Err(CliffError::ExcessiveAmount {
@@ -211,7 +195,7 @@ impl VestingSchedule {
     ///
     pub fn validate(&self, block_time: Timestamp) -> Result<(), VestingError> {
         self.validate_time(block_time)?;
-        match &self {
+        match self {
             VestingSchedule::LinearVestingWithCliff {
                 start_time: _,
                 end_time: _,

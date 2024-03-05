@@ -17,9 +17,6 @@ pub enum ContractError {
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum CliffError {
-    #[error("cliff_amount is zero but should be greater than 0")]
-    ZeroAmount,
-
     #[error("cliff_time ({cliff_time}) should be greater than block_time ({block_time})")]
     InvalidTime { cliff_time: u64, block_time: u64 },
 

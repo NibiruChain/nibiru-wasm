@@ -285,16 +285,6 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
         ContractError::Vesting(VestingError::ZeroVestingAmount),
     );
 
-    // zero amount cliff token
-    let msg = create_msg(100, 110, 1000, 0, 105);
-    require_error(
-        &mut deps,
-        &env,
-        mock_info("addr0000", &[]),
-        msg,
-        ContractError::Vesting(VestingError::Cliff(CliffError::ZeroAmount)),
-    );
-
     // cliff time less than block time
     let msg = create_msg(100, 110, 1000, 500, 99);
     require_error(
@@ -745,19 +735,40 @@ fn claim_native() -> TestResult {
         rewards: vec![RewardUserRequest {
             user_address: "addr0001".to_string(),
             vesting_amount: Uint128::new(1000000u128),
-            cliff_amount: Uint128::zero(),
+            cliff_amount: Uint128::new(500000u128),
         }],
         vesting_schedule: VestingSchedule::LinearVestingWithCliff {
             start_time: Uint64::new(100),
             cliff_time: Uint64::new(105),
             end_time: Uint64::new(110),
             vesting_amount: Uint128::new(1000000u128),
-            cliff_amount: Uint128::zero(),
+            cliff_amount: Uint128::new(500000u128),
         },
     };
 
     let info = mock_info("addr0000", &[Coin::new(1000000u128, "uusd")]);
-    let _ = execute(deps.as_mut(), env.clone(), info, msg)?;
+    let res = execute(deps.as_mut(), env.clone(), info, msg)?;
+    assert_eq!(
+        res.attributes,
+        vec![
+            Attribute {
+                key: "action".to_string(),
+                value: "register_vesting_account".to_string()
+            },
+            Attribute {
+                key: "address".to_string(),
+                value: "addr0001".to_string()
+            },
+            Attribute {
+                key: "vesting_amount".to_string(),
+                value: "1000000".to_string()
+            },
+            Attribute {
+                key: "method".to_string(),
+                value: "reward_users".to_string()
+            }
+        ]
+    );
 
     // make time to half claimable
     env.block.time = Timestamp::from_seconds(105);
@@ -809,7 +820,7 @@ fn claim_native() -> TestResult {
                         start_time: Uint64::new(100),
                         end_time: Uint64::new(110),
                         vesting_amount: Uint128::new(1000000u128),
-                        cliff_amount: Uint128::zero(),
+                        cliff_amount: Uint128::new(500000u128),
                         cliff_time: Uint64::new(105),
                     },
                     claimed_amount: Uint128::new(500000),
