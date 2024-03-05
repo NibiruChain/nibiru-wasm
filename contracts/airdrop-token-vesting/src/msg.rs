@@ -57,7 +57,7 @@ pub enum ExecuteMsg {
 pub struct RewardUserRequest {
     pub user_address: String,
     pub vesting_amount: Uint128,
-    pub cliff_amount: Option<Uint128>,
+    pub cliff_amount: Uint128,
 }
 
 impl RewardUserRequest {
@@ -71,18 +71,16 @@ impl RewardUserRequest {
 
         if let VestingSchedule::LinearVestingWithCliff { .. } = vesting_schedule
         {
-            if self.cliff_amount.is_none()
-                || self.cliff_amount.unwrap().is_zero()
-            {
+            if self.cliff_amount.is_zero() {
                 return Err(ContractError::Vesting(VestingError::Cliff(
                     CliffError::ZeroAmount,
                 )));
             }
 
-            if self.cliff_amount.unwrap() > self.vesting_amount {
+            if self.cliff_amount > self.vesting_amount {
                 return Err(ContractError::Vesting(VestingError::Cliff(
                     CliffError::ExcessiveAmount {
-                        cliff_amount: self.cliff_amount.unwrap().into(),
+                        cliff_amount: self.cliff_amount.into(),
                         vesting_amount: self.vesting_amount.into(),
                     },
                 )));

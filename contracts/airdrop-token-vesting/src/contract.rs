@@ -178,7 +178,7 @@ fn reward_users(
                 ..
             } => {
                 *vesting_amount = req.vesting_amount;
-                *cliff_amount = req.cliff_amount.unwrap();
+                *cliff_amount = req.cliff_amount;
             }
         }
 
@@ -530,7 +530,7 @@ pub mod tests {
             rewards: vec![RewardUserRequest {
                 user_address: "addr0001".to_string(),
                 vesting_amount: Uint128::new(5000u128),
-                cliff_amount: None,
+                cliff_amount: Uint128::zero(),
             }],
             vesting_schedule: VestingSchedule::LinearVesting {
                 start_time: Uint64::new(100),
@@ -577,7 +577,7 @@ pub mod tests {
             rewards: vec![RewardUserRequest {
                 user_address: "addr0001".to_string(),
                 vesting_amount: Uint128::new(5000u128),
-                cliff_amount: None,
+                cliff_amount: Uint128::zero(),
             }],
             vesting_schedule: VestingSchedule::LinearVesting {
                 start_time: Uint64::new(100),
