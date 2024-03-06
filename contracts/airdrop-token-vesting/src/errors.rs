@@ -9,22 +9,7 @@ pub enum ContractError {
     Vesting(#[from] VestingError),
 
     #[error(transparent)]
-    Cliff(#[from] CliffError),
-
-    #[error(transparent)]
     Overflow(#[from] cosmwasm_std::OverflowError),
-}
-
-#[derive(thiserror::Error, Debug, PartialEq)]
-pub enum CliffError {
-    #[error("cliff_time ({cliff_time}) should be greater than block_time ({block_time})")]
-    InvalidTime { cliff_time: u64, block_time: u64 },
-
-    #[error("cliff_amount ({cliff_amount}) should be less than or equal to vesting_amount ({vesting_amount})")]
-    ExcessiveAmount {
-        cliff_amount: u128,
-        vesting_amount: u128,
-    },
 }
 
 #[derive(thiserror::Error, Debug, PartialEq)]
@@ -35,10 +20,17 @@ pub enum VestingError {
     #[error(
         "end_time ({end_time}) should be greater than start_time ({start_time})"
     )]
-    InvalidTimeRange { start_time: u64, end_time: u64 },
+    InvalidTimeRange {
+        start_time: u64,
+        cliff_time: u64,
+        end_time: u64,
+    },
 
-    #[error(transparent)]
-    Cliff(#[from] CliffError),
+    #[error("cliff_amount ({cliff_amount}) should be less than or equal to vesting_amount ({vesting_amount})")]
+    ExcessiveAmount {
+        cliff_amount: u128,
+        vesting_amount: u128,
+    },
 
     #[error("vesting_amount ({vesting_amount}) should be equal to deposit_amount ({deposit_amount})")]
     MismatchedVestingAndDepositAmount {
