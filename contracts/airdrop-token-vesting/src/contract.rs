@@ -31,15 +31,14 @@ pub fn instantiate(
     if info.funds.len() != 1 {
         return Err(StdError::generic_err(
             "must deposit exactly one type of token",
-        )
-        .into());
+        ));
     }
     if info.funds[0].amount.is_zero() {
-        return Err(StdError::generic_err("must deposit some token").into());
+        return Err(StdError::generic_err("must deposit some token"));
     }
     // Managers validation
     if msg.managers.is_empty() {
-        return Err(StdError::generic_err("managers cannot be empty").into());
+        return Err(StdError::generic_err("managers cannot be empty"));
     }
 
     deps.api.addr_validate(&msg.admin)?;
@@ -117,7 +116,7 @@ pub fn withdraw(
         return Err(StdError::generic_err("Nothing to withdraw").into());
     }
 
-    unallocated_amount = unallocated_amount - amount_max;
+    unallocated_amount -= amount_max;
     UNALLOCATED_AMOUNT.save(deps.storage, &unallocated_amount)?;
 
     // validate recipient address
@@ -131,8 +130,8 @@ pub fn withdraw(
         )?])
         .add_attribute("action", "withdraw")
         .add_attribute("recipient", &recipient)
-        .add_attribute("amount", &amount_max.to_string())
-        .add_attribute("unallocated_amount", &unallocated_amount.to_string()))
+        .add_attribute("amount", amount_max.to_string())
+        .add_attribute("unallocated_amount", unallocated_amount.to_string()))
 }
 
 fn reward_users(
@@ -317,7 +316,7 @@ fn send_if_amount_is_not_zero(
     default_recipient: String,
 ) -> Result<(), ContractError> {
     if !amount.is_zero() {
-        let recipient = recipient_option.unwrap_or_else(|| default_recipient);
+        let recipient = recipient_option.unwrap_or(default_recipient);
         let msg_send: CosmosMsg = build_send_msg(denom, amount, recipient)?;
         messages.push(msg_send);
     }
@@ -391,10 +390,7 @@ fn build_send_msg(
 ) -> StdResult<CosmosMsg> {
     Ok(BankMsg::Send {
         to_address: to,
-        amount: vec![Coin {
-            denom: denom,
-            amount,
-        }],
+        amount: vec![Coin { denom, amount }],
     }
     .into())
 }
@@ -441,7 +437,7 @@ fn vesting_account(
                 vesting_amount: account.vesting_amount,
                 vesting_schedule: vesting_schedule_query,
 
-                vested_amount: vested_amount,
+                vested_amount,
                 claimable_amount: vested_amount
                     .checked_sub(account.claimed_amount)?,
             };
