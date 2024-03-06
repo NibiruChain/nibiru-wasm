@@ -2,8 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
-    Env, MessageInfo, Response, StdError, StdResult, Storage, Timestamp,
-    Uint128,
+    Env, MessageInfo, Response, StdError, StdResult, Storage, Uint128,
 };
 use std::cmp::min;
 
@@ -139,7 +138,7 @@ pub fn withdraw(
 
 fn reward_users(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     rewards: Vec<RewardUserRequest>,
     vesting_schedule: VestingSchedule,
@@ -459,7 +458,7 @@ pub mod tests {
     use cosmwasm_std::{
         coin,
         testing::{self, MockApi, MockQuerier, MockStorage},
-        Empty, OwnedDeps, Uint64,
+        Empty, OwnedDeps, Timestamp, Uint64,
     };
 
     pub type TestResult = Result<(), anyhow::Error>;
