@@ -163,7 +163,7 @@ fn reward_users(
             StdError::generic_err("Insufficient funds for all rewards").into()
         );
     }
-    vesting_schedule.validate(env.block.time)?;
+    vesting_schedule.validate()?;
 
     let mut attrs: Vec<Attribute> = vec![];
     for req in rewards {
@@ -172,7 +172,6 @@ fn reward_users(
 
         let result = register_vesting_account(
             deps.storage,
-            env.block.time,
             req.user_address.clone(),
             req.vesting_amount,
             req.cliff_amount,
@@ -208,7 +207,6 @@ fn reward_users(
 
 fn register_vesting_account(
     storage: &mut dyn Storage,
-    block_time: Timestamp,
     address: String,
     vesting_amount: Uint128,
     cliff_amount: Uint128,
@@ -218,7 +216,7 @@ fn register_vesting_account(
     if VESTING_ACCOUNTS.has(storage, address.as_str()) {
         return Err(StdError::generic_err("already exists").into());
     }
-    vesting_schedule.validate(block_time)?;
+    vesting_schedule.validate()?;
 
     VESTING_ACCOUNTS.save(
         storage,

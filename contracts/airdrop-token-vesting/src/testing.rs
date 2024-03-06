@@ -1,6 +1,6 @@
 use crate::contract::tests::TestResult;
 use crate::contract::{execute, instantiate, query};
-use crate::errors::{CliffError, ContractError, VestingError};
+use crate::errors::{ContractError, VestingError};
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, QueryMsg, RewardUserRequest,
     VestingAccountResponse, VestingData, VestingSchedule,
@@ -291,10 +291,11 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
         &env,
         mock_info("addr0000", &[Coin::new(1000u128, "uusd")]),
         msg,
-        ContractError::Vesting(VestingError::Cliff(CliffError::InvalidTime {
+        ContractError::Vesting(VestingError::InvalidTimeRange {
+            start_time: 100,
             cliff_time: 99,
-            block_time: 100,
-        })),
+            end_time: 110,
+        }),
     );
 
     // end time less than start time
@@ -306,6 +307,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
         msg,
         ContractError::Vesting(VestingError::InvalidTimeRange {
             start_time: 110,
+            cliff_time: 105,
             end_time: 100,
         }),
     );
@@ -319,7 +321,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
         mock_info("addr0000", &[Coin::new(1000u128, "uusd")]),
         msg,
         ContractError::Vesting(
-            CliffError::ExcessiveAmount {
+            VestingError::ExcessiveAmount {
                 cliff_amount,
                 vesting_amount,
             }

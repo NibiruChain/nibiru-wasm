@@ -1,8 +1,8 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Timestamp, Uint128, Uint64};
+use cosmwasm_std::{Uint128, Uint64};
 use cw20::Denom;
 
-use crate::errors::{CliffError, ContractError, VestingError};
+use crate::errors::{ContractError, VestingError};
 
 /// Structure for the message that instantiates the smart contract.
 #[cw_serde]
@@ -65,12 +65,10 @@ impl RewardUserRequest {
         }
 
         if self.cliff_amount > self.vesting_amount {
-            return Err(ContractError::Vesting(VestingError::Cliff(
-                CliffError::ExcessiveAmount {
-                    cliff_amount: self.cliff_amount.into(),
-                    vesting_amount: self.vesting_amount.into(),
-                },
-            )));
+            return Err(ContractError::Vesting(VestingError::ExcessiveAmount {
+                cliff_amount: self.cliff_amount.into(),
+                vesting_amount: self.vesting_amount.into(),
+            }));
         }
 
         Ok(())
@@ -152,35 +150,6 @@ pub fn from_vesting_to_query_output(
     }
 }
 
-pub struct Cliff {
-    pub amount: Uint128,
-    pub time: Uint64,
-}
-
-impl Cliff {
-    pub fn ok_time(&self, block_time: Timestamp) -> Result<(), CliffError> {
-        let cliff_time_seconds = self.time.u64();
-        if cliff_time_seconds < block_time.seconds() {
-            return Err(CliffError::InvalidTime {
-                cliff_time: cliff_time_seconds,
-                block_time: block_time.seconds(),
-            });
-        }
-        Ok(())
-    }
-
-    pub fn ok_amount(&self, vesting_amount: Uint128) -> Result<(), CliffError> {
-        let cliff_amount = self.amount.u128();
-        if cliff_amount > vesting_amount.u128() {
-            return Err(CliffError::ExcessiveAmount {
-                cliff_amount,
-                vesting_amount: vesting_amount.u128(),
-            });
-        }
-        Ok(())
-    }
-}
-
 impl VestingSchedule {
     ///
     /// validate_time checks that the start_time is less than the end_time.
@@ -190,7 +159,7 @@ impl VestingSchedule {
     /// Additionally, it the vesting schedule is LinearVestingWithCliff, it checks that the cliff_time
     /// is bigger or equal to the block_time.
     ///
-    pub fn validate(&self, block_time: Timestamp) -> Result<(), VestingError> {
+    pub fn validate(&self) -> Result<(), VestingError> {
         match self {
             VestingSchedule::LinearVestingWithCliff {
                 start_time,
@@ -201,14 +170,25 @@ impl VestingSchedule {
                 if end_time <= start_time {
                     return Err(VestingError::InvalidTimeRange {
                         start_time: start_time.u64(),
+                        cliff_time: cliff_time.u64(),
                         end_time: end_time.u64(),
                     });
                 }
-                let cliff = Cliff {
-                    amount: Uint128::zero(),
-                    time: *cliff_time,
-                };
-                cliff.ok_time(block_time)?;
+                if cliff_time < start_time {
+                    return Err(VestingError::InvalidTimeRange {
+                        start_time: start_time.u64(),
+                        cliff_time: cliff_time.u64(),
+                        end_time: end_time.u64(),
+                    });
+                }
+
+                if cliff_time > end_time {
+                    return Err(VestingError::InvalidTimeRange {
+                        start_time: start_time.u64(),
+                        cliff_time: cliff_time.u64(),
+                        end_time: end_time.u64(),
+                    });
+                }
                 Ok(())
             }
         }
