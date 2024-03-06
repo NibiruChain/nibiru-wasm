@@ -24,6 +24,7 @@ yarn.lock
 
 contracts/*/.editorconfig
 packages/*/.editorconfig
+contracts/*/schema
 lcov.info
 
 .DS_Store
