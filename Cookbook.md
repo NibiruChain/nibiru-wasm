@@ -3,18 +3,14 @@
 This file describes the different messages that can be sent as queries or transactions
 to the contracts of this repository with a description of the expected behavior.
 
-- [Core cw3 flex multisig](#core-cw3-flex-multisig)
+- [Core shifter](#core-shifter)
   - [Instantiate](#instantiate)
   - [Execute](#execute)
   - [Query](#query)
-- [Core shifter](#core-shifter)
+- [Core token vesting](#core-token-vesting)
   - [Instantiate](#instantiate-1)
   - [Execute](#execute-1)
   - [Query](#query-1)
-- [Core token vesting](#core-token-vesting)
-  - [Instantiate](#instantiate-2)
-  - [Execute](#execute-2)
-  - [Query](#query-2)
 - [4. Nibi Stargate](#4-nibi-stargate)
   - [4.1 Instantiate](#41-instantiate)
   - [4.2 Execute](#42-execute)
@@ -110,7 +106,7 @@ There's no instantiation message.
 
 ### Execute
 
-- **Receive** 
+- **Receive**
 
 ```js
 {
@@ -244,6 +240,7 @@ The instantiation defines the owner of the contract, who will be able to add and
   "admin": "cosmos1...",
 }
 ```
+
 ### 5.2 Execute
 
 - **MarketOrder** places a market order for a specified trading pair. `pair` indicates the trading pair, `is_long` determines if it's a long or short order, `quote_amount` is the amount in the quote currency, `leverage` specifies the leverage to apply, and `base_amount_limit` sets a limit for the amount in the base currency.
@@ -384,7 +381,6 @@ The owner is the only one who can execute messages in the contract
 ```
 
 ### 6.3 Query
-
 
 - **Mintable** queries the amount of μNUSD that can be minted in exchange for the specified set of `from_coins`.
 
