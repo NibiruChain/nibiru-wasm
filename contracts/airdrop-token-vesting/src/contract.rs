@@ -87,7 +87,10 @@ pub fn execute(
             vested_token_recipient,
             left_vesting_token_recipient,
         ),
-        ExecuteMsg::Claim { recipient } => claim(deps, env, info, recipient),
+        ExecuteMsg::Claim {
+            denoms: _denoms,
+            recipient,
+        } => claim(deps, env, info, recipient),
         ExecuteMsg::Withdraw { amount, recipient } => {
             withdraw(deps, env, info, amount, recipient)
         }

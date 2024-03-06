@@ -759,7 +759,10 @@ fn claim_native() -> TestResult {
 
     // valid claim
     let info = mock_info("addr0001", &[]);
-    let msg = ExecuteMsg::Claim { recipient: None };
+    let msg = ExecuteMsg::Claim {
+        recipient: None,
+        denoms: vec![],
+    };
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
     assert_eq!(

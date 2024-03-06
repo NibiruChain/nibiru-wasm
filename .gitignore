@@ -27,3 +27,4 @@ packages/*/.editorconfig
 lcov.info
 
 .DS_Store
+artifacts/*.json
