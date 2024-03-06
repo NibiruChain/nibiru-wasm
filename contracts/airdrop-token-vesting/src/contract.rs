@@ -420,7 +420,10 @@ fn vesting_account(
     let denom = DENOM.load(deps.storage)?;
 
     match account {
-        None => Err(StdError::not_found("Vesting account not found")),
+        None => Ok(VestingAccountResponse {
+            address,
+            vestings: vec![],
+        }),
         Some(account) => {
             let vested_amount =
                 account.vested_amount(env.block.time.seconds())?;
