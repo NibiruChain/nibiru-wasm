@@ -139,7 +139,7 @@ fn reward_users(
     env: Env,
     info: MessageInfo,
     rewards: Vec<RewardUserRequest>,
-    mut vesting_schedule: VestingSchedule,
+    vesting_schedule: VestingSchedule,
 ) -> Result<Response, ContractError> {
     let mut res = vec![];
 
@@ -160,30 +160,19 @@ fn reward_users(
             StdError::generic_err("Insufficient funds for all rewards").into()
         );
     }
-    vesting_schedule.validate_time(env.block.time)?;
+    vesting_schedule.validate(env.block.time)?;
 
     let mut attrs: Vec<Attribute> = vec![];
     for req in rewards {
         // validate amounts and cliff details if there's one
         req.validate()?;
 
-        // update the vesting schedule to match with the request
-        match &mut vesting_schedule {
-            VestingSchedule::LinearVestingWithCliff {
-                vesting_amount,
-                cliff_amount,
-                ..
-            } => {
-                *vesting_amount = req.vesting_amount;
-                *cliff_amount = req.cliff_amount;
-            }
-        }
-
         let result = register_vesting_account(
             deps.storage,
             env.block.time,
             req.user_address.clone(),
             req.vesting_amount,
+            req.cliff_amount,
             vesting_schedule.clone(),
         );
 
@@ -218,7 +207,8 @@ fn register_vesting_account(
     storage: &mut dyn Storage,
     block_time: Timestamp,
     address: String,
-    deposit_amount: Uint128,
+    vesting_amount: Uint128,
+    cliff_amount: Uint128,
     vesting_schedule: VestingSchedule,
 ) -> Result<Response, ContractError> {
     // vesting_account existence check
@@ -232,7 +222,8 @@ fn register_vesting_account(
         address.as_str(),
         &VestingAccount {
             address: address.to_string(),
-            vesting_amount: deposit_amount,
+            vesting_amount,
+            cliff_amount,
             vesting_schedule,
             claimed_amount: Uint128::zero(),
         },
@@ -241,7 +232,7 @@ fn register_vesting_account(
     Ok(Response::new().add_attributes(vec![
         ("action", "register_vesting_account"),
         ("address", address.as_str()),
-        ("vesting_amount", &deposit_amount.to_string()),
+        ("vesting_amount", &vesting_amount.to_string()),
     ]))
 }
 
@@ -278,9 +269,7 @@ fn deregister_vesting_account(
     // remove vesting account
     VESTING_ACCOUNTS.remove(deps.storage, address.as_str());
 
-    let vested_amount = account
-        .vesting_schedule
-        .vested_amount(env.block.time.seconds())?;
+    let vested_amount = account.vested_amount(env.block.time.seconds())?;
     let claimed_amount = account.claimed_amount;
 
     // transfer already vested amount to vested_token_recipient and if
@@ -359,9 +348,7 @@ fn claim(
     }
 
     let mut account = account.unwrap();
-    let vested_amount = account
-        .vesting_schedule
-        .vested_amount(env.block.time.seconds())?;
+    let vested_amount = account.vested_amount(env.block.time.seconds())?;
     let claimed_amount = account.claimed_amount;
 
     let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
@@ -436,9 +423,8 @@ fn vesting_account(
     match account {
         None => Err(StdError::not_found("Vesting account not found")),
         Some(account) => {
-            let vested_amount = account
-                .vesting_schedule
-                .vested_amount(env.block.time.seconds())?;
+            let vested_amount =
+                account.vested_amount(env.block.time.seconds())?;
 
             let vesting = VestingData {
                 vesting_account: account.clone(),
@@ -532,8 +518,6 @@ pub mod tests {
             vesting_schedule: VestingSchedule::LinearVestingWithCliff {
                 start_time: Uint64::new(100),
                 end_time: Uint64::new(110),
-                vesting_amount: Uint128::new(1000000u128),
-                cliff_amount: Uint128::zero(),
                 cliff_time: Uint64::new(105),
             },
         };
@@ -602,8 +586,6 @@ pub mod tests {
             vesting_schedule: VestingSchedule::LinearVestingWithCliff {
                 start_time: Uint64::new(100),
                 end_time: Uint64::new(110),
-                vesting_amount: Uint128::new(1000000u128),
-                cliff_amount: Uint128::zero(),
                 cliff_time: Uint64::new(105),
             },
         };
