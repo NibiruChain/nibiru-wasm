@@ -844,20 +844,21 @@ fn claim_native() -> TestResult {
     );
 
     // query vesting account
-    let res = &query(
-        deps.as_ref(),
-        env,
-        QueryMsg::VestingAccount {
+    assert_eq!(
+        from_json::<VestingAccountResponse>(&query(
+            deps.as_ref(),
+            env,
+            QueryMsg::VestingAccount {
+                address: "addr0001".to_string(),
+                start_after: None,
+                limit: None,
+            },
+        )?)?,
+        VestingAccountResponse {
             address: "addr0001".to_string(),
-            start_after: None,
-            limit: None,
-        },
+            vestings: vec![],
+        }
     );
-    //expect res to be an errro
-    match res {
-        Err(StdError::NotFound { .. }) => {}
-        _ => panic!("should not enter. got result: {res:?}"),
-    }
 
     Ok(())
 }
