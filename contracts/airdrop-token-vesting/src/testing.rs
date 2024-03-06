@@ -4,6 +4,7 @@ use crate::errors::{CliffError, ContractError, VestingError};
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, QueryMsg, RewardUserRequest,
     VestingAccountResponse, VestingData, VestingSchedule,
+    VestingScheduleQueryOutput,
 };
 
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
@@ -678,22 +679,22 @@ fn register_vesting_account_with_native_token() -> TestResult {
         )?)?,
         VestingAccountResponse {
             address: "addr0001".to_string(),
-            vesting: VestingData {
-                vesting_account: crate::state::VestingAccount {
-                    address: "addr0001".to_string(),
-                    vesting_amount: Uint128::new(100u128),
-                    cliff_amount: Uint128::zero(),
-                    vesting_schedule: VestingSchedule::LinearVestingWithCliff {
+            vestings: vec![VestingData {
+                master_address: Some("addr0000".to_string()),
+                vesting_amount: Uint128::new(100u128),
+                vesting_schedule:
+                    VestingScheduleQueryOutput::LinearVestingWithCliff {
                         start_time: Uint64::new(100),
                         end_time: Uint64::new(110),
                         cliff_time: Uint64::new(105),
+                        vesting_amount: Uint128::new(100u128),
+                        cliff_amount: Uint128::zero(),
                     },
-                    claimed_amount: Uint128::zero(),
-                },
+                vesting_denom: cw20::Denom::Native("uusd".to_string()),
                 vested_amount: Uint128::zero(),
                 claimable_amount: Uint128::zero(),
-            },
-        }
+            }]
+        },
     );
     Ok(())
 }
@@ -782,7 +783,6 @@ fn claim_native() -> TestResult {
         ],
     );
 
-    // query vesting account
     assert_eq!(
         from_json::<VestingAccountResponse>(&query(
             deps.as_ref(),
@@ -795,22 +795,22 @@ fn claim_native() -> TestResult {
         )?)?,
         VestingAccountResponse {
             address: "addr0001".to_string(),
-            vesting: VestingData {
-                vesting_account: crate::state::VestingAccount {
-                    address: "addr0001".to_string(),
-                    vesting_amount: Uint128::new(1000000),
-                    cliff_amount: Uint128::new(500000),
-                    vesting_schedule: VestingSchedule::LinearVestingWithCliff {
+            vestings: vec![VestingData {
+                master_address: Some("addr0000".to_string()),
+                vesting_amount: Uint128::new(1000000u128),
+                vesting_schedule:
+                    VestingScheduleQueryOutput::LinearVestingWithCliff {
                         start_time: Uint64::new(100),
                         end_time: Uint64::new(110),
                         cliff_time: Uint64::new(105),
+                        vesting_amount: Uint128::new(1000000u128),
+                        cliff_amount: Uint128::new(500000u128),
                     },
-                    claimed_amount: Uint128::new(500000),
-                },
-                vested_amount: Uint128::new(500000),
+                vesting_denom: cw20::Denom::Native("uusd".to_string()),
+                vested_amount: Uint128::new(500000u128),
                 claimable_amount: Uint128::zero(),
-            },
-        }
+            }]
+        },
     );
 
     // make time to half claimable

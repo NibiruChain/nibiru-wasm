@@ -2,10 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Timestamp, Uint128, Uint64};
 use cw20::Denom;
 
-use crate::{
-    errors::{CliffError, ContractError, VestingError},
-    state::VestingAccount,
-};
+use crate::errors::{CliffError, ContractError, VestingError};
 
 /// Structure for the message that instantiates the smart contract.
 #[cw_serde]
@@ -99,12 +96,16 @@ pub enum QueryMsg {
 #[cw_serde]
 pub struct VestingAccountResponse {
     pub address: String,
-    pub vesting: VestingData,
+    pub vestings: Vec<VestingData>,
 }
 
 #[cw_serde]
 pub struct VestingData {
-    pub vesting_account: VestingAccount,
+    pub master_address: Option<String>,
+    pub vesting_denom: Denom,
+    pub vesting_amount: Uint128,
+    pub vesting_schedule: VestingScheduleQueryOutput,
+
     pub vested_amount: Uint128,
     pub claimable_amount: Uint128,
 }
@@ -116,6 +117,38 @@ pub enum VestingSchedule {
         end_time: Uint64,   // vesting end time in second unit
         cliff_time: Uint64, // cliff time in second unit
     },
+}
+
+/// For legacy, we need the query to return the schedule with the vesting amount and cliff amount
+#[cw_serde]
+pub enum VestingScheduleQueryOutput {
+    LinearVestingWithCliff {
+        start_time: Uint64, // vesting start time in second unit
+        end_time: Uint64,   // vesting end time in second unit
+        cliff_time: Uint64, // cliff time in second unit
+        vesting_amount: Uint128,
+        cliff_amount: Uint128,
+    },
+}
+
+pub fn from_vesting_to_query_output(
+    vesting: &VestingSchedule,
+    vesting_amount: Uint128,
+    cliff_amount: Uint128,
+) -> VestingScheduleQueryOutput {
+    match vesting {
+        VestingSchedule::LinearVestingWithCliff {
+            start_time,
+            end_time,
+            cliff_time,
+        } => VestingScheduleQueryOutput::LinearVestingWithCliff {
+            start_time: *start_time,
+            end_time: *end_time,
+            cliff_time: *cliff_time,
+            vesting_amount,
+            cliff_amount,
+        },
+    }
 }
 
 pub struct Cliff {
