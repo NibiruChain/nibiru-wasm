@@ -118,19 +118,13 @@
     "RewardUserRequest": {
       "type": "object",
       "required": [
+        "cliff_amount",
         "user_address",
         "vesting_amount"
       ],
       "properties": {
         "cliff_amount": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Uint128"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/definitions/Uint128"
         },
         "user_address": {
           "type": "string"
@@ -152,36 +146,6 @@
     "VestingSchedule": {
       "oneOf": [
         {
-          "description": "LinearVesting is used to vest tokens linearly during a time period. The total_amount will be vested during this period.",
-          "type": "object",
-          "required": [
-            "linear_vesting"
-          ],
-          "properties": {
-            "linear_vesting": {
-              "type": "object",
-              "required": [
-                "end_time",
-                "start_time",
-                "vesting_amount"
-              ],
-              "properties": {
-                "end_time": {
-                  "$ref": "#/definitions/Uint64"
-                },
-                "start_time": {
-                  "$ref": "#/definitions/Uint64"
-                },
-                "vesting_amount": {
-                  "$ref": "#/definitions/Uint128"
-                }
-              },
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
-        },
-        {
           "type": "object",
           "required": [
             "linear_vesting_with_cliff"
@@ -190,16 +154,11 @@
             "linear_vesting_with_cliff": {
               "type": "object",
               "required": [
-                "cliff_amount",
                 "cliff_time",
                 "end_time",
-                "start_time",
-                "vesting_amount"
+                "start_time"
               ],
               "properties": {
-                "cliff_amount": {
-                  "$ref": "#/definitions/Uint128"
-                },
                 "cliff_time": {
                   "$ref": "#/definitions/Uint64"
                 },
@@ -208,9 +167,6 @@
                 },
                 "start_time": {
                   "$ref": "#/definitions/Uint64"
-                },
-                "vesting_amount": {
-                  "$ref": "#/definitions/Uint128"
                 }
               },
               "additionalProperties": false

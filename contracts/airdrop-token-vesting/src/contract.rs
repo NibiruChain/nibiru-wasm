@@ -11,8 +11,9 @@ use serde_json::to_string;
 
 use crate::errors::ContractError;
 use crate::msg::{
-    ExecuteMsg, InstantiateMsg, QueryMsg, RewardUserRequest, RewardUserResponse,
-    VestingAccountResponse, VestingData, VestingSchedule,
+    from_vesting_to_query_output, ExecuteMsg, InstantiateMsg, QueryMsg,
+    RewardUserRequest, RewardUserResponse, VestingAccountResponse, VestingData,
+    VestingSchedule,
 };
 use crate::state::{
     VestingAccount, Whitelist, DENOM, UNALLOCATED_AMOUNT, VESTING_ACCOUNTS,
@@ -419,6 +420,8 @@ fn vesting_account(
     address: String,
 ) -> StdResult<VestingAccountResponse> {
     let account = VESTING_ACCOUNTS.may_load(deps.storage, address.as_str())?;
+    let whitelist = WHITELIST.load(deps.storage)?;
+    let denom = DENOM.load(deps.storage)?;
 
     match account {
         None => Err(StdError::not_found("Vesting account not found")),
@@ -426,14 +429,27 @@ fn vesting_account(
             let vested_amount =
                 account.vested_amount(env.block.time.seconds())?;
 
+            let vesting_schedule_query = from_vesting_to_query_output(
+                &account.vesting_schedule,
+                account.vesting_amount,
+                account.cliff_amount,
+            );
+
             let vesting = VestingData {
-                vesting_account: account.clone(),
+                master_address: Some(whitelist.admin.clone()),
+                vesting_denom: cw20::Denom::Native(denom),
+                vesting_amount: account.vesting_amount,
+                vesting_schedule: vesting_schedule_query,
+
                 vested_amount: vested_amount,
                 claimable_amount: vested_amount
                     .checked_sub(account.claimed_amount)?,
             };
 
-            Ok(VestingAccountResponse { address, vesting })
+            Ok(VestingAccountResponse {
+                address,
+                vestings: vec![vesting],
+            })
         }
     }
 }
