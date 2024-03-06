@@ -11,8 +11,9 @@ use serde_json::to_string;
 
 use crate::errors::ContractError;
 use crate::msg::{
-    ExecuteMsg, InstantiateMsg, QueryMsg, RewardUserRequest, RewardUserResponse,
-    VestingAccountResponse, VestingData, VestingSchedule,
+    from_vesting_to_query_output, ExecuteMsg, InstantiateMsg, QueryMsg,
+    RewardUserRequest, RewardUserResponse, VestingAccountResponse, VestingData,
+    VestingSchedule,
 };
 use crate::state::{
     VestingAccount, Whitelist, DENOM, UNALLOCATED_AMOUNT, VESTING_ACCOUNTS,
@@ -30,15 +31,14 @@ pub fn instantiate(
     if info.funds.len() != 1 {
         return Err(StdError::generic_err(
             "must deposit exactly one type of token",
-        )
-        .into());
+        ));
     }
     if info.funds[0].amount.is_zero() {
-        return Err(StdError::generic_err("must deposit some token").into());
+        return Err(StdError::generic_err("must deposit some token"));
     }
     // Managers validation
     if msg.managers.is_empty() {
-        return Err(StdError::generic_err("managers cannot be empty").into());
+        return Err(StdError::generic_err("managers cannot be empty"));
     }
 
     deps.api.addr_validate(&msg.admin)?;
@@ -116,7 +116,7 @@ pub fn withdraw(
         return Err(StdError::generic_err("Nothing to withdraw").into());
     }
 
-    unallocated_amount = unallocated_amount - amount_max;
+    unallocated_amount -= amount_max;
     UNALLOCATED_AMOUNT.save(deps.storage, &unallocated_amount)?;
 
     // validate recipient address
@@ -130,8 +130,8 @@ pub fn withdraw(
         )?])
         .add_attribute("action", "withdraw")
         .add_attribute("recipient", &recipient)
-        .add_attribute("amount", &amount_max.to_string())
-        .add_attribute("unallocated_amount", &unallocated_amount.to_string()))
+        .add_attribute("amount", amount_max.to_string())
+        .add_attribute("unallocated_amount", unallocated_amount.to_string()))
 }
 
 fn reward_users(
@@ -316,7 +316,7 @@ fn send_if_amount_is_not_zero(
     default_recipient: String,
 ) -> Result<(), ContractError> {
     if !amount.is_zero() {
-        let recipient = recipient_option.unwrap_or_else(|| default_recipient);
+        let recipient = recipient_option.unwrap_or(default_recipient);
         let msg_send: CosmosMsg = build_send_msg(denom, amount, recipient)?;
         messages.push(msg_send);
     }
@@ -390,10 +390,7 @@ fn build_send_msg(
 ) -> StdResult<CosmosMsg> {
     Ok(BankMsg::Send {
         to_address: to,
-        amount: vec![Coin {
-            denom: denom,
-            amount,
-        }],
+        amount: vec![Coin { denom, amount }],
     }
     .into())
 }
@@ -419,6 +416,8 @@ fn vesting_account(
     address: String,
 ) -> StdResult<VestingAccountResponse> {
     let account = VESTING_ACCOUNTS.may_load(deps.storage, address.as_str())?;
+    let whitelist = WHITELIST.load(deps.storage)?;
+    let denom = DENOM.load(deps.storage)?;
 
     match account {
         None => Err(StdError::not_found("Vesting account not found")),
@@ -426,14 +425,27 @@ fn vesting_account(
             let vested_amount =
                 account.vested_amount(env.block.time.seconds())?;
 
+            let vesting_schedule_query = from_vesting_to_query_output(
+                &account.vesting_schedule,
+                account.vesting_amount,
+                account.cliff_amount,
+            );
+
             let vesting = VestingData {
-                vesting_account: account.clone(),
-                vested_amount: vested_amount,
+                master_address: Some(whitelist.admin.clone()),
+                vesting_denom: cw20::Denom::Native(denom),
+                vesting_amount: account.vesting_amount,
+                vesting_schedule: vesting_schedule_query,
+
+                vested_amount,
                 claimable_amount: vested_amount
                     .checked_sub(account.claimed_amount)?,
             };
 
-            Ok(VestingAccountResponse { address, vesting })
+            Ok(VestingAccountResponse {
+                address,
+                vestings: vec![vesting],
+            })
         }
     }
 }
