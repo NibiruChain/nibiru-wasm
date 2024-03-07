@@ -3,202 +3,54 @@
 This file describes the different messages that can be sent as queries or transactions
 to the contracts of this repository with a description of the expected behavior.
 
-## 1. Core cw3 flex multisig
+- [Contracts Cookbook](#contracts-cookbook)
+  - [Core shifter](#core-shifter)
+    - [Instantiate](#instantiate)
+    - [Execute](#execute)
+    - [Query](#query)
+  - [Core token vesting](#core-token-vesting)
+    - [Instantiate](#instantiate-1)
+    - [Execute](#execute-1)
+    - [Query](#query-1)
+  - [4. Nibi Stargate](#4-nibi-stargate)
+    - [4.1 Instantiate](#41-instantiate)
+    - [4.2 Execute](#42-execute)
+  - [5. Nibi Stargate Perp](#5-nibi-stargate-perp)
+    - [5.1 Instantiate](#51-instantiate)
+    - [5.2 Execute](#52-execute)
+  - [6. Nusd Valuator](#6-nusd-valuator)
+    - [6.1 Instantiate](#61-instantiate)
+    - [6.2 Execute](#62-execute)
+    - [6.3 Query](#63-query)
+  - [7. Airdrop token vesting](#7-airdrop-token-vesting)
+    - [7.1 Instantiate](#71-instantiate)
+    - [7.2 Execute](#72-execute)
+    - [7.3 Query](#73-query)
+  - [8. Auto compounder](#8-auto-compounder)
+    - [8.1 Instantiate](#81-instantiate)
+    - [8.2 Execute](#82-execute)
+      - [Admin functions](#admin-functions)
+      - [Manager functions](#manager-functions)
+    - [8.3 Query](#83-query)
 
-This contract is a multisig contract that is backed by a cw4 (group) contract, which independently maintains the voter set.
-
-### 1.1 Instantiate
-
-```javascript
-{
-    "group_addr": "cosmos1...", // this is the group contract that contains the member list
-    "threshold": {
-        "absolute_count": {"weight": 2},
-        "absolute_percentage": {"percentage": 0.5},
-        "threshold_quorum": { "threshold": 0.1, "quorum": 0.2 }
-    },
-    "max_voting_period": "3600s",
-    // who is able to execute passed proposals
-    // None means that anyone can execute
-    "executor": {},
-    /// The cost of creating a proposal (if any).
-    "proposal_deposit": {
-        "denom": "uusd",
-        "amount": "1000000"
-    },
-}
-```
-
-### 1.2 Execute
-
-- **Propose** creates a message to be executed by the multisig. It can be executed by anyone.
-
-```javascript
-{
-  "propose": {
-    "title": "My proposal",
-    "description": "This is a proposal",
-    "msgs": [
-      {
-        "bank": {
-          "send": {
-            "from_address": "cosmos1...",
-            "to_address": "cosmos1...",
-            "amount": [{ "denom": "uusd", "amount": "1000000" }]
-          }
-        }
-      }
-    ],
-    "latest": {
-      "at_height": 123456
-    }
-  }
-}
-```
-
-- **Vote** adds a vote to an existing proposal. It can be executed by anyone.
-
-```javascript
-{
-  "vote": {
-    "proposal_id": 1,
-    "vote": "yes"
-  }
-}
-```
-
-- **Execute** executes a passed proposal. It can be executed by anyone.
-
-```javascript
-{
-  "execute": {
-    "proposal_id": 1
-  }
-}
-```
-
-- **Close** closes an expired proposal. It can be executed by anyone.
-
-```javascript
-{
-  "close": {
-    "proposal_id": 1
-  }
-}
-```
-
-### 1.3 Query
-
-- **Threshold** returns the current threshold necessary for a proposal to be executed.
-
-```javascript
-{
-  "threshold": {}
-}
-```
-
-- **Proposal** fetches the details of a specific proposal given its ID.
-
-```javascript
-{
-  "proposal": {
-    "proposal_id": 1
-  }
-}
-```
-
-- **ListProposals** lists proposals with optional pagination. `start_after` specifies the ID after which to start listing, and `limit` sets the maximum number of proposals to return.
-
-```javascript
-{
-  "list_proposals": {
-    "start_after": 1,
-    "limit": 10
-  }
-}
-```
-
-- **ReverseProposals** lists proposals in reverse order with optional pagination. `start_before` specifies the ID before which to start listing in reverse, and `limit` sets the maximum number of proposals to return.
-
-```javascript
-{
-  "reverse_proposals": {
-    "start_before": 10,
-    "limit": 10
-  }
-}
-```
-
-- **Vote** retrieves the vote details for a given proposal ID and voter address.
-
-```javascript
-{
-  "vote": {
-    "proposal_id": 1,
-    "voter": "cosmos1..."
-  }
-}
-```
-
-- **ListVotes** lists votes for a given proposal, with optional pagination. `start_after` specifies the address after which to start listing votes, and `limit` sets the maximum number of votes to return.
-
-```javascript
-{
-  "list_votes": {
-    "proposal_id": 1,
-    "start_after": "cosmos1...",
-    "limit": 10
-  }
-}
-```
-
-- **Voter** fetches details about a specific voter by their address.
-
-```javascript
-{
-  "voter": {
-    "address": "cosmos1..."
-  }
-}
-```
-
-- **ListVoters** lists voters with optional pagination. `start_after` specifies the address after which to start listing voters, and `limit` sets the maximum number of voters to return.
-
-```javascript
-{
-  "list_voters": {
-    "start_after": "cosmos1...",
-    "limit": 10
-  }
-}
-```
-
-- **Config** retrieves the current configuration of the system.
-
-```javascript
-{
-  "config": {}
-}
-```
-
-## 2. Core shifter
+## Core shifter
 
 Shifter is a simple contract that can execute peg and depth shift to any markets in the x/perp module of Nibiru.
 The contract holds a whitelist of addressses that are allowed to execute the shift.
 
-### 2.1 Instantiate
+### Instantiate
 
 The instantiation defines just the onwer of the contract, who wil be able to add and remove addresses from the whitelist, and execute the shifts.
 
-```javascript
+```js
 {"owner": "cosmos1..."}
 ```
 
-### 2.2 Execute
+### Execute
 
 - **ShiftSwapInvariant** executes a depth shift in a market.
 
-```javascript
+```js
 {
   "shift_swap_invariant": {
     "pair": "uusd:usdr",
@@ -209,7 +61,7 @@ The instantiation defines just the onwer of the contract, who wil be able to add
 
 - **ShiftPegMultiplier** executes a depth shift on a market. It can be executed by anyone.
 
-```javascript
+```js
 {
   "shift_peg_multiplier": {
     "pair": "ubtc:unusd",
@@ -220,7 +72,7 @@ The instantiation defines just the onwer of the contract, who wil be able to add
 
 - **EditOpers** adds or removes addresses from the whitelist. It can be executed by the owner.
 
-```javascript
+```js
 {
   "edit_opers": {
     "add_oper": {"addr": "cosmos1..."},
@@ -229,13 +81,13 @@ The instantiation defines just the onwer of the contract, who wil be able to add
 }
 ```
 
-### 2.3 Query
+### Query
 
 The queries have to do with checking permissions of addresses.
 
 - **HasPerms** checks if an address has permissions to execute shifts.
 
-```javascript
+```js
 {
   "has_perms": {
     "address": "cosmos1..."
@@ -245,30 +97,30 @@ The queries have to do with checking permissions of addresses.
 
 - **Perms** query the contract owner and set of operators.
 
-```javascript
+```js
 {
   "perms": {},
 }
 ```
 
-## 3. Core token vesting
+## Core token vesting
 
 This contract implements vesting accounts for the CW20 and native tokens.
 
-### 3.1 Instantiate
+### Instantiate
 
 There's no instantiation message.
 
-```javascript
+```js
 {
 }
 ```
 
-### 3.2 Execute
+### Execute
 
 - **Receive**
 
-```javascript
+```js
 {
   "receive": {
     "sender": "cosmos1...",
@@ -280,7 +132,7 @@ There's no instantiation message.
 
 - **RegisterVestingAccount** registers a vesting account
 
-```javascript
+```js
 {
   "register_vesting_account": {
     "address": "cosmos1...",
@@ -298,7 +150,7 @@ There's no instantiation message.
 
 - **DeregisterVestingAccount** deregisters a vesting account
 
-```javascript
+```js
 {
   "deregister_vesting_account": {
     "address": "cosmos1...",
@@ -311,7 +163,7 @@ There's no instantiation message.
 
 - **Claim** allows to claim vested tokens
 
-```javascript
+```js
 {
   "claim": {
     "denom": "uusd",
@@ -320,11 +172,11 @@ There's no instantiation message.
 }
 ```
 
-### 3.3 Query
+### Query
 
 - **VestingAccount** returns the vesting account details for a given address.
 
-```javascript
+```js
 {
   "vesting_account": {
     "address": "cosmos1...",
@@ -340,7 +192,7 @@ This smart contract showcases usage examples for certain Nibiru-specific and Cos
 
 There's no instantiation message.
 
-```javascript
+```js
 {
 }
 ```
@@ -349,7 +201,7 @@ There's no instantiation message.
 
 - **CreateDenom** creates a new denom
 
-```javascript
+```js
 {
   "create_denom": { "subdenom": "zzz" }
 }
@@ -357,7 +209,7 @@ There's no instantiation message.
 
 - **Mint** mints tokens
 
-```javascript
+```js
 {
   "mint": {
     "coin": { "amount": "[amount]", "denom": "tf/[contract-addr]/[subdenom]" },
@@ -368,7 +220,7 @@ There's no instantiation message.
 
 - **Burn** burns tokens
 
-```javascript
+```js
 {
   "burn": {
     "coin": { "amount": "[amount]", "denom": "tf/[contract-addr]/[subdenom]" },
@@ -379,7 +231,7 @@ There's no instantiation message.
 
 - **ChangeAdmin** changes the admin of a denom
 
-```javascript
+```js
 {
   "change_admin": {
     "denom": "tf/[contract-addr]/[subdenom]",
@@ -396,7 +248,7 @@ This smart contract showcases usage examples for certain Nibiru-specific for the
 
 The instantiation defines the owner of the contract, who will be able to add and remove addresses from the whitelist, and execute the shifts.
 
-```javascript
+```js
 {
   "admin": "cosmos1...",
 }
@@ -406,7 +258,7 @@ The instantiation defines the owner of the contract, who will be able to add and
 
 - **MarketOrder** places a market order for a specified trading pair. `pair` indicates the trading pair, `is_long` determines if it's a long or short order, `quote_amount` is the amount in the quote currency, `leverage` specifies the leverage to apply, and `base_amount_limit` sets a limit for the amount in the base currency.
 
-```javascript
+```js
 {
   "market_order": {
     "pair": "BTC/USDT",
@@ -420,7 +272,7 @@ The instantiation defines the owner of the contract, who will be able to add and
 
 - **ClosePosition** closes an open position for a specified trading pair.
 
-```javascript
+```js
 {
   "close_position": {
     "pair": "BTC/USDT"
@@ -430,7 +282,7 @@ The instantiation defines the owner of the contract, who will be able to add and
 
 - **AddMargin** adds margin to an existing position for a specified trading pair. `margin` is the amount of additional margin to add.
 
-```javascript
+```js
 {
   "add_margin": {
     "pair": "BTC/USDT",
@@ -441,7 +293,7 @@ The instantiation defines the owner of the contract, who will be able to add and
 
 - **RemoveMargin** removes margin from an existing position for a specified trading pair. `margin` is the amount of margin to remove.
 
-```javascript
+```js
 {
   "remove_margin": {
     "pair": "BTC/USDT",
@@ -452,7 +304,7 @@ The instantiation defines the owner of the contract, who will be able to add and
 
 - **MultiLiquidate** triggers multiple liquidations based on the provided arguments. `liquidations` is a list of liquidation arguments specifying the details for each liquidation.
 
-```javascript
+```js
 {
   "multi_liquidate": {
     "liquidations": [
@@ -471,7 +323,7 @@ The instantiation defines the owner of the contract, who will be able to add and
 
 - **DonateToInsuranceFund** allows donation to the insurance fund. `donation` is the coin and amount to donate.
 
-```javascript
+```js
 {
   "donate_to_insurance_fund": {
     "donation": {"denom": "usdt", "amount": "100000"}
@@ -481,7 +333,7 @@ The instantiation defines the owner of the contract, who will be able to add and
 
 - **Claim** facilitates the claiming of funds. `funds` is an optional field specifying a particular coin and amount to claim, `claim_all` is an optional flag to claim all funds, and `to` is the address to which the funds will be sent.
 
-```javascript
+```js
 {
   "claim": {
     "funds": {"denom": "usdt", "amount": "100000"},
@@ -501,7 +353,7 @@ This smart contract is a simple valuator for the nusd token, which takes one col
 
 The owner is the only one who can execute messages in the contract
 
-```javascript
+```js
 {
   "owner": "cosmos1...",
   "accepted_denoms": "uusdc",
@@ -512,7 +364,7 @@ The owner is the only one who can execute messages in the contract
 
 - **ChangeDenom** updates the accepted denoms
 
-```javascript
+```js
 {
   "change_denom": {
     "from: "uusdc",
@@ -523,7 +375,7 @@ The owner is the only one who can execute messages in the contract
 
 - **AddDenom** adds a new accepted denom
 
-```javascript
+```js
 {
   "add_denom": {
     "denom": "uusd",
@@ -533,7 +385,7 @@ The owner is the only one who can execute messages in the contract
 
 - **RemoveDenom** removes an accepted denom
 
-```javascript
+```js
 {
   "remove_denom": {
     "denom": "uusd",
@@ -545,7 +397,7 @@ The owner is the only one who can execute messages in the contract
 
 - **Mintable** queries the amount of μNUSD that can be minted in exchange for the specified set of `from_coins`.
 
-```javascript
+```js
 {
   "mintable": {
     "from_coins": ["BTC", "ETH"]
@@ -555,7 +407,7 @@ The owner is the only one who can execute messages in the contract
 
 - **Redeemable** calculates the amount of a specified `to_denom` currency that is redeemable for a given `redeem_amount` of μNUSD.
 
-```javascript
+```js
 {
   "redeemable": {
     "redeem_amount": "1000000",
@@ -566,7 +418,7 @@ The owner is the only one who can execute messages in the contract
 
 - **AcceptedDenoms** retrieves the set of token denominations that are accepted as collateral.
 
-```javascript
+```js
 {
   "accepted_denoms": {}
 }
@@ -574,7 +426,7 @@ The owner is the only one who can execute messages in the contract
 
 - **RedeemableChoices** provides a set of possible redeemable coin options that could be received when redeeming a specified `redeem_amount` of μNUSD.
 
-```javascript
+```js
 {
   "redeemable_choices": {
     "redeem_amount": "1000000"
@@ -763,4 +615,8 @@ We need to specify admin and managers
 {
   "admin_and_managers": {}
 }
+```
+
+```
+
 ```

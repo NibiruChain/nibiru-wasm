@@ -1,9 +1,10 @@
 use crate::contract::tests::TestResult;
 use crate::contract::{execute, instantiate, query};
-use crate::errors::{CliffError, ContractError, VestingError};
+use crate::errors::{ContractError, VestingError};
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, QueryMsg, RewardUserRequest,
     VestingAccountResponse, VestingData, VestingSchedule,
+    VestingScheduleQueryOutput,
 };
 
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
@@ -246,27 +247,25 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
     let create_msg = |start_time: u64,
                       end_time: u64,
                       vesting_amount: u128,
-                      cliff_amount: Option<u128>,
+                      cliff_amount: u128,
                       cliff_time: u64|
      -> ExecuteMsg {
         ExecuteMsg::RewardUsers {
             rewards: vec![RewardUserRequest {
                 user_address: "addr0001".to_string(),
                 vesting_amount: Uint128::new(vesting_amount),
-                cliff_amount: cliff_amount.map(Uint128::new),
+                cliff_amount: Uint128::new(cliff_amount),
             }],
             vesting_schedule: VestingSchedule::LinearVestingWithCliff {
                 start_time: Uint64::new(start_time),
                 end_time: Uint64::new(end_time),
-                vesting_amount: Uint128::zero(),
-                cliff_amount: Uint128::zero(),
                 cliff_time: Uint64::new(cliff_time),
             },
         }
     };
 
     // unauthorized sender
-    let msg = create_msg(100, 110, 0, Some(1000), 105);
+    let msg = create_msg(100, 110, 0, 1000, 105);
     require_error(
         &mut deps,
         &env,
@@ -276,7 +275,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
     );
 
     // zero amount vesting token
-    let msg = create_msg(100, 110, 0, Some(1000), 105);
+    let msg = create_msg(100, 110, 0, 1000, 105);
     require_error(
         &mut deps,
         &env,
@@ -285,41 +284,22 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
         ContractError::Vesting(VestingError::ZeroVestingAmount),
     );
 
-    // zero amount cliff token
-    let msg = create_msg(100, 110, 1000, Some(0), 105);
-    require_error(
-        &mut deps,
-        &env,
-        mock_info("addr0000", &[]),
-        msg,
-        ContractError::Vesting(VestingError::Cliff(CliffError::ZeroAmount)),
-    );
-
-    // none amount cliff token
-    let msg = create_msg(100, 110, 1000, None, 105);
-    require_error(
-        &mut deps,
-        &env,
-        mock_info("addr0000", &[]),
-        msg,
-        ContractError::Vesting(VestingError::Cliff(CliffError::ZeroAmount)),
-    );
-
     // cliff time less than block time
-    let msg = create_msg(100, 110, 1000, Some(1000), 99);
+    let msg = create_msg(100, 110, 1000, 500, 99);
     require_error(
         &mut deps,
         &env,
         mock_info("addr0000", &[Coin::new(1000u128, "uusd")]),
         msg,
-        ContractError::Vesting(VestingError::Cliff(CliffError::InvalidTime {
+        ContractError::Vesting(VestingError::InvalidTimeRange {
+            start_time: 100,
             cliff_time: 99,
-            block_time: 100,
-        })),
+            end_time: 110,
+        }),
     );
 
     // end time less than start time
-    let msg = create_msg(110, 100, 1000, Some(1000), 105);
+    let msg = create_msg(110, 100, 1000, 1000, 105);
     require_error(
         &mut deps,
         &env,
@@ -327,21 +307,21 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
         msg,
         ContractError::Vesting(VestingError::InvalidTimeRange {
             start_time: 110,
+            cliff_time: 105,
             end_time: 100,
         }),
     );
 
     // cliff amount greater than vesting amount
     let (vesting_amount, cliff_amount, cliff_time) = (1000, 1001, 105);
-    let msg =
-        create_msg(100, 110, vesting_amount, Some(cliff_amount), cliff_time);
+    let msg = create_msg(100, 110, vesting_amount, cliff_amount, cliff_time);
     require_error(
         &mut deps,
         &env,
         mock_info("addr0000", &[Coin::new(1000u128, "uusd")]),
         msg,
         ContractError::Vesting(
-            CliffError::ExcessiveAmount {
+            VestingError::ExcessiveAmount {
                 cliff_amount,
                 vesting_amount,
             }
@@ -351,8 +331,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
 
     // deposit amount higher than unallocated
     let (vesting_amount, cliff_amount, cliff_time) = (10000, 250, 105);
-    let msg =
-        create_msg(100, 110, vesting_amount, Some(cliff_amount), cliff_time);
+    let msg = create_msg(100, 110, vesting_amount, cliff_amount, cliff_time);
     require_error(
         &mut deps,
         &env,
@@ -363,8 +342,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
 
     // valid amount
     let (vesting_amount, cliff_amount, cliff_time) = (1000, 250, 105);
-    let msg =
-        create_msg(100, 110, vesting_amount, Some(cliff_amount), cliff_time);
+    let msg = create_msg(100, 110, vesting_amount, cliff_amount, cliff_time);
 
     let res =
         execute(deps.as_mut(), env.clone(), mock_info("addr0000", &[]), msg)?;
@@ -401,19 +379,17 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
             RewardUserRequest {
                 user_address: "addr0002".to_string(),
                 vesting_amount: Uint128::new(vesting_amount),
-                cliff_amount: Some(Uint128::new(cliff_amount)),
+                cliff_amount: Uint128::new(cliff_amount),
             },
             RewardUserRequest {
                 user_address: "addr0002".to_string(),
                 vesting_amount: Uint128::new(vesting_amount),
-                cliff_amount: Some(Uint128::new(cliff_amount)),
+                cliff_amount: Uint128::new(cliff_amount),
             },
         ],
         vesting_schedule: VestingSchedule::LinearVestingWithCliff {
             start_time: Uint64::new(100),
             end_time: Uint64::new(110),
-            vesting_amount: Uint128::zero(),
-            cliff_amount: Uint128::zero(),
             cliff_time: Uint64::new(cliff_time),
         },
     };
@@ -465,20 +441,18 @@ fn test_withdraw() -> TestResult {
     let create_msg = |start_time: u64,
                       end_time: u64,
                       vesting_amount: u128,
-                      cliff_amount: Option<u128>,
+                      cliff_amount: u128,
                       cliff_time: u64|
      -> ExecuteMsg {
         ExecuteMsg::RewardUsers {
             rewards: vec![RewardUserRequest {
                 user_address: "addr0001".to_string(),
                 vesting_amount: Uint128::new(vesting_amount),
-                cliff_amount: cliff_amount.map(Uint128::new),
+                cliff_amount: Uint128::new(cliff_amount),
             }],
             vesting_schedule: VestingSchedule::LinearVestingWithCliff {
                 start_time: Uint64::new(start_time),
                 end_time: Uint64::new(end_time),
-                vesting_amount: Uint128::zero(),
-                cliff_amount: Uint128::zero(),
                 cliff_time: Uint64::new(cliff_time),
             },
         }
@@ -486,8 +460,7 @@ fn test_withdraw() -> TestResult {
 
     // valid amount
     let (vesting_amount, cliff_amount, cliff_time) = (1000, 250, 105);
-    let msg =
-        create_msg(100, 110, vesting_amount, Some(cliff_amount), cliff_time);
+    let msg = create_msg(100, 110, vesting_amount, cliff_amount, cliff_time);
 
     let _res =
         execute(deps.as_mut(), env.clone(), mock_info("addr0000", &[]), msg)?;
@@ -590,12 +563,12 @@ fn register_vesting_account_with_native_token() -> TestResult {
         rewards: vec![RewardUserRequest {
             user_address: "addr0001".to_string(),
             vesting_amount: Uint128::zero(),
-            cliff_amount: None,
+            cliff_amount: Uint128::zero(),
         }],
-        vesting_schedule: VestingSchedule::LinearVesting {
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
             start_time: Uint64::new(100),
             end_time: Uint64::new(110),
-            vesting_amount: Uint128::zero(),
+            cliff_time: Uint64::new(105),
         },
     };
 
@@ -612,12 +585,12 @@ fn register_vesting_account_with_native_token() -> TestResult {
         rewards: vec![RewardUserRequest {
             user_address: "addr0001".to_string(),
             vesting_amount: Uint128::new(1000001u128),
-            cliff_amount: None,
+            cliff_amount: Uint128::zero(),
         }],
-        vesting_schedule: VestingSchedule::LinearVesting {
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
             start_time: Uint64::new(100),
             end_time: Uint64::new(110),
-            vesting_amount: Uint128::new(1000000u128),
+            cliff_time: Uint64::new(105),
         },
     };
     let info = mock_info("addr0000", &[]);
@@ -635,18 +608,18 @@ fn register_vesting_account_with_native_token() -> TestResult {
             RewardUserRequest {
                 user_address: "addr0001".to_string(),
                 vesting_amount: Uint128::new(1000u128),
-                cliff_amount: None,
+                cliff_amount: Uint128::zero(),
             },
             RewardUserRequest {
                 user_address: "addr0001".to_string(),
                 vesting_amount: Uint128::new(1u128),
-                cliff_amount: None,
+                cliff_amount: Uint128::zero(),
             },
         ],
-        vesting_schedule: VestingSchedule::LinearVesting {
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
             start_time: Uint64::new(100),
             end_time: Uint64::new(110),
-            vesting_amount: Uint128::new(1000000u128),
+            cliff_time: Uint64::new(105),
         },
     };
     let info = mock_info("addr0000", &[]);
@@ -663,12 +636,12 @@ fn register_vesting_account_with_native_token() -> TestResult {
         rewards: vec![RewardUserRequest {
             user_address: "addr0001".to_string(),
             vesting_amount: Uint128::new(100u128),
-            cliff_amount: None,
+            cliff_amount: Uint128::zero(),
         }],
-        vesting_schedule: VestingSchedule::LinearVesting {
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
             start_time: Uint64::new(100),
             end_time: Uint64::new(110),
-            vesting_amount: Uint128::new(100u128),
+            cliff_time: Uint64::new(105),
         },
     };
     let info = mock_info("addr0000", &[Coin::new(1000u128, "uusd")]);
@@ -708,21 +681,22 @@ fn register_vesting_account_with_native_token() -> TestResult {
         )?)?,
         VestingAccountResponse {
             address: "addr0001".to_string(),
-            vesting: VestingData {
-                vesting_account: crate::state::VestingAccount {
-                    address: "addr0001".to_string(),
-                    vesting_amount: Uint128::new(100u128),
-                    vesting_schedule: VestingSchedule::LinearVesting {
+            vestings: vec![VestingData {
+                master_address: Some("addr0000".to_string()),
+                vesting_amount: Uint128::new(100u128),
+                vesting_schedule:
+                    VestingScheduleQueryOutput::LinearVestingWithCliff {
                         start_time: Uint64::new(100),
                         end_time: Uint64::new(110),
+                        cliff_time: Uint64::new(105),
                         vesting_amount: Uint128::new(100u128),
+                        cliff_amount: Uint128::zero(),
                     },
-                    claimed_amount: Uint128::zero(),
-                },
+                vesting_denom: cw20::Denom::Native("uusd".to_string()),
                 vested_amount: Uint128::zero(),
                 claimable_amount: Uint128::zero(),
-            },
-        }
+            }]
+        },
     );
     Ok(())
 }
@@ -749,24 +723,48 @@ fn claim_native() -> TestResult {
         rewards: vec![RewardUserRequest {
             user_address: "addr0001".to_string(),
             vesting_amount: Uint128::new(1000000u128),
-            cliff_amount: None,
+            cliff_amount: Uint128::new(500000u128),
         }],
-        vesting_schedule: VestingSchedule::LinearVesting {
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
             start_time: Uint64::new(100),
+            cliff_time: Uint64::new(105),
             end_time: Uint64::new(110),
-            vesting_amount: Uint128::new(1000000u128),
         },
     };
 
     let info = mock_info("addr0000", &[Coin::new(1000000u128, "uusd")]);
-    let _ = execute(deps.as_mut(), env.clone(), info, msg)?;
+    let res = execute(deps.as_mut(), env.clone(), info, msg)?;
+    assert_eq!(
+        res.attributes,
+        vec![
+            Attribute {
+                key: "action".to_string(),
+                value: "register_vesting_account".to_string()
+            },
+            Attribute {
+                key: "address".to_string(),
+                value: "addr0001".to_string()
+            },
+            Attribute {
+                key: "vesting_amount".to_string(),
+                value: "1000000".to_string()
+            },
+            Attribute {
+                key: "method".to_string(),
+                value: "reward_users".to_string()
+            }
+        ]
+    );
 
     // make time to half claimable
     env.block.time = Timestamp::from_seconds(105);
 
     // valid claim
     let info = mock_info("addr0001", &[]);
-    let msg = ExecuteMsg::Claim { recipient: None };
+    let msg = ExecuteMsg::Claim {
+        recipient: None,
+        denoms: vec![],
+    };
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
     assert_eq!(
@@ -790,7 +788,6 @@ fn claim_native() -> TestResult {
         ],
     );
 
-    // query vesting account
     assert_eq!(
         from_json::<VestingAccountResponse>(&query(
             deps.as_ref(),
@@ -803,21 +800,22 @@ fn claim_native() -> TestResult {
         )?)?,
         VestingAccountResponse {
             address: "addr0001".to_string(),
-            vesting: VestingData {
-                vesting_account: crate::state::VestingAccount {
-                    address: "addr0001".to_string(),
-                    vesting_amount: Uint128::new(1000000),
-                    vesting_schedule: VestingSchedule::LinearVesting {
+            vestings: vec![VestingData {
+                master_address: Some("addr0000".to_string()),
+                vesting_amount: Uint128::new(1000000u128),
+                vesting_schedule:
+                    VestingScheduleQueryOutput::LinearVestingWithCliff {
                         start_time: Uint64::new(100),
                         end_time: Uint64::new(110),
+                        cliff_time: Uint64::new(105),
                         vesting_amount: Uint128::new(1000000u128),
+                        cliff_amount: Uint128::new(500000u128),
                     },
-                    claimed_amount: Uint128::new(500000),
-                },
-                vested_amount: Uint128::new(500000),
+                vesting_denom: cw20::Denom::Native("uusd".to_string()),
+                vested_amount: Uint128::new(500000u128),
                 claimable_amount: Uint128::zero(),
-            },
-        }
+            }]
+        },
     );
 
     // make time to half claimable
@@ -846,20 +844,21 @@ fn claim_native() -> TestResult {
     );
 
     // query vesting account
-    let res = &query(
-        deps.as_ref(),
-        env,
-        QueryMsg::VestingAccount {
+    assert_eq!(
+        from_json::<VestingAccountResponse>(&query(
+            deps.as_ref(),
+            env,
+            QueryMsg::VestingAccount {
+                address: "addr0001".to_string(),
+                start_after: None,
+                limit: None,
+            },
+        )?)?,
+        VestingAccountResponse {
             address: "addr0001".to_string(),
-            start_after: None,
-            limit: None,
-        },
+            vestings: vec![],
+        }
     );
-    //expect res to be an errro
-    match res {
-        Err(StdError::NotFound { .. }) => {}
-        _ => panic!("should not enter. got result: {res:?}"),
-    }
 
     Ok(())
 }

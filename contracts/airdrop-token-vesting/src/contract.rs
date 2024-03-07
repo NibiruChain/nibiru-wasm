@@ -2,8 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
-    Env, MessageInfo, Response, StdError, StdResult, Storage, Timestamp,
-    Uint128,
+    Env, MessageInfo, Response, StdError, StdResult, Storage, Uint128,
 };
 use std::cmp::min;
 
@@ -11,8 +10,9 @@ use serde_json::to_string;
 
 use crate::errors::ContractError;
 use crate::msg::{
-    ExecuteMsg, InstantiateMsg, QueryMsg, RewardUserRequest, RewardUserResponse,
-    VestingAccountResponse, VestingData, VestingSchedule,
+    from_vesting_to_query_output, ExecuteMsg, InstantiateMsg, QueryMsg,
+    RewardUserRequest, RewardUserResponse, VestingAccountResponse, VestingData,
+    VestingSchedule,
 };
 use crate::state::{
     VestingAccount, Whitelist, DENOM, UNALLOCATED_AMOUNT, VESTING_ACCOUNTS,
@@ -30,15 +30,14 @@ pub fn instantiate(
     if info.funds.len() != 1 {
         return Err(StdError::generic_err(
             "must deposit exactly one type of token",
-        )
-        .into());
+        ));
     }
     if info.funds[0].amount.is_zero() {
-        return Err(StdError::generic_err("must deposit some token").into());
+        return Err(StdError::generic_err("must deposit some token"));
     }
     // Managers validation
     if msg.managers.is_empty() {
-        return Err(StdError::generic_err("managers cannot be empty").into());
+        return Err(StdError::generic_err("managers cannot be empty"));
     }
 
     deps.api.addr_validate(&msg.admin)?;
@@ -86,7 +85,10 @@ pub fn execute(
             vested_token_recipient,
             left_vesting_token_recipient,
         ),
-        ExecuteMsg::Claim { recipient } => claim(deps, env, info, recipient),
+        ExecuteMsg::Claim {
+            denoms: _denoms,
+            recipient,
+        } => claim(deps, env, info, recipient),
         ExecuteMsg::Withdraw { amount, recipient } => {
             withdraw(deps, env, info, amount, recipient)
         }
@@ -116,7 +118,7 @@ pub fn withdraw(
         return Err(StdError::generic_err("Nothing to withdraw").into());
     }
 
-    unallocated_amount = unallocated_amount - amount_max;
+    unallocated_amount -= amount_max;
     UNALLOCATED_AMOUNT.save(deps.storage, &unallocated_amount)?;
 
     // validate recipient address
@@ -130,16 +132,16 @@ pub fn withdraw(
         )?])
         .add_attribute("action", "withdraw")
         .add_attribute("recipient", &recipient)
-        .add_attribute("amount", &amount_max.to_string())
-        .add_attribute("unallocated_amount", &unallocated_amount.to_string()))
+        .add_attribute("amount", amount_max.to_string())
+        .add_attribute("unallocated_amount", unallocated_amount.to_string()))
 }
 
 fn reward_users(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     rewards: Vec<RewardUserRequest>,
-    mut vesting_schedule: VestingSchedule,
+    vesting_schedule: VestingSchedule,
 ) -> Result<Response, ContractError> {
     let mut res = vec![];
 
@@ -160,33 +162,18 @@ fn reward_users(
             StdError::generic_err("Insufficient funds for all rewards").into()
         );
     }
-    vesting_schedule.validate_time(env.block.time)?;
+    vesting_schedule.validate()?;
 
     let mut attrs: Vec<Attribute> = vec![];
     for req in rewards {
         // validate amounts and cliff details if there's one
-        req.validate(vesting_schedule.clone())?;
-
-        // update the vesting schedule to match with the request
-        match &mut vesting_schedule {
-            VestingSchedule::LinearVesting { vesting_amount, .. } => {
-                *vesting_amount = req.vesting_amount;
-            }
-            VestingSchedule::LinearVestingWithCliff {
-                vesting_amount,
-                cliff_amount,
-                ..
-            } => {
-                *vesting_amount = req.vesting_amount;
-                *cliff_amount = req.cliff_amount.unwrap();
-            }
-        }
+        req.validate()?;
 
         let result = register_vesting_account(
             deps.storage,
-            env.block.time,
             req.user_address.clone(),
             req.vesting_amount,
+            req.cliff_amount,
             vesting_schedule.clone(),
         );
 
@@ -219,23 +206,24 @@ fn reward_users(
 
 fn register_vesting_account(
     storage: &mut dyn Storage,
-    block_time: Timestamp,
     address: String,
-    deposit_amount: Uint128,
+    vesting_amount: Uint128,
+    cliff_amount: Uint128,
     vesting_schedule: VestingSchedule,
 ) -> Result<Response, ContractError> {
     // vesting_account existence check
     if VESTING_ACCOUNTS.has(storage, address.as_str()) {
         return Err(StdError::generic_err("already exists").into());
     }
-    vesting_schedule.validate(block_time)?;
+    vesting_schedule.validate()?;
 
     VESTING_ACCOUNTS.save(
         storage,
         address.as_str(),
         &VestingAccount {
             address: address.to_string(),
-            vesting_amount: deposit_amount,
+            vesting_amount,
+            cliff_amount,
             vesting_schedule,
             claimed_amount: Uint128::zero(),
         },
@@ -244,7 +232,7 @@ fn register_vesting_account(
     Ok(Response::new().add_attributes(vec![
         ("action", "register_vesting_account"),
         ("address", address.as_str()),
-        ("vesting_amount", &deposit_amount.to_string()),
+        ("vesting_amount", &vesting_amount.to_string()),
     ]))
 }
 
@@ -281,9 +269,7 @@ fn deregister_vesting_account(
     // remove vesting account
     VESTING_ACCOUNTS.remove(deps.storage, address.as_str());
 
-    let vested_amount = account
-        .vesting_schedule
-        .vested_amount(env.block.time.seconds())?;
+    let vested_amount = account.vested_amount(env.block.time.seconds())?;
     let claimed_amount = account.claimed_amount;
 
     // transfer already vested amount to vested_token_recipient and if
@@ -330,7 +316,7 @@ fn send_if_amount_is_not_zero(
     default_recipient: String,
 ) -> Result<(), ContractError> {
     if !amount.is_zero() {
-        let recipient = recipient_option.unwrap_or_else(|| default_recipient);
+        let recipient = recipient_option.unwrap_or(default_recipient);
         let msg_send: CosmosMsg = build_send_msg(denom, amount, recipient)?;
         messages.push(msg_send);
     }
@@ -362,9 +348,7 @@ fn claim(
     }
 
     let mut account = account.unwrap();
-    let vested_amount = account
-        .vesting_schedule
-        .vested_amount(env.block.time.seconds())?;
+    let vested_amount = account.vested_amount(env.block.time.seconds())?;
     let claimed_amount = account.claimed_amount;
 
     let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
@@ -406,10 +390,7 @@ fn build_send_msg(
 ) -> StdResult<CosmosMsg> {
     Ok(BankMsg::Send {
         to_address: to,
-        amount: vec![Coin {
-            denom: denom,
-            amount,
-        }],
+        amount: vec![Coin { denom, amount }],
     }
     .into())
 }
@@ -435,22 +416,39 @@ fn vesting_account(
     address: String,
 ) -> StdResult<VestingAccountResponse> {
     let account = VESTING_ACCOUNTS.may_load(deps.storage, address.as_str())?;
+    let whitelist = WHITELIST.load(deps.storage)?;
+    let denom = DENOM.load(deps.storage)?;
 
     match account {
-        None => Err(StdError::not_found("Vesting account not found")),
+        None => Ok(VestingAccountResponse {
+            address,
+            vestings: vec![],
+        }),
         Some(account) => {
-            let vested_amount = account
-                .vesting_schedule
-                .vested_amount(env.block.time.seconds())?;
+            let vested_amount =
+                account.vested_amount(env.block.time.seconds())?;
+
+            let vesting_schedule_query = from_vesting_to_query_output(
+                &account.vesting_schedule,
+                account.vesting_amount,
+                account.cliff_amount,
+            );
 
             let vesting = VestingData {
-                vesting_account: account.clone(),
-                vested_amount: vested_amount,
+                master_address: Some(whitelist.admin.clone()),
+                vesting_denom: cw20::Denom::Native(denom),
+                vesting_amount: account.vesting_amount,
+                vesting_schedule: vesting_schedule_query,
+
+                vested_amount,
                 claimable_amount: vested_amount
                     .checked_sub(account.claimed_amount)?,
             };
 
-            Ok(VestingAccountResponse { address, vesting })
+            Ok(VestingAccountResponse {
+                address,
+                vestings: vec![vesting],
+            })
         }
     }
 }
@@ -463,7 +461,7 @@ pub mod tests {
     use cosmwasm_std::{
         coin,
         testing::{self, MockApi, MockQuerier, MockStorage},
-        Empty, OwnedDeps, Uint64,
+        Empty, OwnedDeps, Timestamp, Uint64,
     };
 
     pub type TestResult = Result<(), anyhow::Error>;
@@ -530,21 +528,42 @@ pub mod tests {
             rewards: vec![RewardUserRequest {
                 user_address: "addr0001".to_string(),
                 vesting_amount: Uint128::new(5000u128),
-                cliff_amount: None,
+                cliff_amount: Uint128::zero(),
             }],
-            vesting_schedule: VestingSchedule::LinearVesting {
+            vesting_schedule: VestingSchedule::LinearVestingWithCliff {
                 start_time: Uint64::new(100),
                 end_time: Uint64::new(110),
-                vesting_amount: Uint128::new(1000000u128),
+                cliff_time: Uint64::new(105),
             },
         };
 
-        execute(
+        let res = execute(
             deps.as_mut(),
             env.clone(), // Use the custom environment with the adjusted block time
             testing::mock_info("admin-sender", &[coin(1000000, "token")]),
             register_msg,
         )?;
+        assert_eq!(
+            res.attributes,
+            vec![
+                Attribute {
+                    key: "action".to_string(),
+                    value: "register_vesting_account".to_string()
+                },
+                Attribute {
+                    key: "address".to_string(),
+                    value: "addr0001".to_string()
+                },
+                Attribute {
+                    key: "vesting_amount".to_string(),
+                    value: "5000".to_string()
+                },
+                Attribute {
+                    key: "method".to_string(),
+                    value: "reward_users".to_string()
+                }
+            ]
+        );
 
         // Try to deregister with unauthorized sender
         let msg = ExecuteMsg::DeregisterVestingAccount {
@@ -577,12 +596,12 @@ pub mod tests {
             rewards: vec![RewardUserRequest {
                 user_address: "addr0001".to_string(),
                 vesting_amount: Uint128::new(5000u128),
-                cliff_amount: None,
+                cliff_amount: Uint128::zero(),
             }],
-            vesting_schedule: VestingSchedule::LinearVesting {
+            vesting_schedule: VestingSchedule::LinearVestingWithCliff {
                 start_time: Uint64::new(100),
                 end_time: Uint64::new(110),
-                vesting_amount: Uint128::new(1000000u128),
+                cliff_time: Uint64::new(105),
             },
         };
 
