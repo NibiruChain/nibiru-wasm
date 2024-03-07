@@ -761,7 +761,10 @@ fn claim_native() -> TestResult {
 
     // valid claim
     let info = mock_info("addr0001", &[]);
-    let msg = ExecuteMsg::Claim { recipient: None };
+    let msg = ExecuteMsg::Claim {
+        recipient: None,
+        denoms: vec![],
+    };
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
     assert_eq!(
@@ -841,20 +844,21 @@ fn claim_native() -> TestResult {
     );
 
     // query vesting account
-    let res = &query(
-        deps.as_ref(),
-        env,
-        QueryMsg::VestingAccount {
+    assert_eq!(
+        from_json::<VestingAccountResponse>(&query(
+            deps.as_ref(),
+            env,
+            QueryMsg::VestingAccount {
+                address: "addr0001".to_string(),
+                start_after: None,
+                limit: None,
+            },
+        )?)?,
+        VestingAccountResponse {
             address: "addr0001".to_string(),
-            start_after: None,
-            limit: None,
-        },
+            vestings: vec![],
+        }
     );
-    //expect res to be an errro
-    match res {
-        Err(StdError::NotFound { .. }) => {}
-        _ => panic!("should not enter. got result: {res:?}"),
-    }
 
     Ok(())
 }

@@ -2,8 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
-    Env, MessageInfo, Response, StdError, StdResult, Storage, Timestamp,
-    Uint128,
+    Env, MessageInfo, Response, StdError, StdResult, Storage, Uint128,
 };
 use std::cmp::min;
 
@@ -86,7 +85,10 @@ pub fn execute(
             vested_token_recipient,
             left_vesting_token_recipient,
         ),
-        ExecuteMsg::Claim { recipient } => claim(deps, env, info, recipient),
+        ExecuteMsg::Claim {
+            denoms: _denoms,
+            recipient,
+        } => claim(deps, env, info, recipient),
         ExecuteMsg::Withdraw { amount, recipient } => {
             withdraw(deps, env, info, amount, recipient)
         }
@@ -136,7 +138,7 @@ pub fn withdraw(
 
 fn reward_users(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     rewards: Vec<RewardUserRequest>,
     vesting_schedule: VestingSchedule,
@@ -418,7 +420,10 @@ fn vesting_account(
     let denom = DENOM.load(deps.storage)?;
 
     match account {
-        None => Err(StdError::not_found("Vesting account not found")),
+        None => Ok(VestingAccountResponse {
+            address,
+            vestings: vec![],
+        }),
         Some(account) => {
             let vested_amount =
                 account.vested_amount(env.block.time.seconds())?;
@@ -456,7 +461,7 @@ pub mod tests {
     use cosmwasm_std::{
         coin,
         testing::{self, MockApi, MockQuerier, MockStorage},
-        Empty, OwnedDeps, Uint64,
+        Empty, OwnedDeps, Timestamp, Uint64,
     };
 
     pub type TestResult = Result<(), anyhow::Error>;
