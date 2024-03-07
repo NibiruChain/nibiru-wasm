@@ -189,9 +189,8 @@ pub fn stake(
     }
 
     let mut messages: Vec<CosmosMsg> = vec![];
+    let mut attrs: Vec<cosmwasm_std::Attribute> = vec![];
     for stake_msg in stake_msgs.iter() {
-        let _ = deps.api.addr_validate(&stake_msg.validator)?;
-
         let amount_to_delegate = amount * stake_msg.share / total_shares;
         if amount_to_delegate.is_zero() {
             continue;
@@ -201,12 +200,17 @@ pub fn stake(
             amount_to_delegate,
             stake_msg.validator.to_string(),
         )?);
+        attrs.push(cosmwasm_std::Attribute {
+            key: "stake".to_string(),
+            value: format!("{}:{}", stake_msg.validator, amount_to_delegate),
+        });
     }
 
     Ok(Response::new()
         .add_messages(messages)
         .add_attribute("action", "stake")
-        .add_attribute("amount", amount))
+        .add_attribute("amount", amount)
+        .add_attributes(attrs))
 }
 
 ///
