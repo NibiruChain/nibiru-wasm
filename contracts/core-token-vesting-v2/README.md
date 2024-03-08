@@ -29,15 +29,12 @@ This creates a set of vesting accounts for the given users.
 
 ```rust
   DeregisterVestingAccount {
-address: String,
-vested_token_recipient: Option<String>,
-left_vesting_token_recipient: Option<String>,
+    addresses: Vec<String>,
 },
 ```
 
 - DeregisterVestingAccount - deregister vesting account
-  - It will compute `claimable_amount` and `left_vesting_amount`. Each amount respectively sent to (`vested_token_recipient` or `vesting_account`)
-    and (`left_vesting_token_recipient` or `master_address`).
+  - It will compute `claimable_amount` and `left_vesting_amount` and send back to the contract admin.
 
 #### By admin only
 
@@ -139,10 +136,10 @@ cat << EOF | jq '.' | tee reward.json
       }
     ],
     "vesting_schedule": {
-      "linear_vesting": {
+      "linear_vesting_with_cliff": {
         "start_time": "1708642800",
         "end_time": "1708729200",
-        "vesting_amount": "0"
+        "cliff_time": "1708642800"
       }
     }
   }
@@ -190,5 +187,19 @@ cat << EOF | jq '.' | tee withdraw.json
 }
 EOF
 JSON_DATA="$(<withdraw.json)"
+nibid tx wasm execute $CONTRACT_ADDRESS "$JSON_DATA" --from $MANAGER_WALLET "${TX_FLAG[@]}"
+
+# Deregister vesting accounts
+cat << EOF | jq '.' | tee deregister.json
+{
+  "deregister_vesting_accounts": {
+    "addresses": [
+      "nibi1zrz9q4xr2u6tk0gtrzu7c7vyu53uyzp0cr9wgf",
+      "nibi1dczse3mp5cg5jcjwxu5qreh277su4x7fku389c"
+    ]
+  }
+}
+EOF
+JSON_DATA="$(<deregister.json)"
 nibid tx wasm execute $CONTRACT_ADDRESS "$JSON_DATA" --from $MANAGER_WALLET "${TX_FLAG[@]}"
 ```

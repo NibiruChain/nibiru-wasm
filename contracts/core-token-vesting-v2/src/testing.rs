@@ -1,20 +1,46 @@
-use crate::contract::tests::TestResult;
 use crate::contract::{execute, instantiate, query};
 use crate::errors::{ContractError, VestingError};
 use crate::msg::{
-    ExecuteMsg, InstantiateMsg, QueryMsg, RewardUserRequest,
-    VestingAccountResponse, VestingData, VestingSchedule,
+    DeregisterUserResponse, ExecuteMsg, InstantiateMsg, QueryMsg,
+    RewardUserRequest, VestingAccountResponse, VestingData, VestingSchedule,
     VestingScheduleQueryOutput,
 };
 
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
-use cosmwasm_std::{coin, MessageInfo};
+use cosmwasm_std::{coin, testing, Empty, MessageInfo};
 use cosmwasm_std::{
     from_json,
     testing::{mock_dependencies, mock_env, mock_info},
     Attribute, BankMsg, Coin, Env, OwnedDeps, Response, StdError, SubMsg,
     Timestamp, Uint128, Uint64,
 };
+
+pub type TestResult = Result<(), anyhow::Error>;
+
+pub fn mock_env_with_time(block_time: u64) -> Env {
+    let mut env = testing::mock_env();
+    env.block.time = Timestamp::from_seconds(block_time);
+    env
+}
+
+/// Convenience function for instantiating the contract at and setting up
+/// the env to have the given block time.
+pub fn setup_with_block_time(
+    block_time: u64,
+) -> anyhow::Result<(OwnedDeps<MockStorage, MockApi, MockQuerier, Empty>, Env)> {
+    let mut deps = testing::mock_dependencies();
+    let env = mock_env_with_time(block_time);
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        testing::mock_info("admin-sender", &[coin(5000, "token")]),
+        InstantiateMsg {
+            admin: "admin-sender".to_string(),
+            managers: vec!["manager-sender".to_string()],
+        },
+    )?;
+    Ok((deps, env))
+}
 
 #[test]
 fn proper_initialization() -> TestResult {
@@ -866,5 +892,86 @@ fn claim_native() -> TestResult {
         }
     );
 
+    Ok(())
+}
+
+#[test]
+fn deregister_err_nonexistent_vesting_account() -> TestResult {
+    let (mut deps, env) = setup_with_block_time(50)?;
+
+    let msg = ExecuteMsg::DeregisterVestingAccounts {
+        addresses: vec!["nonexistent".to_string()],
+    };
+    let res = execute(
+        deps.as_mut(),
+        env, // Use the custom environment with the adjusted block time
+        testing::mock_info("manager-sender", &[]),
+        msg,
+    )?;
+    let response_items: Vec<DeregisterUserResponse> =
+        from_json(res.data.unwrap()).unwrap();
+    assert!(!response_items[0].success);
+    let error_msg = response_items[0].clone().error_msg;
+    if !error_msg.contains("not found") {
+        panic!("Unexpected error message {error_msg:?}")
+    }
+    Ok(())
+}
+
+#[test]
+fn deregister_err_unauthorized_vesting_account() -> TestResult {
+    // Set up the environment with a block time before the vesting start time
+    let (mut deps, env) = setup_with_block_time(50)?;
+
+    // Try to deregister with unauthorized sender
+    let msg = ExecuteMsg::DeregisterVestingAccounts {
+        addresses: vec!["addr0001".to_string()],
+    };
+    require_error(
+        &mut deps,
+        &env,
+        mock_info("addr0042", &[]),
+        msg,
+        StdError::generic_err("Unauthorized").into(),
+    );
+    Ok(())
+}
+
+#[test]
+fn deregister_successful() -> TestResult {
+    // Set up the environment with a block time before the vesting start time
+    let (mut deps, env) = setup_with_block_time(50)?;
+
+    let register_msg = ExecuteMsg::RewardUsers {
+        rewards: vec![RewardUserRequest {
+            user_address: "addr0001".to_string(),
+            vesting_amount: Uint128::new(5000u128),
+            cliff_amount: Uint128::zero(),
+        }],
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(110),
+            cliff_time: Uint64::new(105),
+        },
+    };
+
+    execute(
+        deps.as_mut(),
+        env.clone(), // Use the custom environment with the adjusted block time
+        testing::mock_info("admin-sender", &[]),
+        register_msg,
+    )?;
+
+    // Deregister with the manager address
+    let msg = ExecuteMsg::DeregisterVestingAccounts {
+        addresses: vec!["addr0001".to_string()],
+    };
+
+    let _res = execute(
+        deps.as_mut(),
+        env, // Use the custom environment with the adjusted block time
+        testing::mock_info("manager-sender", &[]),
+        msg,
+    )?;
     Ok(())
 }
