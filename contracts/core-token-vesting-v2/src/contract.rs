@@ -100,7 +100,7 @@ pub fn withdraw(
     let mut unallocated_amount = UNALLOCATED_AMOUNT.load(deps.storage)?;
     let denom = DENOM.load(deps.storage)?;
 
-    if !whitelist.is_admin(&info.sender) {
+    if !whitelist.is_admin(info.sender) {
         return Err(StdError::generic_err("Unauthorized").into());
     }
 
@@ -235,9 +235,7 @@ fn deregister_vesting_accounts(
 
     let whitelist = WHITELIST.load(deps.storage)?;
 
-    if !(whitelist.is_member(&info.sender)
-        || whitelist.is_admin(&info.sender))
-    {
+    if !(whitelist.is_member(&info.sender) || whitelist.is_admin(&info.sender)) {
         return Err(StdError::generic_err("Unauthorized").into());
     }
 
@@ -309,7 +307,7 @@ fn deregister_vesting_account(
         &mut messages,
         claimable_amount,
         &denom,
-        &address,
+        address,
     )?;
 
     // transfer left vesting amount to left_vesting_token_recipient and if
@@ -320,7 +318,7 @@ fn deregister_vesting_account(
         &mut messages,
         left_vesting_amount,
         &denom,
-        &admin_address,
+        admin_address,
     )?;
 
     Ok(Response::new().add_messages(messages).add_attributes(vec![
