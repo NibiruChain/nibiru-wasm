@@ -6,11 +6,13 @@ Admin and managers are defined at the instantiation of the contracts. Both can
 reward users and de-register vesting accounts, but only the admin can withdraw
 the unallocated amount from the contract.
 
-- [Master Operations](#master-operations)
-  - [By admin and managers](#by-admin-and-managers)
-  - [By admin only](#by-admin-only)
-- [Vesting Account Operations](#vesting-account-operations)
-- [Deployed Contract Info](#deployed-contract-info)
+- [Token Vesting](#token-vesting)
+  - [Master Operations](#master-operations)
+    - [By admin and managers](#by-admin-and-managers)
+    - [By admin only](#by-admin-only)
+  - [Vesting Account Operations](#vesting-account-operations)
+  - [Deployed Contract Info](#deployed-contract-info)
+  - [Testing Against a Live Chain](#testing-against-a-live-chain)
 
 ### Master Operations
 
@@ -80,7 +82,7 @@ TODO for mainnet/testnet
 ### Testing Against a Live Chain
 
 You can test this smart contract on a live chain with the following script. It
-requires `nibid` version 1 or 2. 
+requires `nibid` version 1 or 2.
 
 ```bash
 WALLET=devnet_wallet

@@ -149,9 +149,11 @@ fn reward_users(
     let total_requested: Uint128 =
         rewards.iter().map(|req| req.vesting_amount).sum();
     if total_requested > unallocated_amount {
-        return Err(
-            StdError::generic_err("Insufficient funds for all rewards").into()
-        );
+        return Err(StdError::generic_err(format!(
+            "Insufficient funds for all rewards. Have {} but want {}",
+            unallocated_amount, total_requested
+        ))
+        .into());
     }
     vesting_schedule.validate()?;
 

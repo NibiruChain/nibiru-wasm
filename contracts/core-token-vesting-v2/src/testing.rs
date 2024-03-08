@@ -360,7 +360,10 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
         &env,
         mock_info("addr0000", &[Coin::new(999u128, "uusd")]),
         msg,
-        StdError::generic_err("Insufficient funds for all rewards").into(),
+        StdError::generic_err(
+            "Insufficient funds for all rewards. Have 2000 but want 10000",
+        )
+        .into(),
     );
 
     // valid amount
@@ -620,7 +623,10 @@ fn register_vesting_account_with_native_token() -> TestResult {
     let res = execute(deps.as_mut(), env.clone(), info, msg.clone());
     match res {
         Err(ContractError::Std(StdError::GenericErr { msg, .. })) => {
-            assert_eq!(msg, "Insufficient funds for all rewards")
+            assert_eq!(
+                msg,
+                "Insufficient funds for all rewards. Have 1000 but want 1000001"
+            )
         }
         _ => panic!("should not enter. got result: {res:?}"),
     }
@@ -649,7 +655,10 @@ fn register_vesting_account_with_native_token() -> TestResult {
     let res = execute(deps.as_mut(), env.clone(), info, msg.clone());
     match res {
         Err(ContractError::Std(StdError::GenericErr { msg, .. })) => {
-            assert_eq!(msg, "Insufficient funds for all rewards")
+            assert_eq!(
+                msg,
+                "Insufficient funds for all rewards. Have 1000 but want 1001"
+            )
         }
         _ => panic!("should not enter. got result: {res:?}"),
     }

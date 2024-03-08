@@ -14,7 +14,7 @@ Smart contract sandbox for Nibiru Chain.
     └── 📂 core-shifter       # Calls peg shift and depth shift in x/perp.
     └── 📂 core-controller    # Calls other admin calls from Nibiru foundation.
     └── 📂 core-token-vesting # Token linear vesting contracts with optional cliffs.
-    └── 📂 airdrop-token-vesting # Token linear vesting contracts with optional cliffs but handled for airdrop.
+    └── 📂 core-token-vesting-v2 # Improved version of core-token-vesting-v2.
 ├── 📂 nibiru-std      # Nibiru Chain standard library for smart contracts
     └── 📦 proto       # Types and traits for QueryRequest::Stargate and CosmosMsg::Stargate
          └──           #   Includes constructors for Cosmos, IBC, and Nibiru. 
