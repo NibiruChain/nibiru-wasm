@@ -1,7 +1,7 @@
 use std::env::current_dir;
 use std::fs::create_dir_all;
 
-use airdrop_token_vesting::msg::{
+use core_token_vesting_v2::msg::{
     ExecuteMsg, InstantiateMsg, QueryMsg, VestingAccountResponse,
 };
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
