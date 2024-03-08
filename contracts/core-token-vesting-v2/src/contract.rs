@@ -46,10 +46,10 @@ pub fn instantiate(
     }
 
     let unallocated_amount = info.funds[0].amount;
-    let denom = info.funds[0].denom.clone();
+    let denom = &info.funds[0].denom;
 
     UNALLOCATED_AMOUNT.save(deps.storage, &unallocated_amount)?;
-    DENOM.save(deps.storage, &denom)?;
+    DENOM.save(deps.storage, denom)?;
     WHITELIST.save(
         deps.storage,
         &Whitelist {
@@ -100,7 +100,7 @@ pub fn withdraw(
     let mut unallocated_amount = UNALLOCATED_AMOUNT.load(deps.storage)?;
     let denom = DENOM.load(deps.storage)?;
 
-    if !whitelist.is_admin(info.sender.clone()) {
+    if !whitelist.is_admin(&info.sender) {
         return Err(StdError::generic_err("Unauthorized").into());
     }
 
@@ -113,14 +113,10 @@ pub fn withdraw(
     UNALLOCATED_AMOUNT.save(deps.storage, &unallocated_amount)?;
 
     // validate recipient address
-    deps.api.addr_validate(&recipient.clone())?;
+    deps.api.addr_validate(&recipient)?;
 
     Ok(Response::new()
-        .add_messages(vec![build_send_msg(
-            denom,
-            amount_max,
-            recipient.clone(),
-        )?])
+        .add_messages(vec![build_send_msg(&denom, amount_max, &recipient)?])
         .add_attribute("action", "withdraw")
         .add_attribute("recipient", &recipient)
         .add_attribute("amount", amount_max.to_string())
@@ -138,9 +134,7 @@ fn reward_users(
 
     let whitelist = WHITELIST.load(deps.storage)?;
 
-    if !(whitelist.is_member(info.sender.clone())
-        || whitelist.is_admin(info.sender.clone()))
-    {
+    if !(whitelist.is_member(&info.sender) || whitelist.is_admin(&info.sender)) {
         return Err(StdError::generic_err("Unauthorized").into());
     }
 
@@ -164,10 +158,10 @@ fn reward_users(
 
         let result = register_vesting_account(
             deps.storage,
-            req.user_address.clone(),
+            &req.user_address,
             req.vesting_amount,
             req.cliff_amount,
-            vesting_schedule.clone(),
+            &vesting_schedule,
         );
 
         if let Ok(response) = result {
@@ -182,8 +176,10 @@ fn reward_users(
             res.push(RewardUserResponse {
                 user_address: req.user_address.clone(),
                 success: false,
-                error_msg: "Failed to register vesting account: ".to_string()
-                    + &error.to_string(),
+                error_msg: format!(
+                    "Failed to register vesting account: {}",
+                    error
+                ),
             });
         }
     }
@@ -199,32 +195,32 @@ fn reward_users(
 
 fn register_vesting_account(
     storage: &mut dyn Storage,
-    address: String,
+    address: &str,
     vesting_amount: Uint128,
     cliff_amount: Uint128,
-    vesting_schedule: VestingSchedule,
+    vesting_schedule: &VestingSchedule,
 ) -> Result<Response, ContractError> {
     // vesting_account existence check
-    if VESTING_ACCOUNTS.has(storage, address.as_str()) {
+    if VESTING_ACCOUNTS.has(storage, address) {
         return Err(StdError::generic_err("already exists").into());
     }
     vesting_schedule.validate()?;
 
     VESTING_ACCOUNTS.save(
         storage,
-        address.as_str(),
+        address,
         &VestingAccount {
             address: address.to_string(),
             vesting_amount,
             cliff_amount,
-            vesting_schedule,
+            vesting_schedule: vesting_schedule.clone(),
             claimed_amount: Uint128::zero(),
         },
     )?;
 
     Ok(Response::new().add_attributes(vec![
         ("action", "register_vesting_account"),
-        ("address", address.as_str()),
+        ("address", address),
         ("vesting_amount", &vesting_amount.to_string()),
     ]))
 }
@@ -239,8 +235,8 @@ fn deregister_vesting_accounts(
 
     let whitelist = WHITELIST.load(deps.storage)?;
 
-    if !(whitelist.is_member(info.sender.clone())
-        || whitelist.is_admin(info.sender.clone()))
+    if !(whitelist.is_member(&info.sender)
+        || whitelist.is_admin(&info.sender))
     {
         return Err(StdError::generic_err("Unauthorized").into());
     }
@@ -251,8 +247,8 @@ fn deregister_vesting_accounts(
         let result = deregister_vesting_account(
             deps.storage,
             env.block.time.seconds(),
-            address.clone(),
-            whitelist.admin.clone(),
+            &address,
+            &whitelist.admin,
         );
 
         if let Ok(response) = result {
@@ -267,8 +263,10 @@ fn deregister_vesting_accounts(
             res.push(DeregisterUserResponse {
                 user_address: address.clone(),
                 success: false,
-                error_msg: "Failed to deregister vesting account: ".to_string()
-                    + &error.to_string(),
+                error_msg: format!(
+                    "Failed to deregister vesting account: {}",
+                    error
+                ),
             });
         }
     }
@@ -281,13 +279,13 @@ fn deregister_vesting_accounts(
 fn deregister_vesting_account(
     storage: &mut dyn Storage,
     timestamp: u64,
-    address: String,
-    admin_address: String,
+    address: &str,
+    admin_address: &str,
 ) -> Result<Response, ContractError> {
     let mut messages: Vec<CosmosMsg> = vec![];
 
     // vesting_account existence check
-    let account = VESTING_ACCOUNTS.may_load(storage, address.as_str())?;
+    let account = VESTING_ACCOUNTS.may_load(storage, address)?;
     let denom = DENOM.load(storage)?;
 
     if account.is_none() {
@@ -299,7 +297,7 @@ fn deregister_vesting_account(
     let account = account.unwrap();
 
     // remove vesting account
-    VESTING_ACCOUNTS.remove(storage, address.as_str());
+    VESTING_ACCOUNTS.remove(storage, address);
 
     let vested_amount = account.vested_amount(timestamp)?;
     let claimed_amount = account.claimed_amount;
@@ -310,8 +308,8 @@ fn deregister_vesting_account(
     send_if_amount_is_not_zero(
         &mut messages,
         claimable_amount,
-        denom.clone(),
-        address.clone(),
+        &denom,
+        &address,
     )?;
 
     // transfer left vesting amount to left_vesting_token_recipient and if
@@ -321,13 +319,13 @@ fn deregister_vesting_account(
     send_if_amount_is_not_zero(
         &mut messages,
         left_vesting_amount,
-        denom,
-        admin_address,
+        &denom,
+        &admin_address,
     )?;
 
     Ok(Response::new().add_messages(messages).add_attributes(vec![
         ("action", "deregister_vesting_account"),
-        ("address", address.as_str()),
+        ("address", address),
         ("vesting_amount", &account.vesting_amount.to_string()),
         ("vested_amount", &vested_amount.to_string()),
         ("left_vesting_amount", &left_vesting_amount.to_string()),
@@ -340,8 +338,8 @@ fn deregister_vesting_account(
 fn send_if_amount_is_not_zero(
     messages: &mut Vec<CosmosMsg>,
     amount: Uint128,
-    denom: String,
-    recipient: String,
+    denom: &str,
+    recipient: &str,
 ) -> Result<(), ContractError> {
     if !amount.is_zero() {
         let msg_send: CosmosMsg = build_send_msg(denom, amount, recipient)?;
@@ -391,7 +389,7 @@ fn claim(
     }
 
     let msg_send: CosmosMsg =
-        build_send_msg(denom, claimable_amount, recipient.clone())?;
+        build_send_msg(&denom, claimable_amount, &recipient)?;
 
     messages.push(msg_send);
     attrs.extend(
@@ -411,13 +409,16 @@ fn claim(
 }
 
 fn build_send_msg(
-    denom: String,
+    denom: &str,
     amount: Uint128,
-    to: String,
+    to: &str,
 ) -> StdResult<CosmosMsg> {
     Ok(BankMsg::Send {
-        to_address: to,
-        amount: vec![Coin { denom, amount }],
+        to_address: to.to_string(),
+        amount: vec![Coin {
+            denom: denom.to_string(),
+            amount,
+        }],
     }
     .into())
 }
