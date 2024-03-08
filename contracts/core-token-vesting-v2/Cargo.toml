@@ -1,5 +1,5 @@
 [package]
-name = "airdrop-token-vesting"
+name = "core-token-vesting-v2"
 version = "0.2.0"
 edition = "2021"
 description = "Airdrop token vesting contract"
