@@ -116,7 +116,7 @@ pub fn withdraw(
     deps.api.addr_validate(&recipient)?;
 
     Ok(Response::new()
-        .add_messages(vec![build_send_msg(&denom, amount_max, &recipient)?])
+        .add_messages(vec![build_send_msg(&denom, amount_max, &recipient)])
         .add_attribute("action", "withdraw")
         .add_attribute("recipient", &recipient)
         .add_attribute("amount", amount_max.to_string())
@@ -164,23 +164,25 @@ fn reward_users(
             &vesting_schedule,
         );
 
-        if let Ok(response) = result {
-            attrs.extend(response.attributes);
-            res.push(RewardUserResponse {
-                user_address: req.user_address,
-                success: true,
-                error_msg: "".to_string(),
-            });
-        } else {
-            let error = result.err().unwrap();
-            res.push(RewardUserResponse {
-                user_address: req.user_address,
-                success: false,
-                error_msg: format!(
-                    "Failed to register vesting account: {}",
-                    error
-                ),
-            });
+        match result {
+            Ok(response) => {
+                attrs.extend(response.attributes);
+                res.push(RewardUserResponse {
+                    user_address: req.user_address,
+                    success: true,
+                    error_msg: "".to_string(),
+                });
+            }
+            Err(error) => {
+                res.push(RewardUserResponse {
+                    user_address: req.user_address,
+                    success: false,
+                    error_msg: format!(
+                        "Failed to register vesting account: {}",
+                        error
+                    ),
+                });
+            }
         }
     }
 
@@ -247,25 +249,28 @@ fn deregister_vesting_accounts(
             &whitelist.admin,
         );
 
-        if let Ok(response) = result {
-            attrs.extend(response.attributes);
-            res.push(DeregisterUserResponse {
-                user_address: address,
-                success: true,
-                error_msg: "".to_string(),
-            });
-        } else {
-            let error = result.err().unwrap();
-            res.push(DeregisterUserResponse {
-                user_address: address,
-                success: false,
-                error_msg: format!(
-                    "Failed to deregister vesting account: {}",
-                    error
-                ),
-            });
+        match result {
+            Ok(response) => {
+                attrs.extend(response.attributes);
+                res.push(DeregisterUserResponse {
+                    user_address: address,
+                    success: true,
+                    error_msg: "".to_string(),
+                });
+            }
+            Err(error) => {
+                res.push(DeregisterUserResponse {
+                    user_address: address,
+                    success: false,
+                    error_msg: format!(
+                        "Failed to deregister vesting account: {}",
+                        error
+                    ),
+                });
+            }
         }
     }
+    
     Ok(Response::new()
         .add_attributes(attrs)
         .add_attribute("action", "deregister_vesting_accounts")
@@ -338,8 +343,7 @@ fn send_if_amount_is_not_zero(
     recipient: &str,
 ) -> Result<(), ContractError> {
     if !amount.is_zero() {
-        let msg_send: CosmosMsg = build_send_msg(denom, amount, recipient)?;
-        messages.push(msg_send);
+        messages.push(build_send_msg(denom, amount, recipient));
     }
 
     Ok(())
@@ -355,7 +359,6 @@ fn claim(
     let recipient = recipient.unwrap_or_else(|| sender.to_string());
     let denom = DENOM.load(deps.storage)?;
 
-    let mut messages: Vec<CosmosMsg> = vec![];
     let mut attrs: Vec<Attribute> = vec![];
 
     // vesting_account existence check
@@ -384,10 +387,6 @@ fn claim(
         VESTING_ACCOUNTS.save(deps.storage, sender.as_str(), &account)?;
     }
 
-    let msg_send: CosmosMsg =
-        build_send_msg(&denom, claimable_amount, &recipient)?;
-
-    messages.push(msg_send);
     attrs.extend(
         vec![
             ("vesting_amount", &account.vesting_amount.to_string()),
@@ -399,7 +398,7 @@ fn claim(
     );
 
     Ok(Response::new()
-        .add_messages(messages)
+        .add_messages(vec![build_send_msg(&denom, claimable_amount, &recipient)])
         .add_attributes(vec![("action", "claim"), ("address", sender.as_str())])
         .add_attributes(attrs))
 }
@@ -408,15 +407,14 @@ fn build_send_msg(
     denom: &str,
     amount: Uint128,
     to: &str,
-) -> StdResult<CosmosMsg> {
-    Ok(BankMsg::Send {
+) -> CosmosMsg {
+    BankMsg::Send {
         to_address: to.to_string(),
         amount: vec![Coin {
             denom: denom.to_string(),
             amount,
         }],
-    }
-    .into())
+    }.into()
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
