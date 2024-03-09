@@ -42,7 +42,7 @@ pub fn instantiate(
 
     deps.api.addr_validate(&msg.admin)?;
     for manager in msg.managers.iter() {
-        let _ = deps.api.addr_validate(manager)?;
+        deps.api.addr_validate(manager)?;
     }
 
     let unallocated_amount = info.funds[0].amount;
@@ -167,14 +167,14 @@ fn reward_users(
         if let Ok(response) = result {
             attrs.extend(response.attributes);
             res.push(RewardUserResponse {
-                user_address: req.user_address.clone(),
+                user_address: req.user_address,
                 success: true,
                 error_msg: "".to_string(),
             });
         } else {
             let error = result.err().unwrap();
             res.push(RewardUserResponse {
-                user_address: req.user_address.clone(),
+                user_address: req.user_address,
                 success: false,
                 error_msg: format!(
                     "Failed to register vesting account: {}",
@@ -231,14 +231,12 @@ fn deregister_vesting_accounts(
     info: MessageInfo,
     addresses: Vec<String>,
 ) -> Result<Response, ContractError> {
-    let mut res = vec![];
-
     let whitelist = WHITELIST.load(deps.storage)?;
-
     if !(whitelist.is_member(&info.sender) || whitelist.is_admin(&info.sender)) {
         return Err(StdError::generic_err("Unauthorized").into());
     }
-
+    
+    let mut res = vec![];
     let mut attrs: Vec<Attribute> = vec![];
 
     for address in addresses {
@@ -252,14 +250,14 @@ fn deregister_vesting_accounts(
         if let Ok(response) = result {
             attrs.extend(response.attributes);
             res.push(DeregisterUserResponse {
-                user_address: address.clone(),
+                user_address: address,
                 success: true,
                 error_msg: "".to_string(),
             });
         } else {
             let error = result.err().unwrap();
             res.push(DeregisterUserResponse {
-                user_address: address.clone(),
+                user_address: address,
                 success: false,
                 error_msg: format!(
                     "Failed to deregister vesting account: {}",
