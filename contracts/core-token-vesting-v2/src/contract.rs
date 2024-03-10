@@ -1,7 +1,9 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Storage, Timestamp, Uint128
+    to_json_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
+    Env, MessageInfo, Response, StdError, StdResult, Storage, Timestamp,
+    Uint128,
 };
 use std::cmp::min;
 
@@ -430,17 +432,31 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             address,
             start_after: _start_after,
             limit: _limit,
-        } => to_json_binary(&vesting_account(deps, env, address)?),
+        } => to_json_binary(&vesting_account(deps, &env, address)?),
+        QueryMsg::VestingAccounts { address } => {
+            to_json_binary(&vesting_accounts(deps, &env, address)?)
+        }
     }
+}
+
+// query multiple vesting accounts, with the provided vec of addresses
+fn vesting_accounts(
+    deps: Deps,
+    env: &Env,
+    addresses: Vec<String>,
+) -> StdResult<Vec<VestingAccountResponse>> {
+    let mut res = vec![];
+    for address in addresses {
+        res.push(vesting_account(deps, env, address)?);
+    }
+    Ok(res)
 }
 
 /// address: Bech 32 address for the owner of the vesting accounts. This will be
 ///   the prefix we filter by in state.
-/// limit: Maximum number of vesting accounts to retrieve when reading the
-///   VESTING_ACCOUNTs store.
 fn vesting_account(
     deps: Deps,
-    env: Env,
+    env: &Env,
     address: String,
 ) -> StdResult<VestingAccountResponse> {
     let account = VESTING_ACCOUNTS.may_load(deps.storage, address.as_str())?;
@@ -453,8 +469,7 @@ fn vesting_account(
             vestings: vec![],
         }),
         Some(account) => {
-            let vested_amount =
-                account.vested_amount(env.block.time)?;
+            let vested_amount = account.vested_amount(env.block.time)?;
 
             let vesting_schedule_query = from_vesting_to_query_output(
                 &account.vesting_schedule,
