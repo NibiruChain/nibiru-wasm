@@ -297,7 +297,10 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
         &env,
         mock_info("addr0042", &[]),
         msg,
-        StdError::generic_err("Sender addr0042 is unauthorized to reward users.").into(),
+        StdError::generic_err(
+            "Sender addr0042 is unauthorized to reward users.",
+        )
+        .into(),
     );
 
     // zero amount vesting token
@@ -932,7 +935,10 @@ fn deregister_err_unauthorized_vesting_account() -> TestResult {
         &env,
         mock_info("addr0042", &[]),
         msg,
-        StdError::generic_err("Sender addr0042 is not authorized to deregister vesting accounts.").into(),
+        StdError::generic_err(
+            "Sender addr0042 is not authorized to deregister vesting accounts.",
+        )
+        .into(),
     );
     Ok(())
 }
@@ -973,5 +979,64 @@ fn deregister_successful() -> TestResult {
         testing::mock_info("manager-sender", &[]),
         msg,
     )?;
+    Ok(())
+}
+
+#[test]
+fn query_vesting_accounts() -> TestResult {
+    // Set up the environment with a block time before the vesting start time
+    let (mut deps, env) = setup_with_block_time(105)?;
+
+    let register_msg = ExecuteMsg::RewardUsers {
+        rewards: vec![RewardUserRequest {
+            user_address: "addr0001".to_string(),
+            vesting_amount: Uint128::new(5000u128),
+            cliff_amount: Uint128::new(1250u128),
+        }],
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(110),
+            cliff_time: Uint64::new(105),
+        },
+    };
+
+    execute(
+        deps.as_mut(),
+        env.clone(), // Use the custom environment with the adjusted block time
+        testing::mock_info("admin-sender", &[]),
+        register_msg,
+    )?;
+
+    let res = query(
+        deps.as_ref(),
+        env,
+        QueryMsg::VestingAccounts {
+            address: vec!["addr0001".to_string()],
+        },
+    )?;
+
+    let response_items: Vec<VestingAccountResponse> = from_json(res).unwrap();
+    assert_eq!(
+        response_items[0],
+        VestingAccountResponse {
+            address: "addr0001".to_string(),
+            vestings: vec![VestingData {
+                master_address: Some("admin-sender".to_string()),
+                vesting_amount: Uint128::new(5000u128),
+                vesting_schedule:
+                    VestingScheduleQueryOutput::LinearVestingWithCliff {
+                        start_time: Uint64::new(100),
+                        end_time: Uint64::new(110),
+                        cliff_time: Uint64::new(105),
+                        vesting_amount: Uint128::new(5000u128),
+                        cliff_amount: Uint128::new(1250u128),
+                    },
+                vesting_denom: cw20::Denom::Native("token".to_string()),
+                vested_amount: Uint128::new(1250u128),
+                claimable_amount: Uint128::new(1250u128),
+            }]
+        }
+    );
+
     Ok(())
 }

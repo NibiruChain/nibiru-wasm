@@ -91,6 +91,9 @@ pub enum QueryMsg {
         start_after: Option<Denom>,
         limit: Option<u32>,
     },
+    VestingAccounts {
+        address: Vec<String>,
+    }
 }
 
 #[cw_serde]
