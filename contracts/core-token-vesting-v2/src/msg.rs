@@ -166,7 +166,6 @@ impl VestingSchedule {
                 start_time,
                 end_time,
                 cliff_time,
-                ..
             } => {
                 if end_time <= start_time {
                     return Err(VestingError::InvalidTimeRange {

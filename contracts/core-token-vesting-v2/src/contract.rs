@@ -1,8 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
-    Env, MessageInfo, Response, StdError, StdResult, Storage, Uint128,
+    to_json_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Storage, Timestamp, Uint128
 };
 use std::cmp::min;
 
@@ -133,9 +132,12 @@ fn reward_users(
     let mut res = vec![];
 
     let whitelist = WHITELIST.load(deps.storage)?;
-
     if !(whitelist.is_member(&info.sender) || whitelist.is_admin(&info.sender)) {
-        return Err(StdError::generic_err("Unauthorized").into());
+        return Err(StdError::generic_err(format!(
+            "Sender {} is unauthorized to reward users.",
+            &info.sender
+        ))
+        .into());
     }
 
     let unallocated_amount = UNALLOCATED_AMOUNT.load(deps.storage)?;
@@ -144,7 +146,7 @@ fn reward_users(
         rewards.iter().map(|req| req.vesting_amount).sum();
     if total_requested > unallocated_amount {
         return Err(StdError::generic_err(format!(
-            "Insufficient funds for all rewards. Have {} but want {}",
+            "Insufficient funds for all rewards. Contract has {} available but trying to allocate {}",
             unallocated_amount, total_requested
         ))
         .into());
@@ -204,7 +206,11 @@ fn register_vesting_account(
 ) -> Result<Response, ContractError> {
     // vesting_account existence check
     if VESTING_ACCOUNTS.has(storage, address) {
-        return Err(StdError::generic_err("already exists").into());
+        return Err(StdError::generic_err(format!(
+            "User {} already has a vesting account",
+            address
+        ))
+        .into());
     }
     vesting_schedule.validate()?;
 
@@ -235,16 +241,20 @@ fn deregister_vesting_accounts(
 ) -> Result<Response, ContractError> {
     let whitelist = WHITELIST.load(deps.storage)?;
     if !(whitelist.is_member(&info.sender) || whitelist.is_admin(&info.sender)) {
-        return Err(StdError::generic_err("Unauthorized").into());
+        return Err(StdError::generic_err(format!(
+            "Sender {} is not authorized to deregister vesting accounts.",
+            &info.sender
+        ))
+        .into());
     }
-    
+
     let mut res = vec![];
     let mut attrs: Vec<Attribute> = vec![];
 
     for address in addresses {
         let result = deregister_vesting_account(
             deps.storage,
-            env.block.time.seconds(),
+            env.block.time,
             &address,
             &whitelist.admin,
         );
@@ -270,7 +280,7 @@ fn deregister_vesting_accounts(
             }
         }
     }
-    
+
     Ok(Response::new()
         .add_attributes(attrs)
         .add_attribute("action", "deregister_vesting_accounts")
@@ -279,7 +289,7 @@ fn deregister_vesting_accounts(
 
 fn deregister_vesting_account(
     storage: &mut dyn Storage,
-    timestamp: u64,
+    timestamp: Timestamp,
     address: &str,
     admin_address: &str,
 ) -> Result<Response, ContractError> {
@@ -290,10 +300,11 @@ fn deregister_vesting_account(
     let denom = DENOM.load(storage)?;
 
     if account.is_none() {
-        return Err(ContractError::Std(StdError::generic_err(format!(
-            "vesting entry is not found for address {:?}",
-            to_string(&address).unwrap(),
-        ))));
+        return Err(StdError::generic_err(format!(
+            "User {} does not have a vesting account.",
+            address,
+        ))
+        .into());
     }
     let account = account.unwrap();
 
@@ -303,8 +314,7 @@ fn deregister_vesting_account(
     let vested_amount = account.vested_amount(timestamp)?;
     let claimed_amount = account.claimed_amount;
 
-    // transfer already vested amount to vested_token_recipient and if
-    // it is not provided, transfer it to the address that is the owner of the vesting account
+    // transfer already vested amount to the user
     let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
     send_if_amount_is_not_zero(
         &mut messages,
@@ -313,8 +323,7 @@ fn deregister_vesting_account(
         address,
     )?;
 
-    // transfer left vesting amount to left_vesting_token_recipient and if
-    // it is not provided, transfer it to the master_address
+    // transfer left vesting amount to the admin
     let left_vesting_amount =
         account.vesting_amount.checked_sub(vested_amount)?;
     send_if_amount_is_not_zero(
@@ -355,8 +364,8 @@ fn claim(
     info: MessageInfo,
     recipient: Option<String>,
 ) -> Result<Response, ContractError> {
-    let sender = info.sender;
-    let recipient = recipient.unwrap_or_else(|| sender.to_string());
+    let sender = &info.sender;
+    let recipient = &recipient.unwrap_or_else(|| sender.to_string());
     let denom = DENOM.load(deps.storage)?;
 
     let mut attrs: Vec<Attribute> = vec![];
@@ -372,7 +381,7 @@ fn claim(
     }
 
     let mut account = account.unwrap();
-    let vested_amount = account.vested_amount(env.block.time.seconds())?;
+    let vested_amount = account.vested_amount(env.block.time)?;
     let claimed_amount = account.claimed_amount;
 
     let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
@@ -398,23 +407,20 @@ fn claim(
     );
 
     Ok(Response::new()
-        .add_messages(vec![build_send_msg(&denom, claimable_amount, &recipient)])
+        .add_messages(vec![build_send_msg(&denom, claimable_amount, recipient)])
         .add_attributes(vec![("action", "claim"), ("address", sender.as_str())])
         .add_attributes(attrs))
 }
 
-fn build_send_msg(
-    denom: &str,
-    amount: Uint128,
-    to: &str,
-) -> CosmosMsg {
+fn build_send_msg(denom: &str, amount: Uint128, to: &str) -> CosmosMsg {
     BankMsg::Send {
         to_address: to.to_string(),
         amount: vec![Coin {
             denom: denom.to_string(),
             amount,
         }],
-    }.into()
+    }
+    .into()
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -448,7 +454,7 @@ fn vesting_account(
         }),
         Some(account) => {
             let vested_amount =
-                account.vested_amount(env.block.time.seconds())?;
+                account.vested_amount(env.block.time)?;
 
             let vesting_schedule_query = from_vesting_to_query_output(
                 &account.vesting_schedule,
