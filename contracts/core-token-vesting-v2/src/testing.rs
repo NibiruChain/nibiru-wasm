@@ -297,7 +297,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
         &env,
         mock_info("addr0042", &[]),
         msg,
-        StdError::generic_err("Unauthorized").into(),
+        StdError::generic_err("Sender addr0042 is unauthorized to reward users.").into(),
     );
 
     // zero amount vesting token
@@ -361,7 +361,7 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
         mock_info("addr0000", &[Coin::new(999u128, "uusd")]),
         msg,
         StdError::generic_err(
-            "Insufficient funds for all rewards. Have 2000 but want 10000",
+            "Insufficient funds for all rewards. Contract has 2000 available but trying to allocate 10000",
         )
         .into(),
     );
@@ -625,7 +625,7 @@ fn register_vesting_account_with_native_token() -> TestResult {
         Err(ContractError::Std(StdError::GenericErr { msg, .. })) => {
             assert_eq!(
                 msg,
-                "Insufficient funds for all rewards. Have 1000 but want 1000001"
+                "Insufficient funds for all rewards. Contract has 1000 available but trying to allocate 1000001"
             )
         }
         _ => panic!("should not enter. got result: {res:?}"),
@@ -657,7 +657,7 @@ fn register_vesting_account_with_native_token() -> TestResult {
         Err(ContractError::Std(StdError::GenericErr { msg, .. })) => {
             assert_eq!(
                 msg,
-                "Insufficient funds for all rewards. Have 1000 but want 1001"
+                "Insufficient funds for all rewards. Contract has 1000 available but trying to allocate 1001"
             )
         }
         _ => panic!("should not enter. got result: {res:?}"),
@@ -912,7 +912,7 @@ fn deregister_err_nonexistent_vesting_account() -> TestResult {
         from_json(res.data.unwrap()).unwrap();
     assert!(!response_items[0].success);
     let error_msg = response_items[0].clone().error_msg;
-    if !error_msg.contains("not found") {
+    if !error_msg.contains("Failed to deregister vesting account: Generic error: User nonexistent does not have a vesting account.") {
         panic!("Unexpected error message {error_msg:?}")
     }
     Ok(())
@@ -932,7 +932,7 @@ fn deregister_err_unauthorized_vesting_account() -> TestResult {
         &env,
         mock_info("addr0042", &[]),
         msg,
-        StdError::generic_err("Unauthorized").into(),
+        StdError::generic_err("Sender addr0042 is not authorized to deregister vesting accounts.").into(),
     );
     Ok(())
 }

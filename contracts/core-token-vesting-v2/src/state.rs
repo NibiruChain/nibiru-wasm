@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use cosmwasm_schema::cw_serde;
 
 use crate::msg::VestingSchedule;
-use cosmwasm_std::{StdResult, Uint128};
+use cosmwasm_std::{StdResult, Timestamp, Uint128};
 use cw_storage_plus::{Item, Map};
 
 pub const VESTING_ACCOUNTS: Map<&str, VestingAccount> =
@@ -40,29 +40,29 @@ pub struct VestingAccount {
 }
 
 impl VestingAccount {
-    pub fn vested_amount(&self, block_time: u64) -> StdResult<Uint128> {
+    pub fn vested_amount(&self, block_time: Timestamp) -> StdResult<Uint128> {
         match self.vesting_schedule {
             VestingSchedule::LinearVestingWithCliff {
                 start_time: _start_time,
                 end_time,
                 cliff_time,
             } => {
-                if block_time < cliff_time.u64() {
+                if block_time.seconds() < cliff_time.u64() {
                     return Ok(Uint128::zero());
                 }
 
-                if block_time == cliff_time.u64() {
+                if block_time.seconds() == cliff_time.u64() {
                     return Ok(self.cliff_amount);
                 }
 
-                if block_time >= end_time.u64() {
+                if block_time.seconds() >= end_time.u64() {
                     return Ok(self.vesting_amount);
                 }
 
                 let remaining_token =
                     self.vesting_amount.checked_sub(self.cliff_amount)?;
                 let vested_token = remaining_token
-                    .checked_mul(Uint128::from(block_time - cliff_time.u64()))?
+                    .checked_mul(Uint128::from(block_time.seconds() - cliff_time.u64()))?
                     .checked_div(Uint128::from(end_time - cliff_time))?;
 
                 Ok(vested_token + self.cliff_amount)
