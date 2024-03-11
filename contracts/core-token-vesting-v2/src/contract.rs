@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
-    Env, MessageInfo, Response, StdError, StdResult, Storage, Timestamp,
+    Env, MessageInfo, Response, StdError, StdResult, Storage, SubMsg, Timestamp,
     Uint128,
 };
 use std::cmp::min;
@@ -252,6 +252,7 @@ fn deregister_vesting_accounts(
 
     let mut res = vec![];
     let mut attrs: Vec<Attribute> = vec![];
+    let mut messages: Vec<CosmosMsg> = vec![];
 
     for address in addresses {
         let result = deregister_vesting_account(
@@ -263,6 +264,9 @@ fn deregister_vesting_accounts(
 
         match result {
             Ok(response) => {
+                response.messages.iter().for_each(|msg| {
+                    messages.push(msg.msg.clone());
+                });
                 attrs.extend(response.attributes);
                 res.push(DeregisterUserResponse {
                     user_address: address,
@@ -284,6 +288,7 @@ fn deregister_vesting_accounts(
     }
 
     Ok(Response::new()
+        .add_messages(messages)
         .add_attributes(attrs)
         .add_attribute("action", "deregister_vesting_accounts")
         .set_data(to_json_binary(&res).unwrap()))
