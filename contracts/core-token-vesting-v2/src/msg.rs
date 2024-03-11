@@ -33,9 +33,7 @@ pub enum ExecuteMsg {
     },
 
     /// Claim is an operation that allows one to claim vested tokens.
-    Claim {
-        denoms: Vec<Denom>,
-    },
+    Claim {},
 
     // Withdraw allows the admin to withdraw the funds from the contract
     Withdraw {
@@ -91,7 +89,7 @@ pub enum QueryMsg {
     },
     VestingAccounts {
         address: Vec<String>,
-    }
+    },
 }
 
 #[cw_serde]

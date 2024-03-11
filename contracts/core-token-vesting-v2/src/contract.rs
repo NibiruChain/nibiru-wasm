@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
-    Env, MessageInfo, Response, StdError, StdResult, Storage, SubMsg, Timestamp,
+    Env, MessageInfo, Response, StdError, StdResult, Storage, Timestamp,
     Uint128,
 };
 use std::cmp::min;
@@ -77,7 +77,7 @@ pub fn execute(
         ExecuteMsg::DeregisterVestingAccounts { addresses } => {
             deregister_vesting_accounts(deps, env, info, addresses)
         }
-        ExecuteMsg::Claim { denoms: _denoms } => claim(deps, env, info),
+        ExecuteMsg::Claim { } => claim(deps, env, info),
         ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
     }
 }
