@@ -274,8 +274,12 @@ pub fn query_perms_status(deps: Deps) -> Result<PermsStatus, ContractError> {
 
 #[cfg(test)]
 pub mod tests {
+    use std::collections::BTreeSet;
+
     use cosmwasm_std::{self as cw_std};
-    use cw_std::{from_json, testing, BankMsg, Coin, CosmosMsg, Uint128};
+    use cw_std::{
+        from_json, testing, BankMsg, Coin, CosmosMsg, Response, Uint128,
+    };
     use nibiru_std::errors::TestResult;
     use serde::Serialize;
 
@@ -283,8 +287,9 @@ pub mod tests {
         contract::{execute, query},
         msgs::{ExecuteMsg, PermsStatus, QueryMsg},
         oper_perms::{self, Permissions},
+        state::OPERATORS,
         tutil::{
-            mock_info_for_sender, setup_contract, setup_contract_defaults,
+            self, mock_info_for_sender, setup_contract, setup_contract_defaults,
             TEST_OWNER,
         },
     };
@@ -574,8 +579,121 @@ pub mod tests {
             from_json(query(deps.as_ref(), env.clone(), query_msg.clone())?)?;
         assert_eq!(resp.is_halted, want_is_halted);
 
-        // TODO: ownership query
-        // pub fn get_ownership(storage: &dyn Storage) -> StdResult<Ownership<Addr>>
+        Ok(())
+    }
+
+    // TODO: test ExecuteMsg::EditOpers
+    // TODO: ownership query
+    // pub fn get_ownership(storage: &dyn Storage) -> StdResult<Ownership<Addr>>
+
+    #[test]
+    fn exec_edit_opers_add() -> TestResult {
+        let (mut deps, _env, _info) = tutil::setup_contract_defaults()?;
+        let new_member = "new_member";
+        let perms = Permissions::load(&deps.storage)?;
+        let not_has: bool = !perms.is_owner(new_member);
+        assert!(not_has);
+
+        // Add an operator to the permission set
+        let execute_msg = ExecuteMsg::EditOpers(oper_perms::Action::AddOper {
+            address: new_member.to_string(),
+        });
+        let sender = tutil::TEST_OWNER;
+        let execute_info = testing::mock_info(sender, &[]);
+
+        let check_resp = |resp: Response| {
+            assert_eq!(
+                resp.messages.len(),
+                0,
+                "resp.messages: {:?}",
+                resp.messages
+            );
+            assert_eq!(
+                resp.attributes.len(),
+                2,
+                "resp.attributes: {:#?}",
+                resp.attributes
+            );
+        };
+
+        let result = execute(
+            deps.as_mut(),
+            testing::mock_env(),
+            execute_info,
+            execute_msg,
+        )?;
+        check_resp(result);
+
+        // Check correctness of the result
+        let perms = Permissions::load(&deps.storage)?;
+        let has: bool = perms.has(new_member);
+        assert!(has);
+
+        let query_req = QueryMsg::Perms {};
+        let binary = query(deps.as_ref(), testing::mock_env(), query_req)?;
+        let response: PermsStatus = cosmwasm_std::from_json(binary)?;
+        assert!(response.perms.has(sender));
+        Ok(())
+    }
+
+    #[test]
+    fn exec_edit_opers_remove() -> TestResult {
+        let to_addrs = vec![];
+        let opers = vec![];
+        let (mut deps, _env, _info) = tutil::setup_contract(to_addrs, opers)?;
+        // Set up initial perms
+        let opers_start: Vec<String> = ["vitalik", "musk", "satoshi"]
+            .iter()
+            .map(|&s| s.to_string())
+            .collect();
+        let mut perms = Permissions::load(&deps.storage)?;
+        assert_eq!(perms.operators.len(), 0); // admin remains
+        for member in opers_start.iter() {
+            perms.operators.insert(member.clone());
+        }
+        let res = OPERATORS.save(deps.as_mut().storage, &perms.operators);
+        assert!(res.is_ok());
+
+        // Remove a member from the whitelist
+        let execute_msg =
+            ExecuteMsg::EditOpers(oper_perms::Action::RemoveOper {
+                address: "satoshi".to_string(),
+            });
+        let sender = tutil::TEST_OWNER;
+        let execute_info = testing::mock_info(sender, &[]);
+        let check_resp = |resp: Response| {
+            assert_eq!(
+                resp.messages.len(),
+                0,
+                "resp.messages: {:?}",
+                resp.messages
+            );
+            assert_eq!(
+                resp.attributes.len(),
+                2,
+                "resp.attributes: {:#?}",
+                resp.attributes
+            );
+        };
+        let result = execute(
+            deps.as_mut(),
+            testing::mock_env(),
+            execute_info,
+            execute_msg,
+        )?;
+        check_resp(result);
+
+        // Check correctness of the result
+        let query_req = QueryMsg::Perms {};
+        let binary = query(deps.as_ref(), testing::mock_env(), query_req)?;
+        let response: PermsStatus = cosmwasm_std::from_json(binary)?;
+        let expected_opers: BTreeSet<String> =
+            ["vitalik", "musk"].iter().map(|&s| s.to_string()).collect();
+        assert_eq!(
+            response.perms.operators, expected_opers,
+            "got: {:#?}, wanted: {:#?}",
+            response.perms.operators, expected_opers
+        );
         Ok(())
     }
 }
