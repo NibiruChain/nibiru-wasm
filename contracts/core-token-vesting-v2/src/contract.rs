@@ -260,13 +260,11 @@ fn deregister_vesting_accounts(
             env.block.time,
             &address,
             &whitelist.admin,
+            &mut messages,
         );
 
         match result {
             Ok(response) => {
-                response.messages.iter().for_each(|msg| {
-                    messages.push(msg.msg.clone());
-                });
                 attrs.extend(response.attributes);
                 res.push(DeregisterUserResponse {
                     user_address: address,
@@ -299,9 +297,8 @@ fn deregister_vesting_account(
     timestamp: Timestamp,
     address: &str,
     admin_address: &str,
+    messages: &mut Vec<CosmosMsg>,
 ) -> Result<Response, ContractError> {
-    let mut messages: Vec<CosmosMsg> = vec![];
-
     // vesting_account existence check
     let account = VESTING_ACCOUNTS.may_load(storage, address)?;
     let denom = DENOM.load(storage)?;
@@ -324,7 +321,7 @@ fn deregister_vesting_account(
     // transfer already vested amount to the user
     let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
     send_if_amount_is_not_zero(
-        &mut messages,
+        messages,
         claimable_amount,
         &denom,
         address,
@@ -334,13 +331,13 @@ fn deregister_vesting_account(
     let left_vesting_amount =
         account.vesting_amount.checked_sub(vested_amount)?;
     send_if_amount_is_not_zero(
-        &mut messages,
+        messages,
         left_vesting_amount,
         &denom,
         admin_address,
     )?;
 
-    Ok(Response::new().add_messages(messages).add_attributes(vec![
+    Ok(Response::new().add_attributes(vec![
         ("action", "deregister_vesting_account"),
         ("address", address),
         ("vesting_amount", &account.vesting_amount.to_string()),
