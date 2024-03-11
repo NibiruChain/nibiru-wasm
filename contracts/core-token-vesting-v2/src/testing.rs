@@ -946,18 +946,18 @@ fn deregister_err_unauthorized_vesting_account() -> TestResult {
 #[test]
 fn deregister_successful() -> TestResult {
     // Set up the environment with a block time before the vesting start time
-    let (mut deps, env) = setup_with_block_time(50)?;
+    let (mut deps, env) = setup_with_block_time(105)?;
 
     let register_msg = ExecuteMsg::RewardUsers {
         rewards: vec![RewardUserRequest {
             user_address: "addr0001".to_string(),
             vesting_amount: Uint128::new(5000u128),
-            cliff_amount: Uint128::zero(),
+            cliff_amount: Uint128::new(1250u128),
         }],
         vesting_schedule: VestingSchedule::LinearVestingWithCliff {
             start_time: Uint64::new(100),
-            end_time: Uint64::new(110),
             cliff_time: Uint64::new(105),
+            end_time: Uint64::new(110),
         },
     };
 
@@ -973,12 +973,44 @@ fn deregister_successful() -> TestResult {
         addresses: vec!["addr0001".to_string()],
     };
 
-    let _res = execute(
+    let res = execute(
         deps.as_mut(),
         env, // Use the custom environment with the adjusted block time
         testing::mock_info("manager-sender", &[]),
         msg,
     )?;
+    let data =
+        from_json::<Vec<DeregisterUserResponse>>(res.data.unwrap()).unwrap();
+
+    assert_eq!(
+        data[0],
+        DeregisterUserResponse {
+            user_address: "addr0001".to_string(),
+            success: true,
+            error_msg: "".to_string(),
+        }
+    );
+    assert_eq!(res.messages.len(), 2);
+    assert_eq!(
+        res.messages[0],
+        SubMsg::new(BankMsg::Send {
+            to_address: "addr0001".to_string(),
+            amount: vec![Coin {
+                denom: "token".to_string(),
+                amount: Uint128::new(1250u128),
+            }],
+        })
+    );
+    assert_eq!(
+        res.messages[1],
+        SubMsg::new(BankMsg::Send {
+            to_address: "admin-sender".to_string(),
+            amount: vec![Coin {
+                denom: "token".to_string(),
+                amount: Uint128::new(3750u128),
+            }],
+        })
+    );
     Ok(())
 }
 
