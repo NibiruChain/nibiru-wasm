@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Attribute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
-    Env, MessageInfo, Response, StdError, StdResult, Storage, SubMsg, Timestamp,
+    Env, MessageInfo, Response, StdError, StdResult, Storage, Timestamp,
     Uint128,
 };
 use std::cmp::min;
@@ -77,13 +77,8 @@ pub fn execute(
         ExecuteMsg::DeregisterVestingAccounts { addresses } => {
             deregister_vesting_accounts(deps, env, info, addresses)
         }
-        ExecuteMsg::Claim {
-            denoms: _denoms,
-            recipient,
-        } => claim(deps, env, info, recipient),
-        ExecuteMsg::Withdraw { amount, recipient } => {
-            withdraw(deps, env, info, amount, recipient)
-        }
+        ExecuteMsg::Claim { } => claim(deps, env, info),
+        ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
     }
 }
 
@@ -95,15 +90,15 @@ pub fn withdraw(
     _env: Env,
     info: MessageInfo,
     amount: Uint128,
-    recipient: String,
 ) -> Result<Response, ContractError> {
     let whitelist = WHITELIST.load(deps.storage)?;
     let mut unallocated_amount = UNALLOCATED_AMOUNT.load(deps.storage)?;
     let denom = DENOM.load(deps.storage)?;
 
-    if !whitelist.is_admin(info.sender) {
+    if !whitelist.is_admin(&info.sender) {
         return Err(StdError::generic_err("Unauthorized").into());
     }
+    let recipient = info.sender.as_str();
 
     let amount_max = min(amount, unallocated_amount);
     if amount_max.is_zero() {
@@ -113,13 +108,10 @@ pub fn withdraw(
     unallocated_amount -= amount_max;
     UNALLOCATED_AMOUNT.save(deps.storage, &unallocated_amount)?;
 
-    // validate recipient address
-    deps.api.addr_validate(&recipient)?;
-
     Ok(Response::new()
-        .add_messages(vec![build_send_msg(&denom, amount_max, &recipient)])
+        .add_messages(vec![build_send_msg(&denom, amount_max, recipient)])
         .add_attribute("action", "withdraw")
-        .add_attribute("recipient", &recipient)
+        .add_attribute("recipient", recipient)
         .add_attribute("amount", amount_max.to_string())
         .add_attribute("unallocated_amount", unallocated_amount.to_string()))
 }
@@ -320,12 +312,7 @@ fn deregister_vesting_account(
 
     // transfer already vested amount to the user
     let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
-    send_if_amount_is_not_zero(
-        messages,
-        claimable_amount,
-        &denom,
-        address,
-    )?;
+    send_if_amount_is_not_zero(messages, claimable_amount, &denom, address)?;
 
     // transfer left vesting amount to the admin
     let left_vesting_amount =
@@ -366,16 +353,14 @@ fn claim(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    recipient: Option<String>,
 ) -> Result<Response, ContractError> {
-    let sender = &info.sender;
-    let recipient = &recipient.unwrap_or_else(|| sender.to_string());
+    let recipient = info.sender.as_str();
     let denom = DENOM.load(deps.storage)?;
 
     let mut attrs: Vec<Attribute> = vec![];
 
     // vesting_account existence check
-    let account = VESTING_ACCOUNTS.may_load(deps.storage, sender.as_str())?;
+    let account = VESTING_ACCOUNTS.may_load(deps.storage, recipient)?;
     if account.is_none() {
         return Err(StdError::generic_err(format!(
             "vesting entry is not found for denom {}",
@@ -395,9 +380,9 @@ fn claim(
 
     account.claimed_amount = vested_amount;
     if account.claimed_amount == account.vesting_amount {
-        VESTING_ACCOUNTS.remove(deps.storage, sender.as_str());
+        VESTING_ACCOUNTS.remove(deps.storage, recipient);
     } else {
-        VESTING_ACCOUNTS.save(deps.storage, sender.as_str(), &account)?;
+        VESTING_ACCOUNTS.save(deps.storage, recipient, &account)?;
     }
 
     attrs.extend(
@@ -412,7 +397,7 @@ fn claim(
 
     Ok(Response::new()
         .add_messages(vec![build_send_msg(&denom, claimable_amount, recipient)])
-        .add_attributes(vec![("action", "claim"), ("address", sender.as_str())])
+        .add_attributes(vec![("action", "claim"), ("address", recipient)])
         .add_attributes(attrs))
 }
 

@@ -498,7 +498,6 @@ fn test_withdraw() -> TestResult {
 
     // unauthorized sender
     let msg = ExecuteMsg::Withdraw {
-        recipient: "addr0000".to_string(),
         amount: Uint128::new(1000),
     };
     require_error(
@@ -511,7 +510,6 @@ fn test_withdraw() -> TestResult {
 
     // withdraw more than unallocated
     let msg = ExecuteMsg::Withdraw {
-        recipient: "addr0000".to_string(),
         amount: Uint128::new(1001),
     };
     let res =
@@ -541,7 +539,6 @@ fn test_withdraw() -> TestResult {
 
     // withdraw but there's no more unallocated
     let msg = ExecuteMsg::Withdraw {
-        recipient: "addr0000".to_string(),
         amount: Uint128::new(1),
     };
     require_error(
@@ -796,10 +793,7 @@ fn claim_native() -> TestResult {
 
     // valid claim
     let info = mock_info("addr0001", &[]);
-    let msg = ExecuteMsg::Claim {
-        recipient: None,
-        denoms: vec![],
-    };
+    let msg = ExecuteMsg::Claim {};
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
     assert_eq!(
