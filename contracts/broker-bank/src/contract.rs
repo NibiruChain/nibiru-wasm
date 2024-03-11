@@ -230,7 +230,6 @@ pub fn query_accepted_denoms(deps: Deps) -> StdResult<BTreeSet<String>> {
     TO_ADDRS.load(deps.storage)
 }
 
-
 /// Query all bank balances or return an empty response.
 ///
 /// ```rust
@@ -279,8 +278,9 @@ pub mod tests {
         testing::{mock_env, mock_info},
         DepsMut, MessageInfo,
     };
-    use cw_std::{testing, Coin};
+    use cw_std::{testing, BankMsg, Coin, CosmosMsg, SubMsg, Uint128};
     use nibiru_std::errors::TestResult;
+    use serde::Serialize;
 
     use crate::{
         contract::execute,
@@ -289,14 +289,14 @@ pub mod tests {
         tutil::{mock_info_for_sender, setup_contract, TEST_OWNER},
     };
 
-
     struct TestCaseExec<'a> {
         to_addrs: Vec<String>,
         opers: Vec<String>,
         exec_msg: ExecuteMsg,
         sender: &'a str,
         err: Option<&'a str>,
-        contract_funds_start: Option<&'a Coin>,
+        contract_funds_start: Option<Vec<Coin>>,
+        resp_msgs: Vec<CosmosMsg>,
     }
 
     /// Test that all owner-gated execute calls fail when the tx sender is not
@@ -320,6 +320,7 @@ pub mod tests {
                 }),
                 err: want_err,
                 contract_funds_start: None,
+                resp_msgs: vec![],
             },
             TestCaseExec {
                 to_addrs: to_addrs.to_vec(),
@@ -333,6 +334,7 @@ pub mod tests {
                 ),
                 err: want_err,
                 contract_funds_start: None,
+                resp_msgs: vec![],
             },
             TestCaseExec {
                 to_addrs: to_addrs.to_vec(),
@@ -344,6 +346,7 @@ pub mod tests {
                 },
                 err: want_err,
                 contract_funds_start: None,
+                resp_msgs: vec![],
             },
             TestCaseExec {
                 to_addrs: to_addrs.to_vec(),
@@ -352,6 +355,7 @@ pub mod tests {
                 exec_msg: ExecuteMsg::ToggleHalt {},
                 err: want_err,
                 contract_funds_start: None,
+                resp_msgs: vec![],
             },
             TestCaseExec {
                 to_addrs: to_addrs.to_vec(),
@@ -362,6 +366,7 @@ pub mod tests {
                 },
                 err: want_err,
                 contract_funds_start: None,
+                resp_msgs: vec![],
             },
         ];
 
@@ -385,13 +390,13 @@ pub mod tests {
         Ok(())
     }
 
-    // TODO: test update ownership
     #[test]
     fn exec_withdraw() -> TestResult {
         let to_addrs: [String; 2] =
             ["mm_kucoin", "mm_bybit"].map(|s| s.to_string());
         let opers: [String; 1] = ["valid_oper"].map(|s| s.to_string());
         let test_cases: Vec<TestCaseExec> = vec![
+            // WithdrawAll
             TestCaseExec {
                 to_addrs: to_addrs.to_vec(),
                 opers: opers.to_vec(),
@@ -401,6 +406,65 @@ pub mod tests {
                 },
                 err: None,
                 contract_funds_start: None,
+                resp_msgs: vec![BankMsg::Send {
+                    to_address: String::from("mm_bybit"),
+                    amount: vec![],
+                }
+                .into()],
+            },
+            // WithdrawAll / Nonzero amount
+            TestCaseExec {
+                to_addrs: to_addrs.to_vec(),
+                opers: opers.to_vec(),
+                sender: TEST_OWNER,
+                exec_msg: ExecuteMsg::WithdrawAll {
+                    to: Some(String::from("to_addr")),
+                },
+                err: None,
+                contract_funds_start: Some(vec![Coin {
+                    denom: "unibi".into(),
+                    amount: Uint128::from(420u128),
+                }]),
+                resp_msgs: vec![BankMsg::Send {
+                    to_address: String::from("to_addr"),
+                    amount: vec![Coin {
+                        denom: "unibi".into(),
+                        amount: Uint128::from(420u128),
+                    }],
+                }
+                .into()],
+            },
+            // Withdraw / Nonzero amount
+            TestCaseExec {
+                to_addrs: to_addrs.to_vec(),
+                opers: opers.to_vec(),
+                sender: TEST_OWNER,
+                exec_msg: ExecuteMsg::Withdraw {
+                    to: Some(String::from("to_addr")),
+                    denoms: ["uusd"]
+                        .iter()
+                        .map(|str| String::from(*str))
+                        .collect(),
+                },
+                err: None,
+                contract_funds_start: Some(vec![
+                    Coin {
+                        denom: "unibi".into(),
+                        amount: Uint128::from(420u128),
+                    },
+                    Coin {
+                        denom: "uusd".into(),
+                        amount: Uint128::from(69u128),
+                    },
+                ]),
+                resp_msgs: vec![BankMsg::Send {
+                    to_address: String::from("to_addr"),
+                    amount: vec![Coin {
+                        denom: "uusd".into(),
+                        amount: Uint128::from(69u128),
+                    }],
+                }
+                .into()],
             },
         ];
         for tc in &test_cases {
@@ -410,11 +474,11 @@ pub mod tests {
             let (mut deps, env, _info) =
                 setup_contract(to_addrs.clone(), opers.clone())?;
 
-            if let Some(funds_start) = tc.contract_funds_start {
+            if let Some(funds_start) = &tc.contract_funds_start {
                 // Set up a mock querier with contract balance
                 let contract_addr = env.contract.address.to_string();
                 let balances: &[(&str, &[Coin])] =
-                    &[(contract_addr.as_str(), &[funds_start.clone()])];
+                    &[(contract_addr.as_str(), funds_start.as_slice())];
                 let querier = testing::MockQuerier::new(balances);
                 deps.querier = querier;
             }
@@ -424,14 +488,45 @@ pub mod tests {
             let res = execute(deps.as_mut(), env, info, tc.exec_msg.clone());
             if let Some(want_err) = tc.err {
                 let got_err = res.expect_err("errors should occur in this test");
-                let is_contained = got_err
-                    .to_string()
-                    .contains(want_err);
+                let is_contained = got_err.to_string().contains(want_err);
                 assert!(is_contained, "got error {}", got_err);
-                return Ok(())
+                return Ok(());
             }
             assert!(res.is_ok());
+
+            let resp = res?;
+            let got_resp_msgs: Vec<CosmosMsgExt> = resp
+                .messages
+                .iter()
+                .map(|sub_msg| CosmosMsgExt(&sub_msg.msg))
+                .collect();
+            let want_resp_msgs: Vec<CosmosMsgExt> =
+                tc.resp_msgs.iter().map(CosmosMsgExt).collect();
+            // assert_eq!(
+            //     want_resp_msgs.len(),
+            //     got_resp_msgs.len(),
+            //     "want {want_resp_msgs:?}, got {got_resp_msgs:?}"
+            // );
+            assert_eq!(want_resp_msgs, got_resp_msgs);
         }
         Ok(())
+    }
+
+    #[derive(Debug, Serialize)]
+    struct CosmosMsgExt<'a>(&'a CosmosMsg);
+
+    impl<'a> PartialEq for CosmosMsgExt<'a> {
+        fn eq(&self, other: &Self) -> bool {
+            let err_msg = "cosmos msg should be jsonable";
+            let self_str = serde_json::to_string_pretty(self).expect(err_msg);
+            let other_str = serde_json::to_string_pretty(other).expect(err_msg);
+            self_str.eq(&other_str)
+        }
+    }
+
+    impl<'a> std::fmt::Display for CosmosMsgExt<'a> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", serde_json::to_string_pretty(&self.0).unwrap())
+        }
     }
 }
