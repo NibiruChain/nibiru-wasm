@@ -23,6 +23,25 @@ use crate::{
 };
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
+pub fn instantiate(
+    deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    msg: InstantiateMsg,
+) -> Result<Response, ContractError> {
+    set_contract_version(
+        deps.storage,
+        format!("crates.io:{CONTRACT_NAME}"),
+        CONTRACT_VERSION,
+    )?;
+    cw_ownable::initialize_owner(deps.storage, deps.api, Some(&msg.owner))?;
+    TO_ADDRS.save(deps.storage, &msg.to_addrs)?;
+    OPERATORS.save(deps.storage, &msg.opers)?;
+    IS_HALTED.save(deps.storage, &false)?;
+    Ok(Response::default())
+}
+
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -191,25 +210,6 @@ pub const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
 pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
-pub fn instantiate(
-    deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
-    msg: InstantiateMsg,
-) -> Result<Response, ContractError> {
-    set_contract_version(
-        deps.storage,
-        format!("crates.io:{CONTRACT_NAME}"),
-        CONTRACT_VERSION,
-    )?;
-    cw_ownable::initialize_owner(deps.storage, deps.api, Some(&msg.owner))?;
-    TO_ADDRS.save(deps.storage, &msg.to_addrs)?;
-    OPERATORS.save(deps.storage, &msg.opers)?;
-    IS_HALTED.save(deps.storage, &false)?;
-    Ok(Response::default())
-}
-
-#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn query(
     deps: Deps,
     _env: Env,
@@ -262,6 +262,7 @@ pub fn query_bank_balances(
     Ok(balances)
 }
 
+/// Query the permissions status for the contract owner and operators
 pub fn query_perms_status(deps: Deps) -> Result<PermsStatus, ContractError> {
     let perms = oper_perms::Permissions::load(deps.storage)?;
     let perms_status = PermsStatus {
@@ -273,20 +274,19 @@ pub fn query_perms_status(deps: Deps) -> Result<PermsStatus, ContractError> {
 
 #[cfg(test)]
 pub mod tests {
-    use cosmwasm_std::{
-        self as cw_std,
-        testing::{mock_env, mock_info},
-        DepsMut, MessageInfo,
-    };
-    use cw_std::{testing, BankMsg, Coin, CosmosMsg, SubMsg, Uint128};
+    use cosmwasm_std::{self as cw_std};
+    use cw_std::{from_json, testing, BankMsg, Coin, CosmosMsg, Uint128};
     use nibiru_std::errors::TestResult;
     use serde::Serialize;
 
     use crate::{
-        contract::execute,
-        msgs::ExecuteMsg,
-        oper_perms,
-        tutil::{mock_info_for_sender, setup_contract, TEST_OWNER},
+        contract::{execute, query},
+        msgs::{ExecuteMsg, PermsStatus, QueryMsg},
+        oper_perms::{self, Permissions},
+        tutil::{
+            mock_info_for_sender, setup_contract, setup_contract_defaults,
+            TEST_OWNER,
+        },
     };
 
     struct TestCaseExec<'a> {
@@ -502,11 +502,6 @@ pub mod tests {
                 .collect();
             let want_resp_msgs: Vec<CosmosMsgExt> =
                 tc.resp_msgs.iter().map(CosmosMsgExt).collect();
-            // assert_eq!(
-            //     want_resp_msgs.len(),
-            //     got_resp_msgs.len(),
-            //     "want {want_resp_msgs:?}, got {got_resp_msgs:?}"
-            // );
             assert_eq!(want_resp_msgs, got_resp_msgs);
         }
         Ok(())
@@ -528,5 +523,59 @@ pub mod tests {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(f, "{}", serde_json::to_string_pretty(&self.0).unwrap())
         }
+    }
+
+    #[test]
+    pub fn exec_toggle_halt() -> TestResult {
+        let (mut deps, env, _info) = setup_contract_defaults()?;
+
+        let query_msg = QueryMsg::Perms {};
+        let resp: PermsStatus =
+            from_json(query(deps.as_ref(), env.clone(), query_msg.clone())?)?;
+
+        let want_is_halted = false;
+        assert_eq!(resp.is_halted, want_is_halted);
+        assert_eq!(
+            resp.perms,
+            Permissions {
+                owner: Some(String::from(TEST_OWNER)),
+                operators: ["oper0", "oper1"]
+                    .into_iter()
+                    .map(String::from)
+                    .collect(),
+            }
+        );
+
+        // ToggleHalt : error case
+        let exec_msg = ExecuteMsg::ToggleHalt {};
+        let sender = "not_owner";
+        let info = mock_info_for_sender(sender);
+        let exec_resp =
+            execute(deps.as_mut(), env.clone(), info, exec_msg.clone());
+        assert!(exec_resp.is_err(), "got {exec_resp:?}");
+        let resp: PermsStatus =
+            from_json(query(deps.as_ref(), env.clone(), query_msg.clone())?)?;
+        assert_eq!(resp.is_halted, want_is_halted);
+
+        // ToggleHalt : success case
+        let sender = TEST_OWNER;
+        let mut want_is_halted = true;
+        let info = mock_info_for_sender(sender);
+        let _exec_resp =
+            execute(deps.as_mut(), env.clone(), info.clone(), exec_msg.clone())?;
+        let resp: PermsStatus =
+            from_json(query(deps.as_ref(), env.clone(), query_msg.clone())?)?;
+        assert_eq!(resp.is_halted, want_is_halted);
+
+        want_is_halted = false;
+        let _exec_resp =
+            execute(deps.as_mut(), env.clone(), info, exec_msg.clone())?;
+        let resp: PermsStatus =
+            from_json(query(deps.as_ref(), env.clone(), query_msg.clone())?)?;
+        assert_eq!(resp.is_halted, want_is_halted);
+
+        // TODO: ownership query
+        // pub fn get_ownership(storage: &dyn Storage) -> StdResult<Ownership<Addr>>
+        Ok(())
     }
 }

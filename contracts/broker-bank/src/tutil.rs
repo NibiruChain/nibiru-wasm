@@ -35,6 +35,22 @@ pub fn setup_contract(
     Ok((deps, env, info))
 }
 
+pub fn setup_contract_defaults() -> anyhow::Result<(
+    OwnedDeps<MockStorage, MockApi, MockQuerier>,
+    Env,
+    MessageInfo,
+)> {
+    let to_addrs = vec!["to_addr0", "to_addr1"]
+        .into_iter()
+        .map(String::from)
+        .collect();
+    let opers = vec!["oper0", "oper1"]
+        .into_iter()
+        .map(String::from)
+        .collect();
+    setup_contract(to_addrs, opers)
+}
+
 pub fn mock_info_for_sender(sender: &str) -> MessageInfo {
     mock_info(sender, &[])
 }
