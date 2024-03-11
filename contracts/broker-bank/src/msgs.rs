@@ -29,7 +29,7 @@ pub enum ExecuteMsg {
 
     /// TODO: owner
     EditOpers(oper_perms::Action),
-    // TODO: Clear logs
+    // TODO: feat(broker-bank): Clear logs tx
 }
 
 #[cw_ownable::cw_ownable_query]
@@ -40,7 +40,7 @@ pub enum QueryMsg {
     /// operator set is "halted".
     #[returns(PermsStatus)]
     Perms {},
-    // TODO: Logs query
+    // TODO: feat(broker-bank): Logs query
 }
 
 #[cw_serde]
@@ -48,10 +48,6 @@ pub struct PermsStatus {
     pub is_halted: bool,
     pub perms: oper_perms::Permissions,
 }
-
-// TODO: MigrateMsg
-#[cw_serde]
-pub enum MigrateMsg {}
 
 #[cw_serde]
 pub struct InstantiateMsg {

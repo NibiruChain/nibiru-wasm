@@ -1,9 +1,9 @@
 use std::collections::BTreeSet;
 
 use cosmwasm_std::{
-    self as cw_std, attr, entry_point, to_json_binary, AllBalanceResponse,
-    BankMsg, BankQuery, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest,
-    Response, StdResult,
+    self as cw_std, attr, to_json_binary, AllBalanceResponse, BankMsg,
+    BankQuery, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response,
+    StdResult,
 };
 
 use crate::oper_perms::Permissions;
@@ -18,7 +18,7 @@ use cw2::set_contract_version;
 use crate::{
     error::ContractError,
     events::{event_bank_send, event_toggle_halt, event_withdraw},
-    msgs::{ExecuteMsg, InstantiateMsg, MigrateMsg},
+    msgs::{ExecuteMsg, InstantiateMsg},
     state::TO_ADDRS,
 };
 
@@ -187,31 +187,6 @@ fn assert_not_halted(is_halted: bool) -> Result<(), ContractError> {
     }
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(
-    deps: DepsMut,
-    _env: Env,
-    _msg: MigrateMsg,
-) -> Result<Response, ContractError> {
-    // migrations::v2_0_0::migrate(deps, env, msg)
-
-    // TODO: Handle state migration here.
-
-    set_contract_version(
-        deps.storage,
-        format!("crates.io:{CONTRACT_NAME}"),
-        CONTRACT_VERSION,
-    )?;
-
-    // TODO: from_version Fix this later.
-    let from_version = "v0.1.0";
-
-    Ok(Response::new()
-        .add_attribute("action", "migrate")
-        .add_attribute("from_version", from_version)
-        .add_attribute("to_version", CONTRACT_VERSION))
-}
-
 pub const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
 pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -255,20 +230,22 @@ pub fn query_accepted_denoms(deps: Deps) -> StdResult<BTreeSet<String>> {
     TO_ADDRS.load(deps.storage)
 }
 
+
 /// Query all bank balances or return an empty response.
 ///
 /// ```rust
-/// use cosmwasm_std::{Env, DepsMut, AllBalanceResponse, StdResult};
 /// use broker_bank::contract::query_bank_balances;
+/// use cosmwasm_std::{
+///     testing::{mock_dependencies, mock_env},
+///     AllBalanceResponse, DepsMut, Env, StdResult};
 ///
-/// fn example(env: Env, deps: DepsMut) -> StdResult<AllBalanceResponse> {
-///     let contract_addr = env.contract.address.to_string();
-///     let balances = query_bank_balances(
-///         contract_addr.to_string(),
-///         deps.as_ref(),
-///     )?;
-///     Ok(balances)
-/// }
+/// let env: Env = mock_env();
+/// let mut deps = mock_dependencies();
+/// let mut deps: DepsMut = deps.as_mut();
+/// let contract_addr = env.contract.address.to_string();
+/// let balances: StdResult<AllBalanceResponse> =
+///    query_bank_balances(contract_addr.to_string(), deps.as_ref());
+/// assert!(balances.is_ok())
 /// ```
 pub fn query_bank_balances(
     addr: String,
@@ -302,25 +279,16 @@ pub mod tests {
         testing::{mock_env, mock_info},
         DepsMut, MessageInfo,
     };
+    use cw_std::{testing, Coin};
     use nibiru_std::errors::TestResult;
 
     use crate::{
         contract::execute,
         msgs::ExecuteMsg,
         oper_perms,
-        tutil::{mock_info_for_sender, setup_contract},
+        tutil::{mock_info_for_sender, setup_contract, TEST_OWNER},
     };
 
-    pub fn exec_msg_as_non_owner(
-        exec_msg: &ExecuteMsg,
-        deps: DepsMut,
-    ) -> TestResult {
-        let sender: &str = "not-admin";
-        let info: MessageInfo = mock_info(sender, &cw_std::coins(2, "token"));
-        let resp = execute(deps, mock_env(), info, exec_msg.clone());
-        assert!(resp.is_err(), "resp.err: {:?}", resp.err());
-        Ok(())
-    }
 
     struct TestCaseExec<'a> {
         to_addrs: Vec<String>,
@@ -328,7 +296,7 @@ pub mod tests {
         exec_msg: ExecuteMsg,
         sender: &'a str,
         err: Option<&'a str>,
-        contract_funds: Option<&'a str>,
+        contract_funds_start: Option<&'a Coin>,
     }
 
     /// Test that all owner-gated execute calls fail when the tx sender is not
@@ -351,16 +319,20 @@ pub mod tests {
                     address: String::from("new_oper"),
                 }),
                 err: want_err,
-                contract_funds: None,
+                contract_funds_start: None,
             },
             TestCaseExec {
                 to_addrs: to_addrs.to_vec(),
                 opers: opers.to_vec(),
                 sender: not_owner,
-                exec_msg: ExecuteMsg::UpdateOwnership(cw_ownable::Action::TransferOwnership {
-                    new_owner: String::from("new_owner"), expiry: None }),
+                exec_msg: ExecuteMsg::UpdateOwnership(
+                    cw_ownable::Action::TransferOwnership {
+                        new_owner: String::from("new_owner"),
+                        expiry: None,
+                    },
+                ),
                 err: want_err,
-                contract_funds: None,
+                contract_funds_start: None,
             },
             TestCaseExec {
                 to_addrs: to_addrs.to_vec(),
@@ -371,7 +343,7 @@ pub mod tests {
                     denoms: vec![].into_iter().collect(),
                 },
                 err: want_err,
-                contract_funds: None,
+                contract_funds_start: None,
             },
             TestCaseExec {
                 to_addrs: to_addrs.to_vec(),
@@ -379,7 +351,7 @@ pub mod tests {
                 sender: not_owner,
                 exec_msg: ExecuteMsg::ToggleHalt {},
                 err: want_err,
-                contract_funds: None,
+                contract_funds_start: None,
             },
             TestCaseExec {
                 to_addrs: to_addrs.to_vec(),
@@ -389,7 +361,7 @@ pub mod tests {
                     to: Some(String::from("mm_bybit")),
                 },
                 err: want_err,
-                contract_funds: None,
+                contract_funds_start: None,
             },
         ];
 
@@ -404,19 +376,62 @@ pub mod tests {
             let info = mock_info_for_sender(tc.sender);
             let res = execute(deps.as_mut(), env, info, tc.exec_msg.clone());
             assert!(res.is_err());
-            if let Some(err) = res.err() {
-                let is_contained = err
-                    .to_string()
-                    .contains(tc.err.expect("errors should occur in this test"));
-                assert!(is_contained, "got error {}", err);
-            }
+            let err = res.expect_err("err should be defined");
+            let is_contained = err
+                .to_string()
+                .contains(tc.err.expect("errors should occur in this test"));
+            assert!(is_contained, "got error {}", err);
         }
         Ok(())
     }
 
     // TODO: test update ownership
     #[test]
-    fn update_ownership() -> TestResult {
+    fn exec_withdraw() -> TestResult {
+        let to_addrs: [String; 2] =
+            ["mm_kucoin", "mm_bybit"].map(|s| s.to_string());
+        let opers: [String; 1] = ["valid_oper"].map(|s| s.to_string());
+        let test_cases: Vec<TestCaseExec> = vec![
+            TestCaseExec {
+                to_addrs: to_addrs.to_vec(),
+                opers: opers.to_vec(),
+                sender: TEST_OWNER,
+                exec_msg: ExecuteMsg::WithdrawAll {
+                    to: Some(String::from("mm_bybit")),
+                },
+                err: None,
+                contract_funds_start: None,
+            },
+        ];
+        for tc in &test_cases {
+            let to_addrs = &tc.to_addrs;
+            let opers = &tc.opers;
+            // instantiate smart contract from the owner
+            let (mut deps, env, _info) =
+                setup_contract(to_addrs.clone(), opers.clone())?;
+
+            if let Some(funds_start) = tc.contract_funds_start {
+                // Set up a mock querier with contract balance
+                let contract_addr = env.contract.address.to_string();
+                let balances: &[(&str, &[Coin])] =
+                    &[(contract_addr.as_str(), &[funds_start.clone()])];
+                let querier = testing::MockQuerier::new(balances);
+                deps.querier = querier;
+            }
+
+            // send the exec msg
+            let info = mock_info_for_sender(tc.sender);
+            let res = execute(deps.as_mut(), env, info, tc.exec_msg.clone());
+            if let Some(want_err) = tc.err {
+                let got_err = res.expect_err("errors should occur in this test");
+                let is_contained = got_err
+                    .to_string()
+                    .contains(want_err);
+                assert!(is_contained, "got error {}", got_err);
+                return Ok(())
+            }
+            assert!(res.is_ok());
+        }
         Ok(())
     }
 }
