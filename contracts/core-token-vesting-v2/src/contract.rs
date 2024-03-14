@@ -308,18 +308,14 @@ fn deregister_vesting_account(
     VESTING_ACCOUNTS.remove(storage, address);
 
     let vested_amount = account.vested_amount(timestamp)?;
-    let claimed_amount = account.claimed_amount;
+    let left_vesting_amount = account.vesting_amount.checked_sub(vested_amount)?;
 
-    // transfer already vested amount to the user
-    let claimable_amount = vested_amount.checked_sub(claimed_amount)?;
-    send_if_amount_is_not_zero(messages, claimable_amount, &denom, address)?;
+    let recoverable_amount = account.vesting_amount - account.claimed_amount;
+    // transfer all that's unclaimed to the admin
 
-    // transfer left vesting amount to the admin
-    let left_vesting_amount =
-        account.vesting_amount.checked_sub(vested_amount)?;
     send_if_amount_is_not_zero(
         messages,
-        left_vesting_amount,
+        recoverable_amount,
         &denom,
         admin_address,
     )?;
@@ -330,6 +326,8 @@ fn deregister_vesting_account(
         ("vesting_amount", &account.vesting_amount.to_string()),
         ("vested_amount", &vested_amount.to_string()),
         ("left_vesting_amount", &left_vesting_amount.to_string()),
+        ("claimed_amount", &account.claimed_amount.to_string()),
+        ("recoverable_amount", &recoverable_amount.to_string()),
     ]))
 }
 
