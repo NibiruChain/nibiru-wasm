@@ -201,8 +201,8 @@ fn execute_update_ownership(
 
 fn assert_not_halted(is_halted: bool) -> Result<(), ContractError> {
     match is_halted {
-        true => Ok(()),
-        false => Err(ContractError::OperationsHalted),
+        true => Err(ContractError::OperationsHalted),
+        false => Ok(()),
     }
 }
 
@@ -278,7 +278,7 @@ pub mod tests {
 
     use cosmwasm_std::{self as cw_std};
     use cw_std::{
-        from_json, testing, BankMsg, Coin, CosmosMsg, Response, Uint128,
+        from_json, testing, BankMsg, Coin, CosmosMsg, Response, SubMsg, Uint128,
     };
     use nibiru_std::errors::TestResult;
     use serde::Serialize;
@@ -287,7 +287,7 @@ pub mod tests {
         contract::{execute, query},
         msgs::{ExecuteMsg, PermsStatus, QueryMsg},
         oper_perms::{self, Permissions},
-        state::OPERATORS,
+        state::{IS_HALTED, OPERATORS},
         tutil::{
             self, mock_info_for_sender, setup_contract, setup_contract_defaults,
             TEST_OWNER,
@@ -694,6 +694,67 @@ pub mod tests {
             "got: {:#?}, wanted: {:#?}",
             response.perms.operators, expected_opers
         );
+        Ok(())
+    }
+
+    #[test]
+    fn exec_bank_send() -> TestResult {
+        let to_addrs: [String; 2] =
+            ["mm_kucoin", "mm_bybit"].map(|s| s.to_string());
+        let opers: [String; 1] = ["valid_oper"].map(|s| s.to_string());
+        let (mut deps, env, _info) =
+            setup_contract(to_addrs.to_vec(), opers.to_vec())?;
+
+        // Set is_halted to false
+        IS_HALTED.save(deps.as_mut().storage, &false)?;
+
+        let coins = vec![
+            Coin {
+                denom: "unibi".into(),
+                amount: Uint128::from(420u128),
+            },
+            Coin {
+                denom: "uusd".into(),
+                amount: Uint128::from(69u128),
+            },
+        ];
+
+        // Success case: valid operator sends coins to an allowed address
+        let exec_msg = ExecuteMsg::BankSend {
+            coins: coins.clone(),
+            to: String::from("mm_bybit"),
+        };
+        let sender = "valid_oper";
+        let info = mock_info_for_sender(sender);
+        let res = execute(deps.as_mut(), env.clone(), info, exec_msg.clone())?;
+        assert_eq!(
+            res.messages,
+            vec![SubMsg::new(CosmosMsg::Bank(BankMsg::Send {
+                to_address: String::from("mm_bybit"),
+                amount: coins.clone(),
+            }))]
+        );
+
+        // Error case: unauthorized sender
+        let exec_msg = ExecuteMsg::BankSend {
+            coins: coins.clone(),
+            to: String::from("mm_bybit"),
+        };
+        let sender = "invalid_sender";
+        let info = mock_info_for_sender(sender);
+        let res = execute(deps.as_mut(), env.clone(), info, exec_msg.clone());
+        assert!(res.is_err());
+
+        // Error case: sending to an address not in the allowed list
+        let exec_msg = ExecuteMsg::BankSend {
+            coins,
+            to: String::from("not_allowed_addr"),
+        };
+        let sender = "valid_oper";
+        let info = mock_info_for_sender(sender);
+        let res = execute(deps.as_mut(), env, info, exec_msg);
+        assert!(res.is_err());
+
         Ok(())
     }
 }
