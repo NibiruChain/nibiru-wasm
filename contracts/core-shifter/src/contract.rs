@@ -12,10 +12,7 @@ use nibiru_std::{
 
 use crate::{
     error::ContractError,
-    msgs::{
-        operator_perms, ExecuteMsg, HasPermsResponse, InitMsg, PermsResponse,
-        QueryMsg,
-    },
+    msgs::{operator_perms, ExecuteMsg, InitMsg, QueryMsg},
     state::{instantiate_perms, Permissions, OPERATORS},
 };
 
@@ -167,7 +164,7 @@ pub fn query(
         QueryMsg::HasPerms { address } => {
             let perms = Permissions::load(deps.storage)?;
             let has_perms: bool = perms.is_operator(&address);
-            let res = HasPermsResponse {
+            let res = operator_perms::HasPermsResponse {
                 has_perms,
                 perms,
                 addr: address,
@@ -176,7 +173,7 @@ pub fn query(
         }
         QueryMsg::Perms {} => {
             let perms = Permissions::load(deps.storage)?;
-            let res = PermsResponse { perms };
+            let res = operator_perms::PermsResponse { perms };
             Ok(cosmwasm_std::to_json_binary(&res)?)
         }
     }
@@ -292,7 +289,8 @@ pub mod tests {
             address: new_member.to_string(),
         };
         let binary = query(deps.as_ref(), testing::mock_env(), query_req)?;
-        let response: HasPermsResponse = cosmwasm_std::from_json(binary)?;
+        let response: operator_perms::HasPermsResponse =
+            cosmwasm_std::from_json(binary)?;
         assert!(response.has_perms);
         Ok(())
     }
@@ -345,7 +343,8 @@ pub mod tests {
         // Check correctness of the result
         let query_req = QueryMsg::Perms {};
         let binary = query(deps.as_ref(), testing::mock_env(), query_req)?;
-        let response: PermsResponse = cosmwasm_std::from_json(binary)?;
+        let response: operator_perms::PermsResponse =
+            cosmwasm_std::from_json(binary)?;
         let expected_opers: BTreeSet<String> =
             ["vitalik", "musk"].iter().map(|&s| s.to_string()).collect();
         assert_eq!(
