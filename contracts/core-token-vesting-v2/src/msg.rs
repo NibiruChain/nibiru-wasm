@@ -24,30 +24,20 @@ pub enum ExecuteMsg {
         vesting_schedule: VestingSchedule,
     },
 
-    /// A creator operation that unregisters a vesting account.
+    /// A creator operation that unregisters a vesting account
+    /// and transfers the rest of tokens back to contract admin.
     /// Args:
-    /// - address: String: Bech 32 address of the owner of vesting account.
-    /// - denom: Denom: The denomination of the tokens vested.
-    /// - vested_token_recipient: Option<String>: Bech 32 address that will receive the vested
-    ///   tokens after deregistration. If None, tokens are received by the owner address.
-    /// - left_vesting_token_recipient: Option<String>: Bech 32 address that will receive the left
-    ///   vesting tokens after deregistration.
-    DeregisterVestingAccount {
-        address: String,
-        vested_token_recipient: Option<String>,
-        left_vesting_token_recipient: Option<String>,
+    /// - addresses: Vec<String>: Bech 32 addresses of the owners of vesting accounts.
+    DeregisterVestingAccounts {
+        addresses: Vec<String>,
     },
 
     /// Claim is an operation that allows one to claim vested tokens.
-    Claim {
-        denoms: Vec<Denom>,
-        recipient: Option<String>,
-    },
+    Claim {},
 
     // Withdraw allows the admin to withdraw the funds from the contract
     Withdraw {
         amount: Uint128,
-        recipient: String,
     },
 }
 
@@ -82,6 +72,13 @@ pub struct RewardUserResponse {
     pub error_msg: String,
 }
 
+#[cw_serde]
+pub struct DeregisterUserResponse {
+    pub user_address: String,
+    pub success: bool,
+    pub error_msg: String,
+}
+
 /// Enum representing the message types for the query entry point.
 #[cw_serde]
 pub enum QueryMsg {
@@ -89,6 +86,9 @@ pub enum QueryMsg {
         address: String,
         start_after: Option<Denom>,
         limit: Option<u32>,
+    },
+    VestingAccounts {
+        address: Vec<String>,
     },
 }
 
@@ -165,7 +165,6 @@ impl VestingSchedule {
                 start_time,
                 end_time,
                 cliff_time,
-                ..
             } => {
                 if end_time <= start_time {
                     return Err(VestingError::InvalidTimeRange {

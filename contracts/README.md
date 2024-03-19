@@ -15,18 +15,17 @@
 - [**core-controller**](./core-controller): Admin calls for things like creating
   perp markets or changing oracle parameters.
 
-## Example Contracts 
+## Example Contracts
 
 - [**nibi-stargate**](./nibi-stargate/README.md): Example smart contract that showcases how to use the Nibiru standard (nibiru-std) library to execute `CosmosMsg::Stargate` transactions for the token factory module.
 
 ## Utility Contracts
 
-- **lockup**: Smart contract that enables users to lock or bond tokens for arbitrary durations. This contract can be used as a building block in combination with a contract like `incentives` to implement liquidity mining incentives or other yield mechanisms. 
+- **lockup**: Smart contract that enables users to lock or bond tokens for arbitrary durations. This contract can be used as a building block in combination with a contract like `incentives` to implement liquidity mining incentives or other yield mechanisms.
 
 - **incentives**: Smart contract for funding lockups based with tokens.
-
 
 - [**pricefeed**](./pricefeed): Legacy implementation of the Nibiru Oracle Module in pure
   CosmWasm rather than the Cosmos-SDK.
 
-- [**airdrop-token-vesting**](./airdrop-token-vesting/README.md)
+- [**core-token-vesting-v2**](./core-token-vesting-v2/README.md)

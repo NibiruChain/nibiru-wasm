@@ -1,20 +1,46 @@
-use crate::contract::tests::TestResult;
 use crate::contract::{execute, instantiate, query};
 use crate::errors::{ContractError, VestingError};
 use crate::msg::{
-    ExecuteMsg, InstantiateMsg, QueryMsg, RewardUserRequest,
-    VestingAccountResponse, VestingData, VestingSchedule,
+    DeregisterUserResponse, ExecuteMsg, InstantiateMsg, QueryMsg,
+    RewardUserRequest, VestingAccountResponse, VestingData, VestingSchedule,
     VestingScheduleQueryOutput,
 };
 
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
-use cosmwasm_std::{coin, MessageInfo};
+use cosmwasm_std::{coin, testing, Empty, MessageInfo};
 use cosmwasm_std::{
     from_json,
     testing::{mock_dependencies, mock_env, mock_info},
     Attribute, BankMsg, Coin, Env, OwnedDeps, Response, StdError, SubMsg,
     Timestamp, Uint128, Uint64,
 };
+
+pub type TestResult = Result<(), anyhow::Error>;
+
+pub fn mock_env_with_time(block_time: u64) -> Env {
+    let mut env = testing::mock_env();
+    env.block.time = Timestamp::from_seconds(block_time);
+    env
+}
+
+/// Convenience function for instantiating the contract at and setting up
+/// the env to have the given block time.
+pub fn setup_with_block_time(
+    block_time: u64,
+) -> anyhow::Result<(OwnedDeps<MockStorage, MockApi, MockQuerier, Empty>, Env)> {
+    let mut deps = testing::mock_dependencies();
+    let env = mock_env_with_time(block_time);
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        testing::mock_info("admin-sender", &[coin(5000, "token")]),
+        InstantiateMsg {
+            admin: "admin-sender".to_string(),
+            managers: vec!["manager-sender".to_string()],
+        },
+    )?;
+    Ok((deps, env))
+}
 
 #[test]
 fn proper_initialization() -> TestResult {
@@ -271,7 +297,10 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
         &env,
         mock_info("addr0042", &[]),
         msg,
-        StdError::generic_err("Unauthorized").into(),
+        StdError::generic_err(
+            "Sender addr0042 is unauthorized to reward users.",
+        )
+        .into(),
     );
 
     // zero amount vesting token
@@ -320,13 +349,10 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
         &env,
         mock_info("addr0000", &[Coin::new(1000u128, "uusd")]),
         msg,
-        ContractError::Vesting(
-            VestingError::ExcessiveAmount {
-                cliff_amount,
-                vesting_amount,
-            }
-            .into(),
-        ),
+        ContractError::Vesting(VestingError::ExcessiveAmount {
+            cliff_amount,
+            vesting_amount,
+        }),
     );
 
     // deposit amount higher than unallocated
@@ -337,7 +363,10 @@ fn register_cliff_vesting_account_with_native_token() -> TestResult {
         &env,
         mock_info("addr0000", &[Coin::new(999u128, "uusd")]),
         msg,
-        StdError::generic_err("Insufficient funds for all rewards").into(),
+        StdError::generic_err(
+            "Insufficient funds for all rewards. Contract has 2000 available but trying to allocate 10000",
+        )
+        .into(),
     );
 
     // valid amount
@@ -469,7 +498,6 @@ fn test_withdraw() -> TestResult {
 
     // unauthorized sender
     let msg = ExecuteMsg::Withdraw {
-        recipient: "addr0000".to_string(),
         amount: Uint128::new(1000),
     };
     require_error(
@@ -482,7 +510,6 @@ fn test_withdraw() -> TestResult {
 
     // withdraw more than unallocated
     let msg = ExecuteMsg::Withdraw {
-        recipient: "addr0000".to_string(),
         amount: Uint128::new(1001),
     };
     let res =
@@ -512,7 +539,6 @@ fn test_withdraw() -> TestResult {
 
     // withdraw but there's no more unallocated
     let msg = ExecuteMsg::Withdraw {
-        recipient: "addr0000".to_string(),
         amount: Uint128::new(1),
     };
     require_error(
@@ -597,7 +623,10 @@ fn register_vesting_account_with_native_token() -> TestResult {
     let res = execute(deps.as_mut(), env.clone(), info, msg.clone());
     match res {
         Err(ContractError::Std(StdError::GenericErr { msg, .. })) => {
-            assert_eq!(msg, "Insufficient funds for all rewards")
+            assert_eq!(
+                msg,
+                "Insufficient funds for all rewards. Contract has 1000 available but trying to allocate 1000001"
+            )
         }
         _ => panic!("should not enter. got result: {res:?}"),
     }
@@ -626,7 +655,10 @@ fn register_vesting_account_with_native_token() -> TestResult {
     let res = execute(deps.as_mut(), env.clone(), info, msg.clone());
     match res {
         Err(ContractError::Std(StdError::GenericErr { msg, .. })) => {
-            assert_eq!(msg, "Insufficient funds for all rewards")
+            assert_eq!(
+                msg,
+                "Insufficient funds for all rewards. Contract has 1000 available but trying to allocate 1001"
+            )
         }
         _ => panic!("should not enter. got result: {res:?}"),
     }
@@ -761,10 +793,7 @@ fn claim_native() -> TestResult {
 
     // valid claim
     let info = mock_info("addr0001", &[]);
-    let msg = ExecuteMsg::Claim {
-        recipient: None,
-        denoms: vec![],
-    };
+    let msg = ExecuteMsg::Claim {};
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
     assert_eq!(
@@ -857,6 +886,175 @@ fn claim_native() -> TestResult {
         VestingAccountResponse {
             address: "addr0001".to_string(),
             vestings: vec![],
+        }
+    );
+
+    Ok(())
+}
+
+#[test]
+fn deregister_err_nonexistent_vesting_account() -> TestResult {
+    let (mut deps, env) = setup_with_block_time(50)?;
+
+    let msg = ExecuteMsg::DeregisterVestingAccounts {
+        addresses: vec!["nonexistent".to_string()],
+    };
+    let res = execute(
+        deps.as_mut(),
+        env, // Use the custom environment with the adjusted block time
+        testing::mock_info("manager-sender", &[]),
+        msg,
+    )?;
+    let response_items: Vec<DeregisterUserResponse> =
+        from_json(res.data.unwrap()).unwrap();
+    assert!(!response_items[0].success);
+    let error_msg = response_items[0].clone().error_msg;
+    if !error_msg.contains("Failed to deregister vesting account: Generic error: User nonexistent does not have a vesting account.") {
+        panic!("Unexpected error message {error_msg:?}")
+    }
+    Ok(())
+}
+
+#[test]
+fn deregister_err_unauthorized_vesting_account() -> TestResult {
+    // Set up the environment with a block time before the vesting start time
+    let (mut deps, env) = setup_with_block_time(50)?;
+
+    // Try to deregister with unauthorized sender
+    let msg = ExecuteMsg::DeregisterVestingAccounts {
+        addresses: vec!["addr0001".to_string()],
+    };
+    require_error(
+        &mut deps,
+        &env,
+        mock_info("addr0042", &[]),
+        msg,
+        StdError::generic_err(
+            "Sender addr0042 is not authorized to deregister vesting accounts.",
+        )
+        .into(),
+    );
+    Ok(())
+}
+
+#[test]
+fn deregister_successful() -> TestResult {
+    // Set up the environment with a block time before the vesting start time
+    let (mut deps, env) = setup_with_block_time(105)?;
+
+    execute(
+        deps.as_mut(),
+        env.clone(), // Use the custom environment with the adjusted block time
+        testing::mock_info("admin-sender", &[]),
+        ExecuteMsg::RewardUsers {
+            rewards: vec![RewardUserRequest {
+                user_address: "addr0001".to_string(),
+                vesting_amount: Uint128::new(5000u128),
+                cliff_amount: Uint128::new(1250u128),
+            }],
+            vesting_schedule: VestingSchedule::LinearVestingWithCliff {
+                start_time: Uint64::new(100),
+                cliff_time: Uint64::new(105),
+                end_time: Uint64::new(110),
+            },
+        },
+    )?;
+
+    // claim some of it
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        testing::mock_info("addr0001", &[]),
+        ExecuteMsg::Claim {},
+    )?;
+
+    // Deregister with the manager address
+    let res = execute(
+        deps.as_mut(),
+        env, // Use the custom environment with the adjusted block time
+        testing::mock_info("manager-sender", &[]),
+        ExecuteMsg::DeregisterVestingAccounts {
+            addresses: vec!["addr0001".to_string()],
+        },
+    )?;
+    let data =
+        from_json::<Vec<DeregisterUserResponse>>(res.data.unwrap()).unwrap();
+
+    assert_eq!(
+        data[0],
+        DeregisterUserResponse {
+            user_address: "addr0001".to_string(),
+            success: true,
+            error_msg: "".to_string(),
+        }
+    );
+    assert_eq!(res.messages.len(), 1);
+    assert_eq!(
+        res.messages[0],
+        SubMsg::new(BankMsg::Send {
+            to_address: "admin-sender".to_string(),
+            amount: vec![Coin {
+                denom: "token".to_string(),
+                amount: Uint128::new(3750u128),
+            }],
+        })
+    );
+    Ok(())
+}
+
+#[test]
+fn query_vesting_accounts() -> TestResult {
+    // Set up the environment with a block time before the vesting start time
+    let (mut deps, env) = setup_with_block_time(105)?;
+
+    let register_msg = ExecuteMsg::RewardUsers {
+        rewards: vec![RewardUserRequest {
+            user_address: "addr0001".to_string(),
+            vesting_amount: Uint128::new(5000u128),
+            cliff_amount: Uint128::new(1250u128),
+        }],
+        vesting_schedule: VestingSchedule::LinearVestingWithCliff {
+            start_time: Uint64::new(100),
+            end_time: Uint64::new(110),
+            cliff_time: Uint64::new(105),
+        },
+    };
+
+    execute(
+        deps.as_mut(),
+        env.clone(), // Use the custom environment with the adjusted block time
+        testing::mock_info("admin-sender", &[]),
+        register_msg,
+    )?;
+
+    let res = query(
+        deps.as_ref(),
+        env,
+        QueryMsg::VestingAccounts {
+            address: vec!["addr0001".to_string()],
+        },
+    )?;
+
+    let response_items: Vec<VestingAccountResponse> = from_json(res).unwrap();
+    assert_eq!(
+        response_items[0],
+        VestingAccountResponse {
+            address: "addr0001".to_string(),
+            vestings: vec![VestingData {
+                master_address: Some("admin-sender".to_string()),
+                vesting_amount: Uint128::new(5000u128),
+                vesting_schedule:
+                    VestingScheduleQueryOutput::LinearVestingWithCliff {
+                        start_time: Uint64::new(100),
+                        end_time: Uint64::new(110),
+                        cliff_time: Uint64::new(105),
+                        vesting_amount: Uint128::new(5000u128),
+                        cliff_amount: Uint128::new(1250u128),
+                    },
+                vesting_denom: cw20::Denom::Native("token".to_string()),
+                vested_amount: Uint128::new(1250u128),
+                claimable_amount: Uint128::new(1250u128),
+            }]
         }
     );
 
