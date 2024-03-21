@@ -1,4 +1,4 @@
-# Contracts               <!-- omit in toc -->
+# Contracts <!-- omit in toc -->
 
 - [Core Contracts](#core-contracts)
 - [Example Contracts](#example-contracts)
@@ -14,6 +14,8 @@
   to run a bot.
 - [**core-controller**](./core-controller): Admin calls for things like creating
   perp markets or changing oracle parameters.
+- [**core-compounder**](./core-compounder): Simple contract to allow third parties
+  to stake funds without being able to withdraw/unstake them.
 
 ## Example Contracts
 

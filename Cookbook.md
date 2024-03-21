@@ -616,7 +616,3 @@ We need to specify admin and managers
   "admin_and_managers": {}
 }
 ```
-
-```
-
-```
