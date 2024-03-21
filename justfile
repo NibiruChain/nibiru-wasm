@@ -117,7 +117,7 @@ gen-schema:
         fi
     done
 
-
+# Generate schema for all contracts and generate TypeScript code
 gen-ts:
     #!/usr/bin/env bash
     just gen-schema
