@@ -1,40 +1,34 @@
+use broker_bank::contract::{
+    assert_not_halted, edit_opers, execute_update_ownership, query_perms_status,
+    toggle_halt, withdraw, withdraw_all,
+};
+use broker_bank::oper_perms::Permissions;
+use broker_bank::state::{IS_HALTED, OPERATORS, TO_ADDRS};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env,
-    MessageInfo, Response, StakingMsg, StdError, StdResult, Uint128,
+    to_json_binary, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Response, StakingMsg, StdResult, Uint128,
 };
 
-use crate::errors::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, StakeMsg, UnstakeMsg};
-use crate::state::{Whitelist, COMPOUNDER_ON, WHITELIST};
+use crate::msg::{ExecuteMsg, StakeMsg, UnstakeMsg};
+use broker_bank::error::ContractError;
+use broker_bank::msgs::{
+    InstantiateMsg as BrokerBankInstantiateMsg, PermsStatus, QueryMsg,
+};
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
-    msg: InstantiateMsg,
+    msg: BrokerBankInstantiateMsg,
 ) -> StdResult<Response> {
     // Managers validation
-    if msg.managers.is_empty() {
-        return Err(StdError::generic_err("managers cannot be empty").into());
-    }
-
-    deps.api.addr_validate(&msg.admin)?;
-    for manager in msg.managers.iter() {
-        let _ = deps.api.addr_validate(manager)?;
-    }
-
-    WHITELIST.save(
-        deps.storage,
-        &Whitelist {
-            managers: msg.managers.into_iter().collect(),
-            admin: msg.admin,
-        },
-    )?;
-
-    COMPOUNDER_ON.save(deps.storage, &false)?;
+    cw_ownable::initialize_owner(deps.storage, deps.api, Some(&msg.owner))?;
+    TO_ADDRS.save(deps.storage, &msg.to_addrs)?;
+    OPERATORS.save(deps.storage, &msg.opers)?;
+    IS_HALTED.save(deps.storage, &false)?;
 
     Ok(Response::new())
 }
@@ -46,12 +40,10 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
+    let contract_addr = env.contract.address.to_string();
     match msg {
-        ExecuteMsg::SetAutocompounderMode {
-            autocompounder_mode,
-        } => set_autocompounder_mode(deps, env, info, autocompounder_mode),
-        ExecuteMsg::Withdraw { amount, recipient } => {
-            withdraw(deps, env, info, amount, recipient)
+        ExecuteMsg::Withdraw { to, denoms } => {
+            withdraw(deps, env, info, to, denoms, contract_addr)
         }
         ExecuteMsg::Stake { stake_msgs, amount } => {
             stake(deps, env, info, stake_msgs, amount)
@@ -59,80 +51,15 @@ pub fn execute(
         ExecuteMsg::Unstake { unstake_msgs } => {
             unstake(deps, env, info, unstake_msgs)
         }
-        ExecuteMsg::UpdateManagers { managers } => {
-            update_managers(deps, info, managers)
+        ExecuteMsg::ToggleHalt {} => toggle_halt(deps, env, info),
+        ExecuteMsg::UpdateOwnership(action) => {
+            execute_update_ownership(deps, env, info, action)
+        }
+        ExecuteMsg::EditOpers(action) => edit_opers(deps, env, info, action),
+        ExecuteMsg::WithdrawAll { to } => {
+            withdraw_all(deps, env, info, to, contract_addr)
         }
     }
-}
-
-/// Admin functions
-pub fn update_managers(
-    deps: DepsMut,
-    info: MessageInfo,
-    managers: Vec<String>,
-) -> Result<Response, ContractError> {
-    let whitelist = WHITELIST.load(deps.storage)?;
-    if !whitelist.is_admin(info.sender) {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    for manager in managers.iter() {
-        let _ = deps.api.addr_validate(manager)?;
-    }
-
-    WHITELIST.save(
-        deps.storage,
-        &Whitelist {
-            managers: managers.into_iter().collect(),
-            admin: whitelist.admin,
-        },
-    )?;
-
-    Ok(Response::new())
-}
-
-pub fn set_autocompounder_mode(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    autocompounder_mode: bool,
-) -> Result<Response, ContractError> {
-    let whitelist = WHITELIST.load(deps.storage)?;
-    if !whitelist.is_admin(info.sender) {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    COMPOUNDER_ON.save(deps.storage, &autocompounder_mode)?;
-
-    Ok(Response::new())
-}
-
-pub fn withdraw(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    amount: Uint128,
-    recipient: String,
-) -> Result<Response, ContractError> {
-    let whitelist = WHITELIST.load(deps.storage)?;
-    if !whitelist.is_admin(info.sender) {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    let messages: Vec<CosmosMsg> = vec![];
-    send_if_amount_is_not_zero(
-        &mut messages.clone(),
-        amount,
-        env.contract.address.to_string(),
-        Some(recipient.clone()),
-        env.contract.address.to_string(),
-    )?;
-
-    Ok(Response::new()
-        .add_messages(messages)
-        .add_attribute("action", "withdraw")
-        .add_attribute("recipient", recipient)
-        .add_attribute("amount", amount))
 }
 
 pub fn unstake(
@@ -141,10 +68,7 @@ pub fn unstake(
     info: MessageInfo,
     unstake_msgs: Vec<UnstakeMsg>,
 ) -> Result<Response, ContractError> {
-    let whitelist = WHITELIST.load(deps.storage)?;
-    if !whitelist.is_admin(info.sender) {
-        return Err(ContractError::Unauthorized {});
-    }
+    cw_ownable::assert_owner(deps.storage, &info.sender)?;
 
     let mut messages: Vec<CosmosMsg> = vec![];
     for msg in unstake_msgs.iter() {
@@ -163,7 +87,6 @@ pub fn unstake(
 }
 
 /// Managers functions
-
 pub fn stake(
     deps: DepsMut,
     _env: Env,
@@ -171,21 +94,16 @@ pub fn stake(
     stake_msgs: Vec<StakeMsg>,
     amount: Uint128,
 ) -> Result<Response, ContractError> {
-    let sender = info.sender.clone();
-
-    let whitelist = WHITELIST.load(deps.storage)?;
-    if !whitelist.is_manager(sender.clone()) && !whitelist.is_admin(sender) {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    if !COMPOUNDER_ON.load(deps.storage)? {
-        return Err(ContractError::Unauthorized {});
-    }
+    Permissions::assert_operator(deps.storage, info.sender.to_string())?;
+    let is_halted = IS_HALTED.load(deps.storage)?;
+    assert_not_halted(is_halted)?;
 
     // sum total amount of shares in the stake msgs
     let total_shares: Uint128 = stake_msgs.iter().map(|m| m.share).sum();
     if total_shares.is_zero() {
-        return Err(ContractError::InvalidStakeShares {});
+        return Err(ContractError::Std(cosmwasm_std::StdError::generic_err(
+            "total shares cannot be zero",
+        )));
     }
 
     let mut messages: Vec<CosmosMsg> = vec![];
@@ -211,41 +129,6 @@ pub fn stake(
         .add_attribute("action", "stake")
         .add_attribute("amount", amount)
         .add_attributes(attrs))
-}
-
-///
-/// creates a send message if the amount to send is not zero
-///
-/// If we provide a recipient, we use it. Otherwise, we use the default_recipient
-fn send_if_amount_is_not_zero(
-    messages: &mut Vec<CosmosMsg>,
-    amount: Uint128,
-    denom: String,
-    recipient_option: Option<String>,
-    default_recipient: String,
-) -> Result<(), ContractError> {
-    if !amount.is_zero() {
-        let recipient = recipient_option.unwrap_or_else(|| default_recipient);
-        let msg_send: CosmosMsg = build_send_msg(denom, amount, recipient)?;
-        messages.push(msg_send);
-    }
-
-    Ok(())
-}
-
-fn build_send_msg(
-    denom: String,
-    amount: Uint128,
-    to: String,
-) -> StdResult<CosmosMsg> {
-    Ok(BankMsg::Send {
-        to_address: to,
-        amount: vec![Coin {
-            denom: denom,
-            amount,
-        }],
-    }
-    .into())
 }
 
 fn build_stake_message(
@@ -274,22 +157,23 @@ fn build_unstakes_messages(
     }))
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
+pub fn query(
+    deps: Deps,
+    _env: Env,
+    msg: QueryMsg,
+) -> Result<Binary, ContractError> {
     match msg {
-        QueryMsg::AutocompounderMode {} => {
-            to_json_binary(&query_autocompounder_mode(deps, env)?)
+        QueryMsg::Perms {} => {
+            let perms_status: PermsStatus = query_perms_status(deps)?;
+            Ok(to_json_binary(&perms_status)?)
         }
-        QueryMsg::AdminAndManagers {} => {
-            to_json_binary(&query_admin_and_managers(deps)?)
+        QueryMsg::Ownership {} => {
+            Ok(to_json_binary(&cw_ownable::get_ownership(deps.storage)?)?)
+        }
+        QueryMsg::IsHalted {} => {
+            let is_halted = IS_HALTED.load(deps.storage)?;
+            Ok(to_json_binary(&is_halted)?)
         }
     }
-}
-
-pub fn query_autocompounder_mode(deps: Deps, _env: Env) -> StdResult<bool> {
-    COMPOUNDER_ON.load(deps.storage)
-}
-
-pub fn query_admin_and_managers(deps: Deps) -> StdResult<Whitelist> {
-    WHITELIST.load(deps.storage)
 }

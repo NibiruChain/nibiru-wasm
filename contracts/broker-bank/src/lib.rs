@@ -1,7 +1,5 @@
 pub mod msgs;
 pub mod oper_perms;
-
-#[cfg(test)]
 pub mod tutil;
 
 #[cfg(not(feature = "library"))]

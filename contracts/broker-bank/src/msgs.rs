@@ -40,7 +40,9 @@ pub enum QueryMsg {
     /// operator set is "halted".
     #[returns(PermsStatus)]
     Perms {},
-    // TODO: feat(broker-bank): Logs query
+
+    #[returns(bool)]
+    IsHalted {},
 }
 
 #[cw_serde]

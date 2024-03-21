@@ -1,7 +1,8 @@
 use std::env::current_dir;
 use std::fs::create_dir_all;
 
-use core_compounder::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use broker_bank::msgs::{InstantiateMsg, QueryMsg};
+use core_compounder::msg::ExecuteMsg;
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
 fn main() {

@@ -375,11 +375,14 @@ name = "core-compounder"
 version = "0.2.0"
 dependencies = [
  "anyhow",
+ "broker-bank",
  "cosmwasm-schema",
  "cosmwasm-std",
+ "cw-ownable",
  "cw-storage-plus",
  "cw-utils",
  "cw20",
+ "nibiru-std",
  "schemars",
  "serde",
  "serde_json",
