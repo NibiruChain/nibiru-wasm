@@ -510,7 +510,7 @@ We need to specify admin and managers
 
 ## 8. Auto compounder
 
-This contract implements vesting accounts for the native tokens.
+This contract manages staking re-delegation processes securely, allowing for auto-compounding of staked funds.
 
 ### 8.1 Instantiate
 
