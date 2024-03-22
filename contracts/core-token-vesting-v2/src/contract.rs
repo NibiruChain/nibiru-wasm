@@ -77,7 +77,7 @@ pub fn execute(
         ExecuteMsg::DeregisterVestingAccounts { addresses } => {
             deregister_vesting_accounts(deps, env, info, addresses)
         }
-        ExecuteMsg::Claim { } => claim(deps, env, info),
+        ExecuteMsg::Claim {} => claim(deps, env, info),
         ExecuteMsg::Withdraw { amount } => withdraw(deps, env, info, amount),
     }
 }
@@ -308,7 +308,8 @@ fn deregister_vesting_account(
     VESTING_ACCOUNTS.remove(storage, address);
 
     let vested_amount = account.vested_amount(timestamp)?;
-    let left_vesting_amount = account.vesting_amount.checked_sub(vested_amount)?;
+    let left_vesting_amount =
+        account.vesting_amount.checked_sub(vested_amount)?;
 
     let recoverable_amount = account.vesting_amount - account.claimed_amount;
     // transfer all that's unclaimed to the admin

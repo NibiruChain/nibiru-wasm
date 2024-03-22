@@ -11,8 +11,10 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 backtraces = ["cosmwasm-std/backtraces"]
-# use library feature to disable all instantiate/execute/query exports
-# library = []
+# features.library: Use the library feature to disable all
+# instantiate/execute/query exports. This is necessary use this as a dependency
+# for another smart contract crate.
+library = []
 
 [dependencies]
 cosmwasm-std = { workspace = true }
