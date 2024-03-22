@@ -24,7 +24,7 @@ cosmwasm-std = { version = "1.5.0", features = ["stargate", "staking"] }
 cosmwasm-schema = "1.5.0"
 cw-storage-plus = { version = "1.2.0" }
 cw-multi-test = { version = "0.20.0" }
-cw-utils = { version = "1.0.2" }
+cw-utils = { version = "1.0.3" }
 # Macros for controlling ownership of CosmWasm smart contracts
 cw-ownable = { version = "0.5.1"}
 
@@ -42,6 +42,7 @@ shifter = { path = "contracts/core-shifter" }
 controller = { path = "contracts/core-controller" }
 lockup = { path = "contracts/lockup", features = ["library"] }
 incentives = { path = "contracts/incentives", features = ["library"] }
+broker-bank = { path = "contracts/broker-bank", features = ["library"] }
 
 # deps: else
 anyhow = "1"

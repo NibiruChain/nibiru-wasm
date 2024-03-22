@@ -2,7 +2,7 @@ use std::env::current_dir;
 use std::fs::create_dir_all;
 
 use broker_bank::msgs::{InstantiateMsg, QueryMsg};
-use core_compounder::msg::ExecuteMsg;
+use broker_staking::msg::ExecuteMsg;
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
 fn main() {

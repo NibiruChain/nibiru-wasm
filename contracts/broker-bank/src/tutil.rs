@@ -1,11 +1,11 @@
 //! testing.rs: Test helpers for the contract
+#![cfg(not(target_arch = "wasm32"))]
 
-use cosmwasm_std::{
-    testing::{
-        mock_dependencies, mock_env, mock_info, MockApi, MockQuerier,
-        MockStorage,
-    },
-    Env, MessageInfo, OwnedDeps,
+use cosmwasm_std::{Env, MessageInfo, OwnedDeps};
+
+#[cfg(not(target_arch = "wasm32"))]
+use cosmwasm_std::testing::{
+    mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage,
 };
 
 use crate::{contract::instantiate, msgs::InstantiateMsg};

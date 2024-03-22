@@ -237,6 +237,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "broker-staking"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "broker-bank",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-ownable",
+ "cw-storage-plus",
+ "cw-utils",
+ "cw20",
+ "nibiru-std",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "bstr"
 version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -367,25 +386,6 @@ dependencies = [
  "nibiru-std",
  "schemars",
  "serde",
- "thiserror",
-]
-
-[[package]]
-name = "core-compounder"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "broker-bank",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-ownable",
- "cw-storage-plus",
- "cw-utils",
- "cw20",
- "nibiru-std",
- "schemars",
- "serde",
- "serde_json",
  "thiserror",
 ]
 

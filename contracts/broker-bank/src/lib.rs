@@ -2,7 +2,7 @@ pub mod msgs;
 pub mod oper_perms;
 pub mod tutil;
 
-#[cfg(not(feature = "library"))]
+// #[cfg(not(feature = "library"))]
 // When imported with the "library" feature, contract.rs will not be compiled.
 // This prevents errors related to entry the smart contract's entrypoints,
 // enabling its use as a library.

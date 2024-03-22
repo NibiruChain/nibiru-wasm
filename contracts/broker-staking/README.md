@@ -1,7 +1,24 @@
-## Compounder
+## contracts/broker-staking
 
-This contract handles permissions so we can compound safely the funds of the
-multisig.
+This smart contract handles account abstraction to enable certain staking transaction messages 
+to be called by a subset of "operators", while the funds can only be withdrawn by the contract owner.
+
+This is useful if you want a mutlisig to manage a large allocation of funds while
+permitting certain bots to safely make calls to stake or unstake, as is the case
+for Nibiru's Foundation Delegation Program.
+
+Table of Contents:
+- [Overview](#overview)
+- [Master Operations](#master-operations)
+  - [Instantiate](#instantiate)
+  - [Execute](#execute)
+    - [Admin functions](#admin-functions)
+    - [Manager functions](#manager-functions)
+  - [Query](#query)
+- [Deployed Contract Info](#deployed-contract-info)
+- [Testing Against a Live Chain](#testing-against-a-live-chain)
+
+## Overview
 
 The contract has 2 modes, defined by the autocompounder_on flag. When it is
 true, managers can call the contract to stake the balance of the contract.

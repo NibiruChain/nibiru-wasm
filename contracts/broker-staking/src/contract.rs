@@ -136,7 +136,7 @@ fn build_stake_message(
     validator: String,
 ) -> StdResult<CosmosMsg> {
     Ok(CosmosMsg::Staking(StakingMsg::Delegate {
-        validator: validator,
+        validator,
         amount: Coin {
             denom: "unibi".to_string(),
             amount,
@@ -149,7 +149,7 @@ fn build_unstakes_messages(
     validator: String,
 ) -> StdResult<CosmosMsg> {
     Ok(CosmosMsg::Staking(StakingMsg::Undelegate {
-        validator: validator,
+        validator,
         amount: Coin {
             denom: "unibi".to_string(),
             amount,

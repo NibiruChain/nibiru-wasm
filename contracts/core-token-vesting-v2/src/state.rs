@@ -62,7 +62,9 @@ impl VestingAccount {
                 let remaining_token =
                     self.vesting_amount.checked_sub(self.cliff_amount)?;
                 let vested_token = remaining_token
-                    .checked_mul(Uint128::from(block_time.seconds() - cliff_time.u64()))?
+                    .checked_mul(Uint128::from(
+                        block_time.seconds() - cliff_time.u64(),
+                    ))?
                     .checked_div(Uint128::from(end_time - cliff_time))?;
 
                 Ok(vested_token + self.cliff_amount)

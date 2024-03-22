@@ -475,8 +475,7 @@ fn exec_stake() -> TestResult {
             resp_msgs: vec![CosmosMsg::Staking(StakingMsg::Delegate {
                 validator: String::from("mm_bybit"),
                 amount: coin(50, "unibi"),
-            })
-            .into()],
+            })],
         },
         // Success : valid operation to multiple stakers
         TestCaseExec {
@@ -506,8 +505,7 @@ fn exec_stake() -> TestResult {
                 CosmosMsg::Staking(StakingMsg::Delegate {
                     validator: String::from("mm_kucoin"),
                     amount: coin(25, "unibi"),
-                })
-                .into(),
+                }),
             ],
         },
         // Success : valid operation to multiple stakers - different shares
@@ -538,8 +536,7 @@ fn exec_stake() -> TestResult {
                 CosmosMsg::Staking(StakingMsg::Delegate {
                     validator: String::from("mm_kucoin"),
                     amount: coin(30, "unibi"),
-                })
-                .into(),
+                }),
             ],
         },
         // Fail - invalid sender
@@ -561,8 +558,7 @@ fn exec_stake() -> TestResult {
             resp_msgs: vec![CosmosMsg::Staking(StakingMsg::Delegate {
                 validator: String::from("mm_bybit"),
                 amount: coin(50, "unibi"),
-            })
-            .into()],
+            })],
         },
         // Fail - empty stake messages
         TestCaseExec {
@@ -578,8 +574,7 @@ fn exec_stake() -> TestResult {
             resp_msgs: vec![CosmosMsg::Staking(StakingMsg::Delegate {
                 validator: String::from("mm_bybit"),
                 amount: coin(50, "unibi"),
-            })
-            .into()],
+            })],
         },
     ];
     for tc in &test_cases {
@@ -644,8 +639,7 @@ fn exec_unstake() -> TestResult {
             resp_msgs: vec![CosmosMsg::Staking(StakingMsg::Undelegate {
                 validator: String::from("mm_bybit"),
                 amount: coin(100, "unibi"),
-            })
-            .into()],
+            })],
         },
         // Success - multiple
         TestCaseExec {
@@ -674,13 +668,11 @@ fn exec_unstake() -> TestResult {
                 CosmosMsg::Staking(StakingMsg::Undelegate {
                     validator: String::from("mm_bybit"),
                     amount: coin(100, "unibi"),
-                })
-                .into(),
+                }),
                 CosmosMsg::Staking(StakingMsg::Undelegate {
                     validator: String::from("mm_kucoin"),
                     amount: coin(20, "unibi"),
-                })
-                .into(),
+                }),
             ],
         },
         // Fail - oper can't do that
@@ -699,8 +691,7 @@ fn exec_unstake() -> TestResult {
             resp_msgs: vec![CosmosMsg::Staking(StakingMsg::Undelegate {
                 validator: String::from("mm_bybit"),
                 amount: coin(100, "unibi"),
-            })
-            .into()],
+            })],
         },
         // Fail - non oper also can't
         TestCaseExec {
@@ -718,8 +709,7 @@ fn exec_unstake() -> TestResult {
             resp_msgs: vec![CosmosMsg::Staking(StakingMsg::Undelegate {
                 validator: String::from("mm_bybit"),
                 amount: coin(100, "unibi"),
-            })
-            .into()],
+            })],
         },
     ];
     for tc in &test_cases {
