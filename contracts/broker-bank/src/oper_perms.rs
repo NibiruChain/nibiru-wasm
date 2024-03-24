@@ -19,11 +19,6 @@ pub struct HasPermsResponse {
 }
 
 #[cw_serde]
-pub struct PermsResponse {
-    pub perms: Permissions,
-}
-
-#[cw_serde]
 pub struct Permissions {
     pub owner: Option<String>,
     pub operators: BTreeSet<String>,

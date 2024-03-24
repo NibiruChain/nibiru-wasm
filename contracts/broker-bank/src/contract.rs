@@ -260,10 +260,6 @@ pub fn query(
         QueryMsg::Ownership {} => {
             Ok(to_json_binary(&cw_ownable::get_ownership(deps.storage)?)?)
         }
-        QueryMsg::IsHalted {} => {
-            let is_halted = IS_HALTED.load(deps.storage)?;
-            Ok(to_json_binary(&is_halted)?)
-        }
     }
 }
 

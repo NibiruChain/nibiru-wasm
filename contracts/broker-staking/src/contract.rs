@@ -53,7 +53,7 @@ pub fn execute(
         }
         ExecuteMsg::ToggleHalt {} => toggle_halt(deps, env, info),
         ExecuteMsg::UpdateOwnership(action) => {
-            execute_update_ownership(deps, env, info, action)
+            Ok(execute_update_ownership(deps, env, info, action)?)
         }
         ExecuteMsg::EditOpers(action) => edit_opers(deps, env, info, action),
         ExecuteMsg::WithdrawAll { to } => {
@@ -170,10 +170,6 @@ pub fn query(
         }
         QueryMsg::Ownership {} => {
             Ok(to_json_binary(&cw_ownable::get_ownership(deps.storage)?)?)
-        }
-        QueryMsg::IsHalted {} => {
-            let is_halted = IS_HALTED.load(deps.storage)?;
-            Ok(to_json_binary(&is_halted)?)
         }
     }
 }

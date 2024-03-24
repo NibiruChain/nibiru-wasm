@@ -10,9 +10,12 @@ use cosmwasm_std::Uint128;
 #[cw_ownable::cw_ownable_execute]
 #[cw_serde]
 pub enum ExecuteMsg {
-    /// SetAutocompounderMode allows to set the autocompounder mode.
-    /// If it's set to true, managers will be able to stake tokens, otherwise
-    /// they won't be able to do so.
+    /// Toggles whether "operators" can invoke the smart contract. This acts a
+    /// security feature for the contract owner to disable non-owner permissions
+    /// quickly without sending multiple calls of `ExecuteMsg::EditOpers`.
+    ///
+    /// When the smart contract is halted, the owner can still use the everything,
+    /// while operators cannot.
     ToggleHalt {},
 
     /// Withdraw coins from the broker smart contract balance. Only callable by

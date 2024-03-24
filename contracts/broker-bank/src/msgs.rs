@@ -40,9 +40,6 @@ pub enum QueryMsg {
     /// operator set is "halted".
     #[returns(PermsStatus)]
     Perms {},
-
-    #[returns(bool)]
-    IsHalted {},
 }
 
 #[cw_serde]
