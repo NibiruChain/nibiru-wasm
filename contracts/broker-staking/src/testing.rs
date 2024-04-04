@@ -4,8 +4,8 @@ use crate::contract::{execute, query};
 use crate::msg::{ExecuteMsg, StakeMsg, UnstakeMsg};
 use cosmwasm_std::{self as cw_std};
 use cw_std::{
-    coin, from_json, testing, BankMsg, Coin, CosmosMsg, Response, StakingMsg,
-    Uint128,
+    coin, from_json, testing, BankMsg, Coin, CosmosMsg, DistributionMsg,
+    Response, StakingMsg, Uint128,
 };
 use nibiru_std::errors::TestResult;
 use serde::Serialize;
@@ -710,6 +710,83 @@ fn exec_unstake() -> TestResult {
                 validator: String::from("mm_bybit"),
                 amount: coin(100, "unibi"),
             })],
+        },
+    ];
+    for tc in &test_cases {
+        let to_addrs = &tc.to_addrs;
+        let opers = &tc.opers;
+        // instantiate smart contract from the owner
+        let (mut deps, env, _info) =
+            setup_contract(to_addrs.clone(), opers.clone())?;
+
+        if let Some(funds_start) = &tc.contract_funds_start {
+            // Set up a mock querier with contract balance
+            let contract_addr = env.contract.address.to_string();
+            let balances: &[(&str, &[Coin])] =
+                &[(contract_addr.as_str(), funds_start.as_slice())];
+            let querier = testing::MockQuerier::new(balances);
+            deps.querier = querier;
+        }
+
+        // send the exec msg
+        let info = mock_info_for_sender(tc.sender);
+        let res = execute(deps.as_mut(), env, info, tc.exec_msg.clone());
+
+        if let Some(want_err) = tc.err {
+            let got_err = res.expect_err("errors should occur in this test");
+            let is_contained = got_err.to_string().contains(want_err);
+            assert!(is_contained, "got error {}", got_err);
+            return Ok(());
+        }
+        assert!(res.is_ok(), "got {res:?}");
+
+        let resp = res?;
+        let got_resp_msgs: Vec<CosmosMsgExt> = resp
+            .messages
+            .iter()
+            .map(|sub_msg| CosmosMsgExt(&sub_msg.msg))
+            .collect();
+        let want_resp_msgs: Vec<CosmosMsgExt> =
+            tc.resp_msgs.iter().map(CosmosMsgExt).collect();
+        assert_eq!(want_resp_msgs, got_resp_msgs);
+    }
+    Ok(())
+}
+
+#[test]
+fn test_withdraw_rewards() -> TestResult {
+    let to_addrs: [String; 2] = ["mm_kucoin", "mm_bybit"].map(|s| s.to_string());
+    let opers: [String; 1] = ["valid_oper"].map(|s| s.to_string());
+    let test_cases: Vec<TestCaseExec> = vec![
+        // Success
+        TestCaseExec {
+            to_addrs: to_addrs.to_vec(),
+            opers: opers.to_vec(),
+            sender: "owner",
+            exec_msg: ExecuteMsg::ClaimRewards {},
+            err: None,
+            contract_funds_start: None,
+            resp_msgs: vec![],
+        },
+        // Fail - oper can't do that
+        TestCaseExec {
+            to_addrs: to_addrs.to_vec(),
+            opers: opers.to_vec(),
+            sender: "valid_oper",
+            exec_msg: ExecuteMsg::ClaimRewards {},
+            err: None,
+            contract_funds_start: None,
+            resp_msgs: vec![],
+        },
+        // Fail - non oper also can't
+        TestCaseExec {
+            to_addrs: to_addrs.to_vec(),
+            opers: opers.to_vec(),
+            sender: "invalid_oper",
+            exec_msg: ExecuteMsg::ClaimRewards {},
+            err: Some("insufficient permissions"),
+            contract_funds_start: None,
+            resp_msgs: vec![],
         },
     ];
     for tc in &test_cases {

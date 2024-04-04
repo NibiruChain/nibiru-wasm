@@ -31,6 +31,8 @@ pub enum ExecuteMsg {
         to: Option<String>,
     },
 
+    ClaimRewards {},
+
     /// Unstake allows to unstake a given amount of tokens from a set of
     /// validators. The UnstakeMsgs defines the tokens amount and address
     /// of the validator.
