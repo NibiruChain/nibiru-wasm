@@ -91,6 +91,7 @@ tidy-update: build-update
 
 gen-schema:
   #!/usr/bin/env bash
+  mkdir -p ./schema
   for dir in contracts/*/; do
     dir_name=$(basename $dir)
 
