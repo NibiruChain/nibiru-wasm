@@ -1,5 +1,5 @@
 [workspace]
-members = ["scripts", "packages/*", "nibiru-std", "contracts/*"]
+members = ["scripts", "contracts/*"]
 exclude = ["packages/msig-ez"]
 resolver = "2"
 
@@ -14,7 +14,7 @@ resolver = "2"
 serde = { version = "1.0.189", default-features = false, features = ["derive"] }
 serde_json = "1.0.108"
 
-nibiru-std = { path = "nibiru-std" }
+nibiru-std = { version = "0" }
 prost = "0.12.3"
 prost-types = "0.12.3"
 bash-rs = { path = "packages/bash-rs" }
@@ -26,7 +26,7 @@ cw-storage-plus = { version = "1.2.0" }
 cw-multi-test = { version = "0.20.0" }
 cw-utils = { version = "1.0.3" }
 # Macros for controlling ownership of CosmWasm smart contracts
-cw-ownable = { version = "0.5.1"}
+cw-ownable = { version = "0.5.1" }
 
 # deps: cw-plus
 cw2 = { version = "1.1.1" }
@@ -35,14 +35,6 @@ cw3-fixed-multisig = { version = "1.1.1", features = ["library"] }
 cw4 = { version = "1.1.1" }
 cw20 = { version = "1.1.1" }
 
-# deps: core contracts
-# TODO: revive bindings-perp with stargate
-# bindings-perp = { path = "core/core-bindings-perp" }
-shifter = { path = "contracts/core-shifter" }
-controller = { path = "contracts/core-controller" }
-lockup = { path = "contracts/lockup", features = ["library"] }
-incentives = { path = "contracts/incentives", features = ["library"] }
-broker-bank = { path = "contracts/broker-bank", features = ["library"] }
 
 # deps: else
 anyhow = "1"

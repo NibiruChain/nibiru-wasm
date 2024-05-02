@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 cosmwasm-std = { workspace = true }
+schemars.workspace = true
 serde = { workspace = true }
