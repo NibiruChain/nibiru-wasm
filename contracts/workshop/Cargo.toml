@@ -1,5 +1,5 @@
 [package]
-name = "cw-counter"
+name = "workshop"
 version = "0.1.0"
 edition = "2021"
 
