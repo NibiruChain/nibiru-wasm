@@ -35,7 +35,7 @@ impl Permissions {
     }
 
     pub fn load(storage: &dyn Storage) -> Result<Self, ContractError> {
-        let owner = cw_ownable::get_ownership(storage)?.owner;
+        let owner = nibiru_ownable::get_ownership(storage)?.owner;
         let opers = OPERATORS.load(storage)?;
         Ok(Permissions {
             owner: owner.map(|addr| addr.into_string()),
@@ -52,7 +52,7 @@ pub fn instantiate_perms(
     storage: &mut dyn Storage,
     api: &dyn Api,
 ) -> Result<(), ContractError> {
-    cw_ownable::initialize_owner(storage, api, owner)?;
+    nibiru_ownable::initialize_owner(storage, api, owner)?;
     Ok(OPERATORS.save(storage, &BTreeSet::default())?)
 }
 

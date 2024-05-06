@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std as cw;
 
-#[cw_ownable::cw_ownable_query]
+#[nibiru_ownable::ownable_query]
 #[cw_serde]
 #[derive(cosmwasm_schema::QueryResponses)]
 pub enum QueryMsg {
@@ -30,7 +30,7 @@ pub enum QueryMsg {
     RedeemableChoices { redeem_amount: cw::Uint128 },
 }
 
-#[cw_ownable::cw_ownable_execute]
+#[nibiru_ownable::ownable_execute]
 #[cw_serde]
 pub enum ExecuteMsg {
     /// Change one denom in the "ACCEPTED_DENOMS" set to another one in-place.

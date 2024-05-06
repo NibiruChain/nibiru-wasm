@@ -118,10 +118,14 @@ fn execute_update_ownership(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    action: cw_ownable::Action,
-) -> Result<Response, cw_ownable::OwnershipError> {
-    let ownership =
-        cw_ownable::update_ownership(deps, &env.block, &info.sender, action)?;
+    action: nibiru_ownable::Action,
+) -> Result<Response, nibiru_ownable::OwnershipError> {
+    let ownership = nibiru_ownable::update_ownership(
+        deps,
+        &env.block,
+        info.sender.as_str(),
+        action,
+    )?;
     Ok(Response::new().add_attributes(ownership.into_attributes()))
 }
 

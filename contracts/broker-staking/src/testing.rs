@@ -57,7 +57,7 @@ pub fn test_assert_owner() -> TestResult {
             opers: opers.to_vec(),
             sender: not_owner,
             exec_msg: ExecuteMsg::UpdateOwnership(
-                cw_ownable::Action::TransferOwnership {
+                nibiru_ownable::Action::TransferOwnership {
                     new_owner: String::from("new_owner"),
                     expiry: None,
                 },

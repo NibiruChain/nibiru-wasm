@@ -25,7 +25,7 @@ pub fn instantiate(
     msg: BrokerBankInstantiateMsg,
 ) -> StdResult<Response> {
     // Managers validation
-    cw_ownable::initialize_owner(deps.storage, deps.api, Some(&msg.owner))?;
+    nibiru_ownable::initialize_owner(deps.storage, Some(&msg.owner))?;
     TO_ADDRS.save(deps.storage, &msg.to_addrs)?;
     OPERATORS.save(deps.storage, &msg.opers)?;
     IS_HALTED.save(deps.storage, &false)?;
@@ -68,7 +68,7 @@ pub fn unstake(
     info: MessageInfo,
     unstake_msgs: Vec<UnstakeMsg>,
 ) -> Result<Response, ContractError> {
-    cw_ownable::assert_owner(deps.storage, &info.sender)?;
+    nibiru_ownable::assert_owner(deps.storage, info.sender.as_str())?;
 
     let mut messages: Vec<CosmosMsg> = vec![];
     for msg in unstake_msgs.iter() {
@@ -168,8 +168,8 @@ pub fn query(
             let perms_status: PermsStatus = query_perms_status(deps)?;
             Ok(to_json_binary(&perms_status)?)
         }
-        QueryMsg::Ownership {} => {
-            Ok(to_json_binary(&cw_ownable::get_ownership(deps.storage)?)?)
-        }
+        QueryMsg::Ownership {} => Ok(to_json_binary(
+            &nibiru_ownable::get_ownership(deps.storage)?,
+        )?),
     }
 }

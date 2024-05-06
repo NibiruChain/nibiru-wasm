@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Event;
-use cw_storage_plus::{Deque, Item};
+use cw_storage_plus::{Deque, Item, Map};
 use std::collections::BTreeSet;
 
 /// TO_ADDRS: Defines the set of addresses that can receive transfers from the

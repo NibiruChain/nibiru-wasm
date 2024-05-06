@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Coin};
+use cosmwasm_std::Coin;
 use cw_storage_plus::{Index, IndexList, IndexedMap, Item, MultiIndex};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,7 @@ pub const LOCKS_ID: Item<u64> = Item::new("locks_id");
 pub struct Lock {
     pub id: u64,
     pub coin: Coin,
-    pub owner: Addr,
+    pub owner: String,
     pub duration_blocks: u64,
     pub start_block: u64,
     pub end_block: u64,
@@ -19,9 +19,9 @@ pub struct Lock {
 
 pub struct LockIndexes<'a> {
     pub denom_end: MultiIndex<'a, (String, u64), Lock, u64>,
-    pub addr_denom_end: MultiIndex<'a, (Addr, String, u64), Lock, u64>,
+    pub addr_denom_end: MultiIndex<'a, (String, String, u64), Lock, u64>,
     pub denom_start: MultiIndex<'a, (String, u64), Lock, u64>,
-    pub addr_denom_start: MultiIndex<'a, (Addr, String, u64), Lock, u64>,
+    pub addr_denom_start: MultiIndex<'a, (String, String, u64), Lock, u64>,
 }
 
 impl<'a> IndexList<Lock> for LockIndexes<'a> {
@@ -38,7 +38,7 @@ impl<'a> IndexList<Lock> for LockIndexes<'a> {
     }
 }
 
-pub fn locks<'a>() -> IndexedMap<'a, u64, Lock, LockIndexes<'a>> {
+pub fn locks() -> IndexedMap<u64, Lock, LockIndexes<'static>> {
     let indexes = LockIndexes {
         addr_denom_end: MultiIndex::new(
             |_bz, lock: &Lock| -> (_, _, _) {
@@ -75,5 +75,5 @@ pub fn locks<'a>() -> IndexedMap<'a, u64, Lock, LockIndexes<'a>> {
         ),
     };
 
-    return IndexedMap::new("locks", indexes);
+    IndexedMap::new("locks", indexes)
 }

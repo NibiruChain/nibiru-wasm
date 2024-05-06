@@ -216,7 +216,7 @@ fn execute_withdraw_rewards(
             &lockup::msgs::QueryMsg::LocksByDenomAndAddressBetween {
                 denom: program.lockup_denom.clone(),
                 unlocking_after: epoch.for_coins_unlocking_after,
-                address: info.sender.clone(),
+                address: info.sender.to_string(),
                 locked_before: epoch.for_coins_locked_before,
             },
         )?;
@@ -328,7 +328,7 @@ fn execute_process_epoch(
     // identify how much is the total locked
     let total_locked = locks
         .iter()
-        .map(|lock| -> Uint128 { lock.coin.amount })
+        .map(|lock| lock.coin.amount)
         .sum::<Uint128>();
 
     // then we identify how many coins we need to pay

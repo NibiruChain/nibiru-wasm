@@ -10,7 +10,6 @@ repository = "https://github.com/NibiruChain/cw-nibiru"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports
 library = []
 
@@ -22,7 +21,7 @@ nibiru-std = { workspace = true }
 thiserror = { workspace = true }
 schemars = "0.8.15"
 serde = { version = "1.0.188", default-features = false, features = ["derive"] }
-cw-ownable = { workspace = true }
+nibiru-ownable = { workspace = true }
 cw2 = { workspace = true }
 
 [dev-dependencies]

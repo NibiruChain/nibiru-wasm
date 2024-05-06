@@ -41,7 +41,8 @@ cw3 = { version = "2.0.0" }
 cw3-fixed-multisig = { version = "2.0.0", features = ["library"] }
 cw4 = { version = "2.0.0" }
 cw20 = { version = "2.0.0" }
-
+cw4-group = { version = "2.0" }
+cw20-base = { version = "2.0" }
 
 # deps: core contracts
 shifter     = { path = "contracts/core-shifter" }
@@ -60,7 +61,7 @@ schemars = "0.8.15"
 home = "0.5"
 toml = "0.8"
 quote = "1.0"
-syn = { version = "1", features = ["full"] }
+syn = { version = "1", features = ["full"] } # NOTE: This needs to stay v1
 proc-macro2 = "1.0"
 
 [profile.release]

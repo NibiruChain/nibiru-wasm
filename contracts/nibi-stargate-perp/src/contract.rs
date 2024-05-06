@@ -1,7 +1,7 @@
+use broker_bank::contract::query_bank_balances;
 use cosmwasm_std::{
-    entry_point, AllBalanceResponse, BankMsg, BankQuery, Binary, CosmosMsg,
-    Deps, DepsMut, Env, MessageInfo, QueryRequest, Response, StdError,
-    StdResult,
+    entry_point, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Response, StdError, StdResult,
 };
 
 use cw2::set_contract_version;
@@ -204,7 +204,7 @@ pub fn execute(
                     ));
                 }
                 let contract_address = env_ctx.contract.address;
-                let balances = query_contract_balance(
+                let balances: Vec<cosmwasm_std::Coin> = query_bank_balances(
                     contract_address.to_string(),
                     deps.as_ref(),
                 )?;
@@ -212,7 +212,7 @@ pub fn execute(
                 // Send all funds to the specified recipient.
                 let transfer_msg = BankMsg::Send {
                     to_address: to.clone(),
-                    amount: balances.amount,
+                    amount: balances,
                 };
                 Ok(Response::new().add_message(transfer_msg).add_attribute(
                     event_key,
@@ -275,23 +275,6 @@ fn check_can_execute(deps: Deps, sender: &str) -> StdResult<CanExecute> {
         is_member: sudoers.is_member(sender),
         sender: sender.into(),
     })
-}
-
-/// Query all contract balances or return an empty response
-fn query_contract_balance(
-    contract_address: String,
-    deps: Deps,
-) -> StdResult<AllBalanceResponse> {
-    let query_result =
-        deps.querier
-            .query(&QueryRequest::Bank(BankQuery::AllBalances {
-                address: contract_address,
-            }))?;
-    let balances: AllBalanceResponse = match query_result {
-        Some(res) => res,
-        None => AllBalanceResponse::default(),
-    };
-    Ok(balances)
 }
 
 #[cfg(test)]
@@ -460,7 +443,7 @@ pub mod tests {
 
         // Set up a mock querier with contract balance
         let balances: &[(&str, &[Coin])] =
-            &[(contract_address.as_str(), &[Coin::new(100, "token")])];
+            &[(contract_address.as_str(), &[Coin::new(100u128, "token")])];
         let querier = testing::MockQuerier::new(balances);
         deps.querier = querier;
 
@@ -479,7 +462,7 @@ pub mod tests {
             // claim happy / partial
             TestCaseExecClaim {
                 exec_msg: ExecuteMsg::Claim {
-                    funds: Some(Coin::new(50, "token")),
+                    funds: Some(Coin::new(50u128, "token")),
                     claim_all: None,
                     to: to_address.clone(),
                 },
@@ -518,7 +501,7 @@ pub mod tests {
 
             // Set up a mock querier with contract balance
             let balances: &[(&str, &[Coin])] =
-                &[(contract_address.as_str(), &[Coin::new(100, "token")])];
+                &[(contract_address.as_str(), &[Coin::new(100u128, "token")])];
             let querier = testing::MockQuerier::new(balances);
             deps.querier = querier;
 
