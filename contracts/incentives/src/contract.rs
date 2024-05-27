@@ -240,11 +240,13 @@ fn execute_withdraw_rewards(
             Decimal::from_ratio(qualified_locked_amount, epoch.total_locked);
         println!("ownership ratio: {:?}", user_ownership_ratio.to_string());
         for coin in epoch.to_distribute {
+            let coin_amount = Decimal::new(coin.amount);
+            let coin_amount =(coin_amount * user_ownership_ratio).to_uint_floor();
             add_coins(
                 &mut to_distribute,
                 Coin {
                     denom: coin.denom,
-                    amount: coin.amount * user_ownership_ratio,
+                    amount: coin_amount,
                 },
             )
         }
