@@ -1,0 +1,22 @@
+[package]
+name        = "nibiru-ownable"
+version     = { workspace = true }
+description = "Utility for single-party ownership of CosmWasm smart contracts"
+authors     = ["larry <gm@larry.engineer>", "Unique Divine <realuniquedivine@gmail.com>"]
+edition     = { workspace = true }
+homepage    = { workspace = true }
+repository  = { workspace = true }
+# license     = { workspace = true }
+# keywords    = { workspace = true }
+
+[lib]
+doctest = false # disable doc tests
+
+[dependencies]
+cosmwasm-schema   = { workspace = true }
+cosmwasm-std      = { workspace = true }
+cw-address-like   = { workspace = true }
+ownable-derive = { workspace = true }
+cw-storage-plus   = { workspace = true }
+cw-utils          = { workspace = true }
+thiserror         = { workspace = true }

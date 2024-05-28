@@ -5,6 +5,7 @@ use cosmwasm_std::{
     BankQuery, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response,
     StdResult,
 };
+use cw_std::Coin;
 
 use crate::oper_perms::Permissions;
 use crate::{
@@ -34,7 +35,7 @@ pub fn instantiate(
         format!("crates.io:{CONTRACT_NAME}"),
         CONTRACT_VERSION,
     )?;
-    cw_ownable::initialize_owner(deps.storage, deps.api, Some(&msg.owner))?;
+    nibiru_ownable::initialize_owner(deps.storage, Some(&msg.owner))?;
     TO_ADDRS.save(deps.storage, &msg.to_addrs)?;
     OPERATORS.save(deps.storage, &msg.opers)?;
     IS_HALTED.save(deps.storage, &false)?;
@@ -75,15 +76,14 @@ pub fn withdraw(
     denoms: BTreeSet<String>,
     contract_addr: String,
 ) -> Result<Response, ContractError> {
-    cw_ownable::assert_owner(deps.storage, &info.sender)?;
+    nibiru_ownable::assert_owner(deps.storage, info.sender.as_str())?;
     let to_addr: String = match to {
         Some(given_to_addr) => given_to_addr,
         None => info.sender.to_string(),
     };
-    let balances: AllBalanceResponse =
+    let balances: Vec<cw_std::Coin> =
         query_bank_balances(contract_addr, deps.as_ref())?;
     let balances: Vec<cw_std::Coin> = balances
-        .amount
         .iter()
         .filter(|b_coin| denoms.contains(&b_coin.denom))
         .cloned()
@@ -113,7 +113,7 @@ pub fn withdraw_all(
     to: Option<String>,
     contract_addr: String,
 ) -> Result<Response, ContractError> {
-    cw_ownable::assert_owner(deps.storage, &info.sender)?;
+    nibiru_ownable::assert_owner(deps.storage, info.sender.as_str())?;
     let to_addr: String = match to {
         Some(given_to_addr) => given_to_addr,
         None => info.sender.to_string(),
@@ -121,12 +121,10 @@ pub fn withdraw_all(
     let balances = query_bank_balances(contract_addr, deps.as_ref())?;
     let tx_msg = BankMsg::Send {
         to_address: to_addr.to_string(),
-        amount: balances.amount.clone(),
+        amount: balances.clone(),
     };
-    let event = event_withdraw(
-        serde_json::to_string(&balances.amount)?.as_str(),
-        &to_addr,
-    );
+    let event =
+        event_withdraw(serde_json::to_string(&balances)?.as_str(), &to_addr);
     LOGS.push_front(
         deps.storage,
         &Log {
@@ -144,13 +142,11 @@ pub fn edit_opers(
     info: MessageInfo,
     action: oper_perms::Action,
 ) -> Result<Response, ContractError> {
-    cw_ownable::assert_owner(deps.storage, &info.sender)?;
+    nibiru_ownable::assert_owner(deps.storage, info.sender.as_str())?;
     let mut perms = Permissions::load(deps.storage)?;
-    let api = deps.api;
     match action {
         oper_perms::Action::AddOper { address } => {
-            let addr = api.addr_validate(address.as_str())?;
-            perms.operators.insert(addr.into_string());
+            perms.operators.insert(address.clone());
             OPERATORS.save(deps.storage, &perms.operators)?;
 
             let res = Response::new().add_attributes(vec![
@@ -178,7 +174,7 @@ pub fn toggle_halt(
     _env: Env,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    cw_ownable::assert_owner(deps.storage, &info.sender)?;
+    nibiru_ownable::assert_owner(deps.storage, info.sender.as_str())?;
     let new_is_halted = !IS_HALTED.load(deps.storage)?;
     IS_HALTED.save(deps.storage, &new_is_halted)?;
     Ok(Response::new().add_event(event_toggle_halt(&new_is_halted)))
@@ -229,10 +225,14 @@ pub fn execute_update_ownership(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    action: cw_ownable::Action,
+    action: nibiru_ownable::Action,
 ) -> Result<Response, ContractError> {
-    let ownership =
-        cw_ownable::update_ownership(deps, &env.block, &info.sender, action)?;
+    let ownership = nibiru_ownable::update_ownership(
+        deps,
+        &env.block,
+        info.sender.as_str(),
+        action,
+    )?;
     Ok(Response::new().add_attributes(ownership.into_attributes()))
 }
 
@@ -257,9 +257,9 @@ pub fn query(
             let perms_status: PermsStatus = query_perms_status(deps)?;
             Ok(to_json_binary(&perms_status)?)
         }
-        QueryMsg::Ownership {} => {
-            Ok(to_json_binary(&cw_ownable::get_ownership(deps.storage)?)?)
-        }
+        QueryMsg::Ownership {} => Ok(to_json_binary(
+            &nibiru_ownable::get_ownership(deps.storage)?,
+        )?),
     }
 }
 
@@ -273,28 +273,25 @@ pub fn query_accepted_denoms(deps: Deps) -> StdResult<BTreeSet<String>> {
 /// use broker_bank::contract::query_bank_balances;
 /// use cosmwasm_std::{
 ///     testing::{mock_dependencies, mock_env},
-///     AllBalanceResponse, DepsMut, Env, StdResult};
+///     DepsMut, Env, StdResult, Coin};
 ///
 /// let env: Env = mock_env();
 /// let mut deps = mock_dependencies();
 /// let mut deps: DepsMut = deps.as_mut();
 /// let contract_addr = env.contract.address.to_string();
-/// let balances: StdResult<AllBalanceResponse> =
+/// let balances: StdResult<Vec<Coin>> =
 ///    query_bank_balances(contract_addr.to_string(), deps.as_ref());
 /// assert!(balances.is_ok())
 /// ```
-pub fn query_bank_balances(
-    addr: String,
-    deps: Deps,
-) -> StdResult<AllBalanceResponse> {
-    let query_result =
+pub fn query_bank_balances(addr: String, deps: Deps) -> StdResult<Vec<Coin>> {
+    let query_result: Option<AllBalanceResponse> =
         deps.querier
             .query(&QueryRequest::Bank(BankQuery::AllBalances {
                 address: addr,
             }))?;
-    let balances: AllBalanceResponse = match query_result {
-        Some(res) => res,
-        None => AllBalanceResponse::default(),
+    let balances: Vec<Coin> = match query_result {
+        Some(res) => res.amount,
+        None => Vec::new(),
     };
     Ok(balances)
 }
@@ -369,7 +366,7 @@ pub mod tests {
                 opers: opers.to_vec(),
                 sender: not_owner,
                 exec_msg: ExecuteMsg::UpdateOwnership(
-                    cw_ownable::Action::TransferOwnership {
+                    nibiru_ownable::Action::TransferOwnership {
                         new_owner: String::from("new_owner"),
                         expiry: None,
                     },

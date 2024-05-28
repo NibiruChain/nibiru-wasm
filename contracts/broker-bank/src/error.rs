@@ -12,7 +12,7 @@ pub enum ContractError {
     SerdeJson(String),
 
     #[error("{0}")]
-    Ownership(#[from] cw_ownable::OwnershipError),
+    Ownership(#[from] nibiru_ownable::OwnershipError),
 
     // #[error("serde_json error: {err:?}")]
     // SerdeJson { err: serde_json::error::Error },

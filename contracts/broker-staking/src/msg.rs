@@ -7,7 +7,7 @@ use cosmwasm_std::Uint128;
 /// Enum respresenting message types for the execute entry point.
 /// These express the different ways in which one can invoke the contract
 /// and broadcast tx messages against it.
-#[cw_ownable::cw_ownable_execute]
+#[nibiru_ownable::ownable_execute]
 #[cw_serde]
 pub enum ExecuteMsg {
     /// Toggles whether "operators" can invoke the smart contract. This acts a

@@ -20,7 +20,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::ChangeDenom { from, to } => {
-            cw_ownable::assert_owner(deps.storage, &info.sender)?;
+            nibiru_ownable::assert_owner(deps.storage, info.sender.as_str())?;
 
             // "from" should be within the list of accepted denoms
             let mut denom_set = ACCEPTED_DENOMS.load(deps.storage)?;
@@ -45,7 +45,7 @@ pub fn execute(
             Ok(Response::default().add_event(event))
         }
         ExecuteMsg::AddDenom { denom } => {
-            cw_ownable::assert_owner(deps.storage, &info.sender)?;
+            nibiru_ownable::assert_owner(deps.storage, info.sender.as_str())?;
 
             let mut denom_set = ACCEPTED_DENOMS.load(deps.storage)?;
             if denom_set.contains(&denom) {
@@ -63,7 +63,7 @@ pub fn execute(
         }
 
         ExecuteMsg::RemoveDenom { denom } => {
-            cw_ownable::assert_owner(deps.storage, &info.sender)?;
+            nibiru_ownable::assert_owner(deps.storage, info.sender.as_str())?;
             let mut denom_set = ACCEPTED_DENOMS.load(deps.storage)?;
             let was_present = denom_set.remove(&denom);
             if !was_present {
@@ -91,10 +91,14 @@ fn execute_update_ownership(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    action: cw_ownable::Action,
-) -> Result<Response, cw_ownable::OwnershipError> {
-    let ownership =
-        cw_ownable::update_ownership(deps, &env.block, &info.sender, action)?;
+    action: nibiru_ownable::Action,
+) -> Result<Response, nibiru_ownable::OwnershipError> {
+    let ownership = nibiru_ownable::update_ownership(
+        deps,
+        &env.block,
+        info.sender.as_str(),
+        action,
+    )?;
     Ok(Response::new().add_attributes(ownership.into_attributes()))
 }
 
@@ -138,7 +142,7 @@ pub fn instantiate(
         format!("crates.io:{CONTRACT_NAME}"),
         CONTRACT_VERSION,
     )?;
-    cw_ownable::initialize_owner(deps.storage, deps.api, Some(&msg.owner))?;
+    nibiru_ownable::initialize_owner(deps.storage, Some(&msg.owner))?;
     ACCEPTED_DENOMS.save(deps.storage, &msg.accepted_denoms)?;
     Ok(Response::default())
 }

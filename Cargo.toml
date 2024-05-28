@@ -2,6 +2,10 @@
 members = ["scripts", "packages/*", "nibiru-std", "contracts/*"]
 exclude = ["packages/msig-ez"]
 resolver = "2"
+package.version = "0.1.0"
+package.homepage = "https://github.com/NibiruChain/cw-nibiru"
+package.repository = "https://github.com/NibiruChain/cw-nibiru"
+package.edition = "2021"
 
 # Dependencies can be inherited from a workspace by specifying the dependency in
 # the `[workspace.dependencies]` table. To use workspace crates, add them to the
@@ -14,34 +18,38 @@ resolver = "2"
 serde = { version = "1.0.189", default-features = false, features = ["derive"] }
 serde_json = "1.0.108"
 
+# deps: packages
 nibiru-std = { path = "nibiru-std" }
 prost = "0.12.3"
 prost-types = "0.12.3"
-bash-rs = { path = "packages/bash-rs" }
+bash-rs           = { path = "packages/bash-rs" }
+# Macros for controlling ownership of CosmWasm smart contracts
+nibiru-ownable    = { path = "packages/nibiru-ownable" }
+ownable-derive    = { path = "packages/nibiru-ownable/derive" }
+cw-address-like   = { path = "packages/cw-address-like" }
+easy-addr = { path = "packages/easy-addr" }
 
 # deps: CosmWasm
-cosmwasm-std = { version = "1.5.0", features = ["stargate", "staking"] }
-cosmwasm-schema = "1.5.0"
-cw-storage-plus = { version = "1.2.0" }
-cw-multi-test = { version = "0.20.0" }
-cw-utils = { version = "1.0.3" }
-# Macros for controlling ownership of CosmWasm smart contracts
-cw-ownable = { version = "0.5.1"}
+cosmwasm-std    = { version = "2.0.2", features = ["stargate", "staking"] }
+cosmwasm-schema = "2.0.2"
+cw-storage-plus = { version = "2.0.0" }
+cw-multi-test   = { version = "2.0.1" }
+cw-utils        = { version = "2.0.0" }
 
 # deps: cw-plus
-cw2 = { version = "1.1.1" }
-cw3 = { version = "1.1.1" }
-cw3-fixed-multisig = { version = "1.1.1", features = ["library"] }
-cw4 = { version = "1.1.1" }
-cw20 = { version = "1.1.1" }
+cw2 = { version = "2.0.0" }
+cw3 = { version = "2.0.0" }
+cw3-fixed-multisig = { version = "2.0.0", features = ["library"] }
+cw4 = { version = "2.0.0" }
+cw20 = { version = "2.0.0" }
+cw4-group = { version = "2.0" }
+cw20-base = { version = "2.0" }
 
 # deps: core contracts
-# TODO: revive bindings-perp with stargate
-# bindings-perp = { path = "core/core-bindings-perp" }
-shifter = { path = "contracts/core-shifter" }
-controller = { path = "contracts/core-controller" }
-lockup = { path = "contracts/lockup", features = ["library"] }
-incentives = { path = "contracts/incentives", features = ["library"] }
+shifter     = { path = "contracts/core-shifter" }
+controller  = { path = "contracts/core-controller" }
+lockup      = { path = "contracts/lockup", features = ["library"] }
+incentives  = { path = "contracts/incentives", features = ["library"] }
 broker-bank = { path = "contracts/broker-bank", features = ["library"] }
 
 # deps: else
@@ -53,6 +61,9 @@ clap = { version = "4.4.7", features = ["derive", "cargo", "env", "string"] }
 schemars = "0.8.15"
 home = "0.5"
 toml = "0.8"
+quote = "1.0"
+syn = { version = "1", features = ["full"] } # NOTE: This needs to stay v1
+proc-macro2 = "1.0"
 
 [profile.release]
 opt-level = 3

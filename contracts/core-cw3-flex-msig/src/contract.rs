@@ -513,6 +513,7 @@ mod tests {
         coin, coins, Addr, BankMsg, Coin, Decimal, Timestamp, Uint128,
     };
 
+    use super::*;
     use cw2::{query_contract_info, ContractVersion};
     use cw20::{Cw20Coin, UncheckedDenom};
     use cw3::{DepositError, UncheckedDepositInfo};
@@ -523,16 +524,16 @@ mod tests {
         Executor, SudoMsg,
     };
     use cw_utils::{Duration, Threshold};
+    use easy_addr::addr;
 
-    use super::*;
-
-    const OWNER: &str = "admin0001";
-    const VOTER1: &str = "voter0001";
-    const VOTER2: &str = "voter0002";
-    const VOTER3: &str = "voter0003";
-    const VOTER4: &str = "voter0004";
-    const VOTER5: &str = "voter0005";
-    const SOMEBODY: &str = "somebody";
+    const OWNER: &str = addr!("admin0001");
+    const VOTER1: &str = addr!("voter0001");
+    const VOTER2: &str = addr!("voter0002");
+    const VOTER3: &str = addr!("voter0003");
+    const VOTER4: &str = addr!("voter0004");
+    const VOTER5: &str = addr!("voter0005");
+    const SOMEBODY: &str = addr!("somebody");
+    const NEWBIE: &str = addr!("newbie");
 
     fn member<T: Into<String>>(addr: T, weight: u64) -> Member {
         Member {
@@ -1926,7 +1927,7 @@ mod tests {
         // updates VOTER2 power to 21 -> with snapshot, vote doesn't pass proposal
         // adds NEWBIE with 2 power -> with snapshot, invalid vote
         // removes VOTER3 -> with snapshot, can vote on proposal
-        let newbie: &str = "newbie";
+        let newbie: &str = NEWBIE;
         let update_msg = cw4_group::msg::ExecuteMsg::UpdateMembers {
             remove: vec![VOTER3.into()],
             add: vec![member(VOTER2, 21), member(newbie, 2)],
@@ -2226,7 +2227,7 @@ mod tests {
         app.update_block(|block| block.height += 2);
 
         // admin changes the group (3 -> 0, 2 -> 9, 0 -> 29) - total = 56, require 29 to pass
-        let newbie: &str = "newbie";
+        let newbie: &str = NEWBIE;
         let update_msg = cw4_group::msg::ExecuteMsg::UpdateMembers {
             remove: vec![VOTER3.into()],
             add: vec![member(VOTER2, 9), member(newbie, 29)],
@@ -2331,7 +2332,7 @@ mod tests {
         app.update_block(|block| block.height += 2);
 
         // admin changes the group (3 -> 0, 2 -> 9, 0 -> 28) - total = 55, require 28 to pass
-        let newbie: &str = "newbie";
+        let newbie: &str = NEWBIE;
         let update_msg = cw4_group::msg::ExecuteMsg::UpdateMembers {
             remove: vec![VOTER3.into()],
             add: vec![member(VOTER2, 9), member(newbie, 29)],
