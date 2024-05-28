@@ -195,6 +195,8 @@ pub mod tests {
     use cosmwasm_std::{coins, testing};
     use std::collections::BTreeSet;
 
+    use easy_addr::addr;
+
     // ---------------------------------------------------------------------------
     // Tests
     // ---------------------------------------------------------------------------
@@ -248,7 +250,7 @@ pub mod tests {
     #[test]
     fn test_exec_edit_opers_add() -> TestResult {
         let (mut deps, _env, _info) = t::setup_contract()?;
-        let new_member = "new_member";
+        let new_member = addr!("new_member");
         let perms = Permissions::load(&deps.storage)?;
         let not_has: bool = !perms.is_owner(new_member);
         assert!(not_has);

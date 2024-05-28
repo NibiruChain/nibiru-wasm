@@ -27,6 +27,7 @@ bash-rs           = { path = "packages/bash-rs" }
 nibiru-ownable    = { path = "packages/nibiru-ownable" }
 ownable-derive    = { path = "packages/nibiru-ownable/derive" }
 cw-address-like   = { path = "packages/cw-address-like" }
+easy-addr = { path = "packages/easy-addr" }
 
 # deps: CosmWasm
 cosmwasm-std    = { version = "2.0.2", features = ["stargate", "staking"] }

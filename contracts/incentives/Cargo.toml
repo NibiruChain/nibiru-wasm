@@ -27,3 +27,5 @@ lockup = { workspace = true }
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }
+easy-addr = { workspace = true }
+anyhow = { workspace = true }

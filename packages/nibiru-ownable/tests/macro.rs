@@ -6,9 +6,7 @@ use nibiru_ownable::{ownable_execute, ownable_query, Action};
 enum ExecuteMsg {
     Foo,
     Bar(u64),
-    Fuzz {
-        buzz: String,
-    },
+    Fuzz { buzz: String },
 }
 
 #[ownable_query]
@@ -22,9 +20,7 @@ enum QueryMsg {
     Bar(u64),
 
     #[returns(String)]
-    Fuzz {
-        buzz: String,
-    },
+    Fuzz { buzz: String },
 }
 
 #[test]
@@ -41,9 +37,7 @@ fn derive_execute_variants() {
         | ExecuteMsg::UpdateOwnership(Action::RenounceOwnership)
         | ExecuteMsg::Foo
         | ExecuteMsg::Bar(_)
-        | ExecuteMsg::Fuzz {
-            ..
-        } => "yay",
+        | ExecuteMsg::Fuzz { .. } => "yay",
     };
 }
 
@@ -56,8 +50,6 @@ fn derive_query_variants() {
         QueryMsg::Ownership {}
         | QueryMsg::Foo
         | QueryMsg::Bar(_)
-        | QueryMsg::Fuzz {
-            ..
-        } => "yay",
+        | QueryMsg::Fuzz { .. } => "yay",
     };
 }

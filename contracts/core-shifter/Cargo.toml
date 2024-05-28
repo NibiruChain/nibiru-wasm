@@ -26,3 +26,4 @@ cw2 = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
+easy-addr = { workspace = true }

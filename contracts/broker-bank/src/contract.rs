@@ -123,10 +123,8 @@ pub fn withdraw_all(
         to_address: to_addr.to_string(),
         amount: balances.clone(),
     };
-    let event = event_withdraw(
-        serde_json::to_string(&balances)?.as_str(),
-        &to_addr,
-    );
+    let event =
+        event_withdraw(serde_json::to_string(&balances)?.as_str(), &to_addr);
     LOGS.push_front(
         deps.storage,
         &Log {
@@ -285,10 +283,7 @@ pub fn query_accepted_denoms(deps: Deps) -> StdResult<BTreeSet<String>> {
 ///    query_bank_balances(contract_addr.to_string(), deps.as_ref());
 /// assert!(balances.is_ok())
 /// ```
-pub fn query_bank_balances(
-    addr: String,
-    deps: Deps,
-) -> StdResult<Vec<Coin>> {
+pub fn query_bank_balances(addr: String, deps: Deps) -> StdResult<Vec<Coin>> {
     let query_result: Option<AllBalanceResponse> =
         deps.querier
             .query(&QueryRequest::Bank(BankQuery::AllBalances {
@@ -632,7 +627,6 @@ pub mod tests {
         let perms = Permissions::load(&deps.storage)?;
         let not_has: bool = !perms.is_owner(new_member);
         assert!(not_has);
-
 
         // Add an operator to the permission set
         let execute_msg = ExecuteMsg::EditOpers(oper_perms::Action::AddOper {

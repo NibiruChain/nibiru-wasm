@@ -50,7 +50,7 @@ fn merge_variants(
     };
 
     // insert variants from the right to the left
-    variants.extend(to_add.into_iter());
+    variants.extend(to_add);
 
     quote! { #left }.into()
 }

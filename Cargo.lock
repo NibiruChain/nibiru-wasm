@@ -992,6 +992,7 @@ dependencies = [
  "cw3-fixed-multisig",
  "cw4",
  "cw4-group",
+ "easy-addr",
  "schemars",
  "serde",
  "thiserror",
@@ -1159,6 +1160,16 @@ dependencies = [
  "byteorder",
  "dynasm",
  "memmap2 0.5.10",
+]
+
+[[package]]
+name = "easy-addr"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std 2.0.2",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1607,6 +1618,7 @@ dependencies = [
 name = "incentives"
 version = "0.2.0"
 dependencies = [
+ "anyhow",
  "cosmwasm-schema 2.0.2",
  "cosmwasm-std 2.0.2",
  "cw-multi-test",
@@ -1614,6 +1626,7 @@ dependencies = [
  "cw-utils 2.0.0",
  "cw2 2.0.0",
  "cw20 2.0.0",
+ "easy-addr",
  "lockup",
  "nibiru-std",
  "schemars",
@@ -2662,6 +2675,7 @@ dependencies = [
  "cosmwasm-std 2.0.2",
  "cw-storage-plus 2.0.0",
  "cw2 2.0.0",
+ "easy-addr",
  "nibiru-ownable",
  "nibiru-std",
  "schemars",

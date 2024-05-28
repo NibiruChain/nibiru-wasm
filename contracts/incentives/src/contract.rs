@@ -240,8 +240,13 @@ fn execute_withdraw_rewards(
             Decimal::from_ratio(qualified_locked_amount, epoch.total_locked);
         println!("ownership ratio: {:?}", user_ownership_ratio.to_string());
         for coin in epoch.to_distribute {
-            let coin_amount = Decimal::new(coin.amount);
-            let coin_amount =(coin_amount * user_ownership_ratio).to_uint_floor();
+            let coin_amount: Uint128 = coin
+                .amount
+                .checked_multiply_ratio(
+                    qualified_locked_amount,
+                    epoch.total_locked,
+                )
+                .unwrap();
             add_coins(
                 &mut to_distribute,
                 Coin {
@@ -267,6 +272,14 @@ fn execute_withdraw_rewards(
         .unwrap();
 
     println!("distributing: {:?}", &to_distribute);
+    let to_distribute: Vec<Coin> = to_distribute
+        .into_iter()
+        .filter(|coin| !coin.amount.is_zero())
+        .collect();
+
+    if to_distribute.is_empty() {
+        return Ok(Response::new());
+    }
     Ok(Response::new().add_message(BankMsg::Send {
         to_address: info.sender.to_string(),
         amount: to_distribute,
@@ -328,10 +341,8 @@ fn execute_process_epoch(
     )?;
 
     // identify how much is the total locked
-    let total_locked = locks
-        .iter()
-        .map(|lock| lock.coin.amount)
-        .sum::<Uint128>();
+    let total_locked =
+        locks.iter().map(|lock| lock.coin.amount).sum::<Uint128>();
 
     // then we identify how many coins we need to pay
     // based on the program funding
