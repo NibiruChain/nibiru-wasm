@@ -1,9 +1,0 @@
-{
-    "burn": {
-        "coin": {
-            "amount": "1000000",
-            "denom": "tf/nibi1me663qupsjyvs6pdr5rn59sed9dhmrujjk6l00cwqy5pkvrmt4tq93nt5m/www"
-        },
-        "burn_from": "nibi1tf6lpa5h8m5fuh8u3vpgm0cvwr7ld090ex30ny"
-    }
-}
