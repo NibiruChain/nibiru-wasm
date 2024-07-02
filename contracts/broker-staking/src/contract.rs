@@ -7,8 +7,8 @@ use broker_bank::state::{IS_HALTED, OPERATORS, TO_ADDRS};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
-    Response, StakingMsg, StdResult, Uint128,
+    to_json_binary, Binary, Coin, CosmosMsg, Deps, DepsMut, DistributionMsg,
+    Env, MessageInfo, Response, StakingMsg, StdResult, Uint128,
 };
 
 use crate::msg::{ExecuteMsg, StakeMsg, UnstakeMsg};
@@ -59,7 +59,36 @@ pub fn execute(
         ExecuteMsg::WithdrawAll { to } => {
             withdraw_all(deps, env, info, to, contract_addr)
         }
+        ExecuteMsg::ClaimRewards {} => claim_rewards(deps, env, info),
     }
+}
+
+pub fn claim_rewards(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    let is_halted = IS_HALTED.load(deps.storage)?;
+    assert_not_halted(is_halted)?;
+
+    Permissions::assert_operator(deps.storage, info.sender.to_string())?;
+
+    // query current delegations
+    let delegations =
+        deps.querier.query_all_delegations(&env.contract.address)?;
+
+    let mut messages: Vec<CosmosMsg> = vec![];
+    for delegation in delegations.iter() {
+        messages.push(CosmosMsg::Distribution(
+            DistributionMsg::WithdrawDelegatorReward {
+                validator: delegation.validator.clone(),
+            },
+        ));
+    }
+
+    Ok(Response::new()
+        .add_messages(messages)
+        .add_attribute("action", "claim_rewards"))
 }
 
 pub fn unstake(
