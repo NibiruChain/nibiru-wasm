@@ -778,7 +778,7 @@ fn test_withdraw_rewards() -> TestResult {
             contract_funds_start: None,
             resp_msgs: vec![],
         },
-        // Fail - non oper also can't
+        // Fail - non oper can't
         TestCaseExec {
             to_addrs: to_addrs.to_vec(),
             opers: opers.to_vec(),
