@@ -25,7 +25,8 @@ prost-types = "0.12.3"
 bash-rs           = { path = "packages/bash-rs" }
 # Macros for controlling ownership of CosmWasm smart contracts
 nibiru-ownable    = { path = "packages/nibiru-ownable" }
-ownable-derive    = { path = "packages/nibiru-ownable/derive" }
+nibiru-ownable-derive    = { version = "0.1.0" }
+# nibiru-ownable-derive    = { path = "packages/nibiru-ownable-derive" }
 cw-address-like   = { path = "packages/cw-address-like" }
 easy-addr = { path = "packages/easy-addr" }
 

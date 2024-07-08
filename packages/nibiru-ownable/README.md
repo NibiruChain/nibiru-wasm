@@ -22,13 +22,13 @@ pub fn instantiate(
 }
 ```
 
-Use the `#[ownable_execute]` macro to extend your execute message:
+Use the `#[cw_ownable_execute]` macro to extend your execute message:
 
 ```rust
 use cosmwasm_schema::cw_serde;
-use nibiru_ownable::ownable_execute;
+use nibiru_ownable::cw_ownable_execute;
 
-#[ownable_execute]
+#[cw_ownable_execute]
 #[cw_serde]
 enum ExecuteMsg {
     Foo {},

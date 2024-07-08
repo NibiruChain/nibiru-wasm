@@ -1902,11 +1902,22 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-schema 2.0.2",
  "cosmwasm-std 2.0.2",
- "cw-address-like",
  "cw-storage-plus 2.0.0",
  "cw-utils 2.0.0",
- "ownable-derive",
+ "nibiru-ownable-derive",
  "thiserror",
+]
+
+[[package]]
+name = "nibiru-ownable-derive"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema 2.0.2",
+ "cosmwasm-std 2.0.2",
+ "nibiru-ownable",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -2003,18 +2014,6 @@ dependencies = [
  "libc",
  "pkg-config",
  "vcpkg",
-]
-
-[[package]]
-name = "ownable-derive"
-version = "0.6.0"
-dependencies = [
- "cosmwasm-schema 2.0.2",
- "cosmwasm-std 2.0.2",
- "nibiru-ownable",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
 ]
 
 [[package]]
