@@ -1,82 +1,76 @@
 ## contracts/broker-staking
 
-This smart contract handles account abstraction to enable certain staking transaction messages 
-to be called by a subset of "operators", while the funds can only be withdrawn by the contract owner.
+This smart contract handles account abstraction to enable certain staking transaction messages to be called by a subset of "operators", while the funds can only be withdrawn by the contract owner.
 
-This is useful if you want a mutlisig to manage a large allocation of funds while
-permitting certain bots to safely make calls to stake or unstake, as is the case
-for Nibiru's Foundation Delegation Program.
+This is useful if you want a multisig to manage a large allocation of funds while permitting certain bots to safely make calls to stake or unstake, as is the case for Nibiru's Foundation Delegation Program.
 
 Table of Contents:
+
+- [contracts/broker-staking](#contractsbroker-staking)
 - [Overview](#overview)
-- [Master Operations](#master-operations)
-  - [Instantiate](#instantiate)
-  - [Execute](#execute)
-    - [Admin functions](#admin-functions)
-    - [Manager functions](#manager-functions)
-  - [Query](#query)
-- [Deployed Contract Info](#deployed-contract-info)
-- [Testing Against a Live Chain](#testing-against-a-live-chain)
+  - [Master Operations](#master-operations)
+    - [Instantiate](#instantiate)
+    - [Execute](#execute)
+      - [Admin Functions](#admin-functions)
+      - [Manager Functions](#manager-functions)
+    - [Query](#query)
+  - [Deployed Contract Info](#deployed-contract-info)
+  - [Testing Against a Live Chain](#testing-against-a-live-chain)
 
 ## Overview
 
-The contract has 2 modes, defined by the autocompounder_on flag. When it is
-true, managers can call the contract to stake the balance of the contract.
-
-Admin can:
-
-- unstake funds from validators
-- toggle on/off the autocompounder
-- withdraw funds to the multisig
-
-Managers (and admin) can:
-
-- stake funds to validators in the proportion given
-
-This way, only the multisig can maange the funds, and the seed keys of the
-managers can be public with no risk to the funds of the treasury.
+The contract has 2 modes, defined by the `autocompounder_on` flag. When it is true, managers can call the contract to stake the balance of the contract.
 
 ### Master Operations
 
 #### Instantiate
 
-We need to specify admin and managers
+We need to specify the admin and managers.
 
-```javascript
+```json
 {
-  "admin": "cosmos1...",
-  "managers": ["cosmos1...", "cosmos1..."]
+  "owner": "cosmos1...",
+  "to_addrs": ["cosmos1...", "cosmos1..."],
+  "opers": ["cosmos1...", "cosmos1..."]
 }
 ```
 
 #### Execute
 
-##### Admin functions
+##### Admin Functions
 
-- **SetAutoCompounderMode** sets the auto compounder mode
+- **ToggleHalt** allows the admin to halt or resume operator actions, effectively disabling or enabling non-owner permissions.
 
-```javascript
-{
-  "set_auto_compounder_mode": {
-    "mode": "true" // true or false
+  ```json
+  {
+    "toggle_halt": {}
   }
-}
-```
+  ```
 
-- **Withdraw** allows to withdraw the funds from the contract
+- **Withdraw** allows the admin to withdraw specific denominations from the contract.
 
-  ```javascript
+  ```json
   {
     "withdraw": {
-      "amount": "1000000"
-      "recipient": "cosmos1..."
+      "denoms": ["uatom", "uusd"],
+      "to": "cosmos1..."
     }
   }
   ```
 
-- **unstakes** allows to unstake the funds from the contract
+- **WithdrawAll** allows the admin to withdraw all funds from the contract.
 
-  ```javascript
+  ```json
+  {
+    "withdraw_all": {
+      "to": "cosmos1..."
+    }
+  }
+  ```
+
+- **Unstake** allows the admin to unstake the funds from the contract.
+
+  ```json
   {
     "unstake": {
       "unstake_msgs": [
@@ -93,65 +87,85 @@ We need to specify admin and managers
   }
   ```
 
-- **update managers** allows to update the managers of the contract
+- **UpdateManagers** allows the admin to update the managers of the contract.
 
-```javascript
-{
-  "update_managers": {
-    "managers": ["cosmos1...", "cosmos1..."]
-  }
-}
-```
-
-##### Manager functions
-
-- **stake** allows to stake the funds from the contract. The shares are normalized
-
-```javascript
-{
-  "stake": {
-    "stake_msgs": [
-      {
-        "validator": "cosmosvaloper1...",
-        "share": "1000000"
-      },
-      {
-        "validator": "cosmosvaloper1...",
-        "share": "1000000"
+  ```json
+  {
+    "edit_opers": {
+      "action": {
+        "AddOper": {
+          "address": "cosmos1..."
+        }
       }
-    ]
-  },
-  "amount": "1000000"
-}
-```
+    }
+  }
+  ```
+
+- **ClaimRewards** allows the admin or managers to claim all staking rewards from the contract’s delegations.
+
+  ```json
+  {
+    "claim_rewards": {}
+  }
+  ```
+
+##### Manager Functions
+
+- **Stake** allows managers to stake funds from the contract. The shares are normalized.
+
+  ```json
+  {
+    "stake": {
+      "stake_msgs": [
+        {
+          "validator": "cosmosvaloper1...",
+          "share": "1000000"
+        },
+        {
+          "validator": "cosmosvaloper1...",
+          "share": "1000000"
+        }
+      ],
+      "amount": "1000000"
+    }
+  }
+  ```
+
+- **ClaimRewards** allows managers to claim all staking rewards from the contract’s delegations.
+
+  ```json
+  {
+    "claim_rewards": {}
+  }
+  ```
 
 #### Query
 
-- **auto compounder mode** returns wether the auto compounder mode is enabled or not
+- **Perms** returns the current permissions status of the contract, including the owner and the operators.
 
-```javascript
-{
-  "auto_compounder_mode": {}
-}
-```
+  ```json
+  {
+    "perms": {}
+  }
+  ```
 
-- **AdminAndManagers** returns the admin and managers of the contract
+- **Ownership** returns the ownership status of the contract.
 
-```javascript
-{
-  "admin_and_managers": {}
-}
-```
+  ```json
+  {
+    "ownership": {}
+  }
+  ```
 
 ### Deployed Contract Info
 
-TODO for mainnet/testnet
+Testnet:
 
-| Field         | Value |
-| ------------- | ----- |
-| code_id       | ...   |
-| contract_addr | ...   |
-| rpc_url       | ...   |
-| chain_id      | ...   |
+| Field         | Value                                                           |
+| ------------- | --------------------------------------------------------------- |
+| code_id       | 124                                                             |
+| contract_addr | nibi16znhpjugl5cc3dqhu75tytmzqj58herzdg3r4xnkeqpqrwdqeqcq2eshjl |
 
 ### Testing Against a Live Chain
+
+---
