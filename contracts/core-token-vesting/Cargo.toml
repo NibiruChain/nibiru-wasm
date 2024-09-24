@@ -17,8 +17,6 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 # for quicker tests, cargo test --lib
-# for more explicit tests, cargo test --features=backtraces
-backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
 cosmwasm-schema = "1.4.0"

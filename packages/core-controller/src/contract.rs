@@ -134,9 +134,8 @@ pub fn execute(
 
         ExecuteMsg::AddMember { address } => {
             check_admin(check)?;
-            let api = deps.api;
-            let addr = api.addr_validate(address.as_str()).unwrap();
-            whitelist.members.insert(addr.into_string());
+            let addr = address.as_str();
+            whitelist.members.insert(addr.to_string());
             WHITELIST.save(deps.storage, &whitelist)?;
 
             let res = Response::new().add_attributes(vec![
@@ -160,9 +159,8 @@ pub fn execute(
 
         ExecuteMsg::ChangeAdmin { address } => {
             check_admin(check)?;
-            let api = deps.api;
-            let new_admin = api.addr_validate(address.as_str()).unwrap();
-            whitelist.admin = new_admin.clone().into_string();
+            let new_admin = address.as_str();
+            whitelist.admin = new_admin.to_string();
             whitelist.members.insert(new_admin.to_string());
             WHITELIST.save(deps.storage, &whitelist)?;
 

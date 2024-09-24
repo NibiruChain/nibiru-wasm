@@ -49,7 +49,7 @@ pub struct FundingIndexes<'a> {
     pub(crate) pay_from_epoch: MultiIndex<'a, (u64, u64), Funding, u64>,
 }
 
-impl<'a> IndexList<Funding> for FundingIndexes<'a> {
+impl IndexList<Funding> for FundingIndexes<'_> {
     fn get_indexes(
         &'_ self,
     ) -> Box<dyn Iterator<Item = &'_ dyn Index<Funding>> + '_> {
@@ -58,7 +58,7 @@ impl<'a> IndexList<Funding> for FundingIndexes<'a> {
     }
 }
 
-pub fn funding<'a>() -> IndexedMap<'a, u64, Funding, FundingIndexes<'a>> {
+pub fn funding<'a>() -> IndexedMap<u64, Funding, FundingIndexes<'a>> {
     let indexes = FundingIndexes {
         pay_from_epoch: MultiIndex::new(
             |_bz, funding: &Funding| -> (_, _) {
@@ -69,5 +69,5 @@ pub fn funding<'a>() -> IndexedMap<'a, u64, Funding, FundingIndexes<'a>> {
         ),
     };
 
-    return IndexedMap::new("funding", indexes);
+    IndexedMap::new("funding", indexes)
 }

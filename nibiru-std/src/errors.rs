@@ -3,7 +3,6 @@ use thiserror::Error;
 use cosmwasm_std as cw;
 
 /// Shorthand for an empty anyhow::Result. Useful for idiomatic tests.
-#[cfg(test)]
 pub type TestResult = anyhow::Result<()>;
 
 pub type NibiruResult<T> = Result<T, NibiruError>;

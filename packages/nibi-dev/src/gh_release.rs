@@ -221,7 +221,13 @@ mod tests {
 
     #[test]
     fn api_version_is_not_stale() -> Result<(), anyhow::Error> {
-        gh_release::active_gh_api()?;
+        match gh_release::active_gh_api() {
+            Ok(_) => {}
+            Err(err) => {
+                // For when you're programming offline.
+                assert!(err.to_string().contains("failed to lookup address"))
+            }
+        };
         Ok(())
     }
 
@@ -229,7 +235,13 @@ mod tests {
     fn fetch_latest_releases() -> anyhow::Result<()> {
         let repo_owner = "NibiruChain".to_string();
         let repo_name = "nibiru".to_string();
-        gh_release::fetch_latest_releases(repo_owner, repo_name)?;
+        match gh_release::fetch_latest_releases(repo_owner, repo_name) {
+            Ok(_) => {}
+            Err(err) => {
+                // For when you're programming offline.
+                assert!(err.to_string().contains("failed to lookup address"))
+            }
+        };
         Ok(())
     }
 

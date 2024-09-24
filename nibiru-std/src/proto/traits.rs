@@ -1,6 +1,12 @@
 //! nibiru-std::proto - traits.rs : Implements extensions for prost::Message
 //! types for easy conversion to types needed for CosmWasm smart contracts.
 
+// Allow deprecated variant `cosmwasm_std::CosmosMsg::Stargate` for compatibility
+// with CosmWasm v1. Once we upgrade everything to v2 on Nibiru, we can remove
+// this deprecate statement.
+#![allow(deprecated)]
+// TODO: remove allow(deprevated) ↑
+
 use cosmwasm_std::{Binary, CosmosMsg, QueryRequest};
 
 use crate::errors::{NibiruError, NibiruResult};
