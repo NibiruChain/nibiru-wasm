@@ -961,16 +961,18 @@ dependencies = [
 
 [[package]]
 name = "cw3-fixed-multisig"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a8233125653e61e898eaade6c6fdb3bd9c48aceb2ad97e84eada2c9bf5bff46"
+version = "2.0.1"
 dependencies = [
  "cosmwasm-schema 2.0.2",
  "cosmwasm-std 2.0.2",
+ "cw-multi-test",
  "cw-storage-plus 2.0.0",
  "cw-utils 2.0.0",
  "cw2 2.0.0",
+ "cw20 2.0.0",
+ "cw20-base",
  "cw3",
+ "easy-addr",
  "schemars",
  "serde",
  "thiserror",
@@ -978,7 +980,7 @@ dependencies = [
 
 [[package]]
 name = "cw3-flex-multisig"
-version = "1.0.1"
+version = "2.0.1"
 dependencies = [
  "cosmwasm-schema 2.0.2",
  "cosmwasm-std 2.0.2",
@@ -1902,11 +1904,33 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-schema 2.0.2",
  "cosmwasm-std 2.0.2",
- "cw-address-like",
  "cw-storage-plus 2.0.0",
  "cw-utils 2.0.0",
- "ownable-derive",
+ "nibiru-ownable-derive 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
+]
+
+[[package]]
+name = "nibiru-ownable-derive"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema 2.0.2",
+ "cosmwasm-std 2.0.2",
+ "nibiru-ownable",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "nibiru-ownable-derive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b268c084c537b4baf71eab9bcb7c651723e1475b77cbe7b1a8502612784c4057"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -2003,18 +2027,6 @@ dependencies = [
  "libc",
  "pkg-config",
  "vcpkg",
-]
-
-[[package]]
-name = "ownable-derive"
-version = "0.6.0"
-dependencies = [
- "cosmwasm-schema 2.0.2",
- "cosmwasm-std 2.0.2",
- "nibiru-ownable",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
 ]
 
 [[package]]

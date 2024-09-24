@@ -1,17 +1,19 @@
 #![doc = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/README.md"))]
 
+pub mod address_like;
+
 use std::fmt::Display;
 
+use crate::address_like::AddressLike;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     Attribute, BlockInfo, DepsMut, StdError, StdResult, Storage,
 };
-use cw_address_like::AddressLike;
 use cw_storage_plus::Item;
 
 // re-export the proc macros and the Expiration class
 pub use cw_utils::Expiration;
-pub use ownable_derive::{ownable_execute, ownable_query};
+pub use nibiru_ownable_derive::{ownable_execute, ownable_query};
 
 /// The contract's ownership info
 #[cw_serde]
