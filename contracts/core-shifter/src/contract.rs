@@ -12,10 +12,7 @@ use nibiru_std::{
 
 use crate::{
     error::ContractError,
-    msgs::{
-        operator_perms, ExecuteMsg, HasPermsResponse, InitMsg, PermsResponse,
-        QueryMsg,
-    },
+    msgs::{operator_perms, ExecuteMsg, InitMsg, QueryMsg},
     state::{instantiate_perms, Permissions, OPERATORS},
 };
 
@@ -121,10 +118,14 @@ fn execute_update_ownership(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    action: cw_ownable::Action,
-) -> Result<Response, cw_ownable::OwnershipError> {
-    let ownership =
-        cw_ownable::update_ownership(deps, &env.block, &info.sender, action)?;
+    action: nibiru_ownable::Action,
+) -> Result<Response, nibiru_ownable::OwnershipError> {
+    let ownership = nibiru_ownable::update_ownership(
+        deps,
+        &env.block,
+        info.sender.as_str(),
+        action,
+    )?;
     Ok(Response::new().add_attributes(ownership.into_attributes()))
 }
 
@@ -167,7 +168,7 @@ pub fn query(
         QueryMsg::HasPerms { address } => {
             let perms = Permissions::load(deps.storage)?;
             let has_perms: bool = perms.is_operator(&address);
-            let res = HasPermsResponse {
+            let res = operator_perms::HasPermsResponse {
                 has_perms,
                 perms,
                 addr: address,
@@ -176,7 +177,7 @@ pub fn query(
         }
         QueryMsg::Perms {} => {
             let perms = Permissions::load(deps.storage)?;
-            let res = PermsResponse { perms };
+            let res = operator_perms::PermsResponse { perms };
             Ok(cosmwasm_std::to_json_binary(&res)?)
         }
     }
@@ -193,6 +194,8 @@ pub mod tests {
 
     use cosmwasm_std::{coins, testing};
     use std::collections::BTreeSet;
+
+    use easy_addr::addr;
 
     // ---------------------------------------------------------------------------
     // Tests
@@ -247,7 +250,7 @@ pub mod tests {
     #[test]
     fn test_exec_edit_opers_add() -> TestResult {
         let (mut deps, _env, _info) = t::setup_contract()?;
-        let new_member = "new_member";
+        let new_member = addr!("new_member");
         let perms = Permissions::load(&deps.storage)?;
         let not_has: bool = !perms.is_owner(new_member);
         assert!(not_has);
@@ -292,7 +295,8 @@ pub mod tests {
             address: new_member.to_string(),
         };
         let binary = query(deps.as_ref(), testing::mock_env(), query_req)?;
-        let response: HasPermsResponse = cosmwasm_std::from_json(binary)?;
+        let response: operator_perms::HasPermsResponse =
+            cosmwasm_std::from_json(binary)?;
         assert!(response.has_perms);
         Ok(())
     }
@@ -345,7 +349,8 @@ pub mod tests {
         // Check correctness of the result
         let query_req = QueryMsg::Perms {};
         let binary = query(deps.as_ref(), testing::mock_env(), query_req)?;
-        let response: PermsResponse = cosmwasm_std::from_json(binary)?;
+        let response: operator_perms::PermsResponse =
+            cosmwasm_std::from_json(binary)?;
         let expected_opers: BTreeSet<String> =
             ["vitalik", "musk"].iter().map(|&s| s.to_string()).collect();
         assert_eq!(

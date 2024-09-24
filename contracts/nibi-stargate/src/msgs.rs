@@ -13,5 +13,6 @@ pub enum ExecuteMsg {
     ChangeAdmin { denom: String, new_admin: String },
 }
 
+#[derive(cosmwasm_schema::QueryResponses)]
 #[cw_serde]
 pub enum QueryMsg {}

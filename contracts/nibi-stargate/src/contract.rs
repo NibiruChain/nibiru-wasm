@@ -54,9 +54,9 @@ pub fn execute(
 
             let denom_parts: Vec<&str> = coin.denom.split('/').collect();
             if denom_parts.len() != 3 {
-                return Err(StdError::GenericErr {
-                    msg: "invalid denom input".to_string(),
-                }
+                return Err(StdError::generic_err(
+                    "invalid denom input".to_string(),
+                )
                 .into());
             }
 
