@@ -75,7 +75,7 @@ pub fn claim_rewards(
 
     // query current delegations
     let delegations =
-        deps.querier.query_all_delegations(&env.contract.address)?;
+        deps.querier.query_all_delegations(env.contract.address)?;
 
     let mut messages: Vec<CosmosMsg> = vec![];
     for delegation in delegations.iter() {

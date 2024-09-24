@@ -4,8 +4,8 @@ use crate::contract::{execute, query};
 use crate::msg::{ExecuteMsg, StakeMsg, UnstakeMsg};
 use cosmwasm_std::{self as cw_std};
 use cw_std::{
-    coin, from_json, testing, BankMsg, Coin, CosmosMsg, DistributionMsg,
-    Response, StakingMsg, Uint128,
+    coin, from_json, testing, BankMsg, Coin, CosmosMsg, Response, StakingMsg,
+    Uint128,
 };
 use nibiru_std::errors::TestResult;
 use serde::Serialize;

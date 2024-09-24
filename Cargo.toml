@@ -40,7 +40,7 @@ cw-utils        = { version = "2.0.0" }
 # deps: cw-plus
 cw2 = { version = "2.0.0" }
 cw3 = { version = "2.0.0" }
-cw3-fixed-multisig = { version = "2.0.0", features = ["library"] }
+cw3-fixed-multisig = { path = "contracts/core-cw3-fixed-msig", version = "2.0.0", features = ["library"] }
 cw4 = { version = "2.0.0" }
 cw20 = { version = "2.0.0" }
 cw4-group = { version = "2.0" }
