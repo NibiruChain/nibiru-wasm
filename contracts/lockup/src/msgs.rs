@@ -1,4 +1,3 @@
-use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -23,7 +22,7 @@ pub enum QueryMsg {
     LocksByDenomAndAddressUnlockingAfter {
         denom: String,
         unlocking_after: u64,
-        address: Addr,
+        address: String,
     },
     LocksByDenomBetween {
         denom: String,
@@ -32,7 +31,7 @@ pub enum QueryMsg {
     },
     LocksByDenomAndAddressBetween {
         denom: String,
-        address: Addr,
+        address: String,
         locked_before: u64,
         unlocking_after: u64,
     },

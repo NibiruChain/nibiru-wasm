@@ -22,7 +22,7 @@ jobs:
         with:
           submodules: true
       - name: "Set up Rust caches"
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: rust-cache
         with:
           path: |
@@ -46,7 +46,7 @@ jobs:
         with:
           submodules: true
       - name: "Set up Rust caches"
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: rust-cache
         with:
           path: |
@@ -68,7 +68,7 @@ jobs:
         with:
           submodules: true
       - name: "Set up Rust caches"
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: rust-cache
         with:
           path: |
@@ -97,6 +97,8 @@ jobs:
         run: just test-coverage
         # run: cargo llvm-cov --locked --all-features --lcov --output-path lcov.info
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

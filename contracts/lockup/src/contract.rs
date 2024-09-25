@@ -140,7 +140,7 @@ pub(crate) fn execute_lock(
                 &Lock {
                     id,
                     coin: coin.clone(),
-                    owner: info.sender.clone(),
+                    owner: info.sender.to_string(),
                     duration_blocks: blocks,
                     start_block: env.block.height,
                     end_block: NOT_UNLOCKING_BLOCK_IDENTIFIER,
@@ -265,12 +265,12 @@ mod tests {
     use crate::state::Lock;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 
-    use cosmwasm_std::{from_json, Addr, Coin, DepsMut, Env};
+    use cosmwasm_std::{from_json, Coin, DepsMut, Env};
 
     /// A 'TestLock' is struct representating an "owner" locking "coins" for
     /// some "duration".
     struct TestLock {
-        owner: Addr,
+        owner: String,
         duration: u64,
         coins: Vec<Coin>,
     }
@@ -320,15 +320,15 @@ mod tests {
         init(deps.as_mut());
 
         let lock_1 = TestLock {
-            owner: Addr::unchecked("alice"),
+            owner: String::from("alice"),
             duration: 100,
-            coins: vec![Coin::new(100, "ATOM"), Coin::new(300, "LUNA")],
+            coins: vec![Coin::new(100u128, "ATOM"), Coin::new(300u128, "LUNA")],
         };
 
         let lock_2 = TestLock {
-            owner: Addr::unchecked("bob"),
+            owner: String::from("bob"),
             duration: 50,
-            coins: vec![Coin::new(200, "ATOM"), Coin::new(700, "NIBI")],
+            coins: vec![Coin::new(200u128, "ATOM"), Coin::new(700u128, "NIBI")],
         };
         create_lock(deps.as_mut(), &env, &lock_1);
         create_lock(deps.as_mut(), &env, &lock_2);
@@ -348,7 +348,7 @@ mod tests {
                 denom: denom.to_string(),
                 unlocking_after,
             },
-            coins: vec![Coin::new(100, denom), Coin::new(200, denom)],
+            coins: vec![Coin::new(100u128, denom), Coin::new(200u128, denom)],
         });
         cases.push(CaseLocksByDenomUnlockingAfter {
             msg: QueryMsg::LocksByDenomAndAddressUnlockingAfter {
@@ -356,7 +356,7 @@ mod tests {
                 unlocking_after: 0,
                 address: lock_1.owner.clone(),
             },
-            coins: vec![Coin::new(100, denom)],
+            coins: vec![Coin::new(100u128, denom)],
         });
         cases.push(CaseLocksByDenomUnlockingAfter {
             msg: QueryMsg::LocksByDenomAndAddressUnlockingAfter {
@@ -364,7 +364,7 @@ mod tests {
                 unlocking_after: 0,
                 address: lock_2.owner.clone(),
             },
-            coins: vec![Coin::new(200, denom)],
+            coins: vec![Coin::new(200u128, denom)],
         });
 
         let denom = "LUNA";
@@ -373,7 +373,7 @@ mod tests {
                 denom: denom.to_string(),
                 unlocking_after,
             },
-            coins: vec![Coin::new(300, denom)],
+            coins: vec![Coin::new(300u128, denom)],
         });
 
         let denom = "NIBI";
@@ -382,7 +382,7 @@ mod tests {
                 denom: denom.to_string(),
                 unlocking_after,
             },
-            coins: vec![Coin::new(700, denom)],
+            coins: vec![Coin::new(700u128, denom)],
         });
 
         cases.push(CaseLocksByDenomUnlockingAfter {
@@ -399,7 +399,7 @@ mod tests {
                 unlocking_after,
                 address: lock_2.owner,
             },
-            coins: vec![Coin::new(700, denom)],
+            coins: vec![Coin::new(700u128, denom)],
         });
 
         for case in &cases {

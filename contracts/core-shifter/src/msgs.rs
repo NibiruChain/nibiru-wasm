@@ -1,8 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Uint256;
 
-use crate::state::Permissions;
-
 /// InitMsg specifies the args for the instantiate entry point of the contract.
 #[cw_serde]
 pub struct InitMsg {
@@ -10,7 +8,7 @@ pub struct InitMsg {
 }
 
 /// ExecuteMsg specifies the args for the execute entry point of the contract.
-#[cw_ownable::cw_ownable_execute]
+#[nibiru_ownable::ownable_execute]
 #[cw_serde]
 pub enum ExecuteMsg {
     ShiftSwapInvariant {
@@ -25,12 +23,25 @@ pub enum ExecuteMsg {
 }
 
 pub mod operator_perms {
+    use crate::state::Permissions;
     use cosmwasm_schema::cw_serde;
 
     #[cw_serde]
     pub enum Action {
         AddOper { address: String },
         RemoveOper { address: String },
+    }
+
+    #[cw_serde]
+    pub struct HasPermsResponse {
+        pub has_perms: bool,
+        pub addr: String,
+        pub perms: Permissions,
+    }
+
+    #[cw_serde]
+    pub struct PermsResponse {
+        pub perms: Permissions,
     }
 }
 
@@ -40,21 +51,9 @@ pub mod operator_perms {
 pub enum QueryMsg {
     /// HasPerms: Query whether the given address has operator permissions.
     /// The query response showcases the contract owner and set of operators.
-    #[returns(HasPermsResponse)]
+    #[returns(operator_perms::HasPermsResponse)]
     HasPerms { address: String },
     /// Perms: Query the contract owner and set of operators.
-    #[returns(PermsResponse)]
+    #[returns(operator_perms::PermsResponse)]
     Perms {},
-}
-
-#[cw_serde]
-pub struct HasPermsResponse {
-    pub has_perms: bool,
-    pub addr: String,
-    pub perms: Permissions,
-}
-
-#[cw_serde]
-pub struct PermsResponse {
-    pub perms: Permissions,
 }
