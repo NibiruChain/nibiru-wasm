@@ -181,3 +181,42 @@ fn test_lock_state() -> TestResult {
 
     Ok(())
 }
+
+#[test]
+fn test_withdraw_at_exact_maturity() -> TestResult {
+    let (mut deps, mut env, _info) = setup_contract()?;
+
+    // Create and initiate unlock for a lock
+    let info = mock_info(USER, &coins(100, DENOM));
+    let msg = ExecuteMsg::Lock { blocks: 100 };
+    let _ = execute(deps.as_mut(), env.clone(), info, msg)?;
+
+    let msg = ExecuteMsg::InitiateUnlock { id: 1 };
+    let info = mock_info(USER, &[]);
+    let _ = execute(deps.as_mut(), env.clone(), info, msg)?;
+
+    // Fast forward to exact maturity
+    env.block.height += 100;
+
+    // Attempt to withdraw at exact maturity
+    let msg = ExecuteMsg::WithdrawFunds { id: 1 };
+    let info = mock_info(USER, &[]);
+    let res = execute(deps.as_mut(), env.clone(), info, msg)?;
+
+    // Check that withdrawal was successful
+    assert_eq!(1, res.messages.len());
+    assert_eq!(
+        res.messages[0],
+        SubMsg::new(BankMsg::Send {
+            to_address: USER.to_string(),
+            amount: vec![Coin::new(100u128, DENOM)]
+        })
+    );
+
+    // Query the lock to ensure it's marked as withdrawn
+    let locks = locks();
+    let lock = locks.load(&deps.storage, 1)?;
+    assert!(lock.funds_withdrawn);
+
+    Ok(())
+}
