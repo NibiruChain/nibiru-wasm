@@ -21,5 +21,6 @@ cw20 = { workspace = true }
 schemars = { workspace = true }
 thiserror = { workspace = true }
 serde = { version = "1.0.188", default-features = false, features = ["derive"] }
+anyhow = { workspace = true }
 
 [dev-dependencies]

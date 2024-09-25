@@ -1739,6 +1739,7 @@ dependencies = [
 name = "lockup"
 version = "0.2.0"
 dependencies = [
+ "anyhow",
  "cosmwasm-schema 2.0.2",
  "cosmwasm-std 2.0.2",
  "cw-storage-plus 2.0.0",
@@ -1935,7 +1936,7 @@ dependencies = [
 
 [[package]]
 name = "nibiru-std"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema 2.0.2",
