@@ -3,7 +3,7 @@ name = "controller"
 version = "0.2.0"
 edition = "2021"
 homepage = "https://nibiru.fi"
-repository = "https://github.com/NibiruChain/cw-nibiru"
+repository = "https://github.com/NibiruChain/nibiru-wasm"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]

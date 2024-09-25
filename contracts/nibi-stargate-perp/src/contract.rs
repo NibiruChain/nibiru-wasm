@@ -112,16 +112,16 @@ pub fn execute(
             };
 
             // TODO: feat(nibiru-std): Fn to convert cosmwasm_std::Decimal to
-            // protobuf strings for sdk.Dec [with tests] | https://github.com/NibiruChain/cw-nibiru/issues/99
+            // protobuf strings for sdk.Dec [with tests] | https://github.com/NibiruChain/nibiru-wasm/issues/99
             let cosmos_msg: CosmosMsg = nibiru::perp::MsgMarketOrder {
                 sender: contract_addr,
                 pair,
                 side: side.into(),
-                // TODO: sdk.Dec https://github.com/NibiruChain/cw-nibiru/issues/99
+                // TODO: sdk.Dec https://github.com/NibiruChain/nibiru-wasm/issues/99
                 quote_asset_amount: quote_amount.to_string(),
-                // TODO: sdk.Dec https://github.com/NibiruChain/cw-nibiru/issues/99
+                // TODO: sdk.Dec https://github.com/NibiruChain/nibiru-wasm/issues/99
                 leverage: leverage.to_string(),
-                // TODO: sdk.Dec https://github.com/NibiruChain/cw-nibiru/issues/99
+                // TODO: sdk.Dec https://github.com/NibiruChain/nibiru-wasm/issues/99
                 base_asset_amount_limit: base_amount_limit.to_string(),
             }
             .into_stargate_msg();

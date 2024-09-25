@@ -1,10 +1,10 @@
-# NibiruChain/cw-nibiru
+# NibiruChain/nibiru-wasm
 
-Smart contract sandbox for Nibiru Chain.
+Wasm smart contract sandbox for Nibiru Chain.
 
 ```bash
-⚡ NibiruChain/cw-nibiru
-├── 📂 artifacts         # compiled .wasm smart contracts for cw-nibiru
+⚡ NibiruChain/nibiru-wasm
+├── 📂 artifacts         # compiled .wasm smart contracts for nibiru-wasm
 ├── 📂 contracts         # Smart contracts for Nibiru Chain
     └── 📂 nibi-stargate # Example contract using nibiru-std for CosmosMsg::Stargate
     └── 📂 incentives    # Generalized incentives over time for locked tokens
@@ -27,22 +27,16 @@ Smart contract sandbox for Nibiru Chain.
 ├── Cargo.lock
 └── README.md
 ```
-## Install Cargo
-
-- Install `cargo` with `curl`
-```bash
-curl https://sh.rustup.rs -sSf | sh
-```
-- Check `cargo` version
-```bash
-cargo version
-```
 
 ## Hacking
 
 Install `just` to run project-specific commands.
 
 ```bash
+# Install `cargo` via rustup if you don't already have it.
+curl https://sh.rustup.rs -sSf | sh
+
+# Install just
 cargo install just
 ```
 

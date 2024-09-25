@@ -3,8 +3,8 @@ members = ["scripts", "packages/*", "nibiru-std", "contracts/*"]
 exclude = ["packages/msig-ez"]
 resolver = "2"
 package.version = "0.1.0"
-package.homepage = "https://github.com/NibiruChain/cw-nibiru"
-package.repository = "https://github.com/NibiruChain/cw-nibiru"
+package.homepage = "https://github.com/NibiruChain/nibiru-wasm"
+package.repository = "https://github.com/NibiruChain/nibiru-wasm"
 package.edition = "2021"
 
 # Dependencies can be inherited from a workspace by specifying the dependency in

@@ -5,8 +5,8 @@ authors = ["Ethan Frey <ethanfrey@users.noreply.github.com>"]
 edition = "2021"
 description = "Implementing cw3 with an fixed group multisig"
 license = "Apache-2.0"
-repository = "https://github.com/NibiruChain/cw-nibiru"
-homepage = "https://cosmwasm.com"
+repository = "https://github.com/NibiruChain/nibiru-wasm"
+homepage = { workspace = true }
 documentation = "https://docs.cosmwasm.com"
 
 [lib]

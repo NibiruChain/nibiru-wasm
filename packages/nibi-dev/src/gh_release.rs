@@ -55,7 +55,7 @@ pub fn headers_user_agent(
 ) -> anyhow::Result<(header::HeaderName, header::HeaderValue)> {
     let header_name = header::HeaderName::from_str("User-Agent")?;
     let header_value = header::HeaderValue::from_str(
-        "repo:NibiruChain/cw-nibiru_crate::nibi-dev",
+        "repo:NibiruChain/nibiru-wasm_crate::nibi-dev",
     )?;
     Ok((header_name, header_value))
 }
