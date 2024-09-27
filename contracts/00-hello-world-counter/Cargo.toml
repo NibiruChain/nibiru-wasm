@@ -1,5 +1,5 @@
 [package]
-name = "broker-bank"
+name = "hello-world-counter"
 version = "0.1.0"
 edition = "2021"
 homepage = { workspace = true }
@@ -25,5 +25,7 @@ thiserror = { workspace = true }
 nibiru-std = { workspace = true }
 cw2 = { workspace = true }
 serde_json = { workspace = true }
-nibiru-ownable = { workspace = true }
 anyhow = { workspace = true }
+
+[dev-dependencies]
+easy-addr = { workspace = true }
