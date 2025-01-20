@@ -8,7 +8,7 @@ pub struct InitMsg {
 }
 
 /// ExecuteMsg specifies the args for the execute entry point of the contract.
-#[cw_ownable::cw_ownable_execute]
+#[nibiru_ownable::ownable_execute]
 #[cw_serde]
 pub enum ExecuteMsg {
     ShiftSwapInvariant {

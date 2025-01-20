@@ -19,11 +19,6 @@ pub struct HasPermsResponse {
 }
 
 #[cw_serde]
-pub struct PermsResponse {
-    pub perms: Permissions,
-}
-
-#[cw_serde]
 pub struct Permissions {
     pub owner: Option<String>,
     pub operators: BTreeSet<String>,
@@ -50,10 +45,10 @@ impl Permissions {
     }
 
     pub fn load(storage: &dyn Storage) -> Result<Self, ContractError> {
-        let owner = cw_ownable::get_ownership(storage)?.owner;
+        let owner = nibiru_ownable::get_ownership(storage)?.owner;
         let opers = OPERATORS.load(storage)?;
         Ok(Permissions {
-            owner: owner.map(|addr| addr.into_string()),
+            owner: owner.map(|addr| addr.to_string()),
             operators: opers,
         })
     }

@@ -5,7 +5,7 @@ use cosmwasm_std as cw;
 
 use crate::oper_perms;
 
-#[cw_ownable::cw_ownable_execute]
+#[nibiru_ownable::ownable_execute]
 #[cw_serde]
 pub enum ExecuteMsg {
     /// Send coins to an account the set of "TO_ADDRS", appending transaction
@@ -32,7 +32,7 @@ pub enum ExecuteMsg {
     // TODO: feat(broker-bank): Clear logs tx
 }
 
-#[cw_ownable::cw_ownable_query]
+#[nibiru_ownable::ownable_query]
 #[cw_serde]
 #[derive(cosmwasm_schema::QueryResponses)]
 pub enum QueryMsg {
@@ -40,7 +40,6 @@ pub enum QueryMsg {
     /// operator set is "halted".
     #[returns(PermsStatus)]
     Perms {},
-    // TODO: feat(broker-bank): Logs query
 }
 
 #[cw_serde]

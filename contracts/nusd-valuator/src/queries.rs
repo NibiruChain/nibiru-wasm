@@ -27,7 +27,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_json_binary(&query_redeemable_choices(deps, redeem_amount)?)
         }
         QueryMsg::Ownership {} => {
-            to_json_binary(&cw_ownable::get_ownership(deps.storage)?)
+            to_json_binary(&nibiru_ownable::get_ownership(deps.storage)?)
         }
     }
 }

@@ -1,7 +1,4 @@
 use cosmwasm_std::{Addr, StdError};
-#[cfg(feature = "backtraces")]
-use std::backtrace::Backtrace;
-
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]

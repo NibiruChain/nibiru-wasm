@@ -1,11 +1,9 @@
-use cosmwasm_std::Addr;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_schema::cw_serde;
 
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[cw_serde]
 pub struct InstantiateMsg {}
 
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[cw_serde]
 pub enum ExecuteMsg {
     Lock { blocks: u64 },
 
@@ -14,7 +12,7 @@ pub enum ExecuteMsg {
     WithdrawFunds { id: u64 },
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[cw_serde]
 pub enum QueryMsg {
     LocksByDenomUnlockingAfter {
         denom: String,
@@ -23,7 +21,7 @@ pub enum QueryMsg {
     LocksByDenomAndAddressUnlockingAfter {
         denom: String,
         unlocking_after: u64,
-        address: Addr,
+        address: String,
     },
     LocksByDenomBetween {
         denom: String,
@@ -32,7 +30,7 @@ pub enum QueryMsg {
     },
     LocksByDenomAndAddressBetween {
         denom: String,
-        address: Addr,
+        address: String,
         locked_before: u64,
         unlocking_after: u64,
     },

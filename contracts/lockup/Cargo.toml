@@ -8,7 +8,6 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports
 library = []
 
@@ -22,5 +21,6 @@ cw20 = { workspace = true }
 schemars = { workspace = true }
 thiserror = { workspace = true }
 serde = { version = "1.0.188", default-features = false, features = ["derive"] }
+anyhow = { workspace = true }
 
 [dev-dependencies]

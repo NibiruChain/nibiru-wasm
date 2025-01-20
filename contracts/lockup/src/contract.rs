@@ -1,13 +1,14 @@
 use crate::error::ContractError;
 use crate::events::{
-    new_coins_locked_event, new_funds_withdrawn_event,
-    new_unlock_initiation_event,
+    event_coins_locked, event_funds_withdrawn, event_unlock_initiated,
 };
 use crate::msgs::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{locks, Lock, LOCKS_ID, NOT_UNLOCKING_BLOCK_IDENTIFIER};
+use crate::state::{
+    locks, Lock, LockState, LOCKS_ID, NOT_UNLOCKING_BLOCK_IDENTIFIER,
+};
 use cosmwasm_std::{
-    to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, Event, MessageInfo,
-    Order, Response, StdResult,
+    to_json_binary, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, Event,
+    MessageInfo, Order, Response, StdResult,
 };
 use cw_storage_plus::Bound;
 
@@ -51,30 +52,36 @@ pub(crate) fn execute_withdraw_funds(
 ) -> Result<Response, ContractError> {
     let locks = locks();
 
+    let mut tx_msgs: Vec<CosmosMsg> = Vec::new();
+
     // we update the lock to mark funds have been withdrawn
     let lock =
         locks.update(deps.storage, id, |lock| -> Result<_, ContractError> {
             let mut lock = lock.ok_or(ContractError::NotFound(id))?;
-
-            if lock.funds_withdrawn {
-                return Err(ContractError::FundsAlreadyWithdrawn(id));
+            match lock.state(env.block.height) {
+                LockState::Matured => {
+                    tx_msgs.push(
+                        BankMsg::Send {
+                            to_address: lock.owner.to_string(),
+                            amount: vec![lock.coin.clone()],
+                        }
+                        .into(),
+                    );
+                    lock.funds_withdrawn = true;
+                    Ok(lock)
+                }
+                LockState::FundedPreUnlock | LockState::Unlocking => {
+                    Err(ContractError::NotMatured(id))
+                }
+                LockState::Withdrawn => {
+                    Err(ContractError::FundsAlreadyWithdrawn(id))
+                }
             }
-
-            if lock.end_block < env.block.height {
-                return Err(ContractError::NotMatured(id));
-            }
-
-            lock.funds_withdrawn = true;
-
-            Ok(lock)
         })?;
 
     Ok(Response::new()
-        .add_event(new_funds_withdrawn_event(id, &lock.coin))
-        .add_message(BankMsg::Send {
-            to_address: lock.owner.to_string(),
-            amount: vec![lock.coin],
-        }))
+        .add_event(event_funds_withdrawn(id, &lock.coin))
+        .add_messages(tx_msgs))
 }
 
 pub(crate) fn execute_initiate_unlock(
@@ -89,15 +96,23 @@ pub(crate) fn execute_initiate_unlock(
     let lock =
         locks.update(deps.storage, id, |lock| -> Result<_, ContractError> {
             let mut lock = lock.ok_or(ContractError::NotFound(id))?;
-            if lock.end_block != NOT_UNLOCKING_BLOCK_IDENTIFIER {
-                return Err(ContractError::AlreadyUnlocking(id));
+
+            match lock.state(env.block.height) {
+                LockState::FundedPreUnlock => {
+                    lock.end_block = env.block.height + lock.duration_blocks;
+                    Ok(lock)
+                }
+                LockState::Unlocking | LockState::Matured => {
+                    Err(ContractError::AlreadyUnlocking(id))
+                }
+                LockState::Withdrawn => {
+                    Err(ContractError::FundsAlreadyWithdrawn(id))
+                }
             }
-            lock.end_block = env.block.height + lock.duration_blocks;
-            Ok(lock)
         })?;
 
     // emit unlock initiation event
-    Ok(Response::new().add_event(new_unlock_initiation_event(
+    Ok(Response::new().add_event(event_unlock_initiated(
         id,
         &lock.coin,
         lock.end_block,
@@ -140,7 +155,7 @@ pub(crate) fn execute_lock(
                 &Lock {
                     id,
                     coin: coin.clone(),
-                    owner: info.sender.clone(),
+                    owner: info.sender.to_string(),
                     duration_blocks: blocks,
                     start_block: env.block.height,
                     end_block: NOT_UNLOCKING_BLOCK_IDENTIFIER,
@@ -149,7 +164,7 @@ pub(crate) fn execute_lock(
             )
             .expect("must never fail");
 
-        events.push(new_coins_locked_event(id, &coin))
+        events.push(event_coins_locked(id, &coin))
     }
 
     Ok(Response::new().add_events(events))
@@ -265,12 +280,12 @@ mod tests {
     use crate::state::Lock;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 
-    use cosmwasm_std::{from_json, Addr, Coin, DepsMut, Env};
+    use cosmwasm_std::{from_json, Coin, DepsMut, Env};
 
     /// A 'TestLock' is struct representating an "owner" locking "coins" for
     /// some "duration".
     struct TestLock {
-        owner: Addr,
+        owner: String,
         duration: u64,
         coins: Vec<Coin>,
     }
@@ -320,15 +335,15 @@ mod tests {
         init(deps.as_mut());
 
         let lock_1 = TestLock {
-            owner: Addr::unchecked("alice"),
+            owner: String::from("alice"),
             duration: 100,
-            coins: vec![Coin::new(100, "ATOM"), Coin::new(300, "LUNA")],
+            coins: vec![Coin::new(100u128, "ATOM"), Coin::new(300u128, "LUNA")],
         };
 
         let lock_2 = TestLock {
-            owner: Addr::unchecked("bob"),
+            owner: String::from("bob"),
             duration: 50,
-            coins: vec![Coin::new(200, "ATOM"), Coin::new(700, "NIBI")],
+            coins: vec![Coin::new(200u128, "ATOM"), Coin::new(700u128, "NIBI")],
         };
         create_lock(deps.as_mut(), &env, &lock_1);
         create_lock(deps.as_mut(), &env, &lock_2);
@@ -348,7 +363,7 @@ mod tests {
                 denom: denom.to_string(),
                 unlocking_after,
             },
-            coins: vec![Coin::new(100, denom), Coin::new(200, denom)],
+            coins: vec![Coin::new(100u128, denom), Coin::new(200u128, denom)],
         });
         cases.push(CaseLocksByDenomUnlockingAfter {
             msg: QueryMsg::LocksByDenomAndAddressUnlockingAfter {
@@ -356,7 +371,7 @@ mod tests {
                 unlocking_after: 0,
                 address: lock_1.owner.clone(),
             },
-            coins: vec![Coin::new(100, denom)],
+            coins: vec![Coin::new(100u128, denom)],
         });
         cases.push(CaseLocksByDenomUnlockingAfter {
             msg: QueryMsg::LocksByDenomAndAddressUnlockingAfter {
@@ -364,7 +379,7 @@ mod tests {
                 unlocking_after: 0,
                 address: lock_2.owner.clone(),
             },
-            coins: vec![Coin::new(200, denom)],
+            coins: vec![Coin::new(200u128, denom)],
         });
 
         let denom = "LUNA";
@@ -373,7 +388,7 @@ mod tests {
                 denom: denom.to_string(),
                 unlocking_after,
             },
-            coins: vec![Coin::new(300, denom)],
+            coins: vec![Coin::new(300u128, denom)],
         });
 
         let denom = "NIBI";
@@ -382,7 +397,7 @@ mod tests {
                 denom: denom.to_string(),
                 unlocking_after,
             },
-            coins: vec![Coin::new(700, denom)],
+            coins: vec![Coin::new(700u128, denom)],
         });
 
         cases.push(CaseLocksByDenomUnlockingAfter {
@@ -399,7 +414,7 @@ mod tests {
                 unlocking_after,
                 address: lock_2.owner,
             },
-            coins: vec![Coin::new(700, denom)],
+            coins: vec![Coin::new(700u128, denom)],
         });
 
         for case in &cases {

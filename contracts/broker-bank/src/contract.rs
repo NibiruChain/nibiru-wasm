@@ -5,6 +5,7 @@ use cosmwasm_std::{
     BankQuery, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response,
     StdResult,
 };
+use cw_std::Coin;
 
 use crate::oper_perms::Permissions;
 use crate::{
@@ -34,7 +35,7 @@ pub fn instantiate(
         format!("crates.io:{CONTRACT_NAME}"),
         CONTRACT_VERSION,
     )?;
-    cw_ownable::initialize_owner(deps.storage, deps.api, Some(&msg.owner))?;
+    nibiru_ownable::initialize_owner(deps.storage, Some(&msg.owner))?;
     TO_ADDRS.save(deps.storage, &msg.to_addrs)?;
     OPERATORS.save(deps.storage, &msg.opers)?;
     IS_HALTED.save(deps.storage, &false)?;
@@ -51,155 +52,191 @@ pub fn execute(
     let contract_addr = env.contract.address.to_string();
     match msg {
         ExecuteMsg::BankSend { coins, to } => {
-            // assert sender is operator
-            Permissions::assert_operator(deps.storage, info.sender.to_string())?;
-            // assert: Operator execute calls should not be halted.
-            let is_halted = IS_HALTED.load(deps.storage)?;
-            assert_not_halted(is_halted)?;
-
-            // assert: Recipient addr must be in the TO_ADDRS set.
-            if !TO_ADDRS.load(deps.storage)?.contains(&to) {
-                return Err(ContractError::ToAddrNotAllowed {
-                    to_addr: to.to_string(),
-                });
-            }
-
-            // Events and tx history logging
-            let coins_json = serde_json::to_string(&coins)?;
-            let event = event_bank_send(&coins_json, info.sender.as_str());
-            LOGS.push_front(
-                deps.storage,
-                &Log {
-                    block_height: env.block.height,
-                    sender_addr: info.sender.to_string(),
-                    event: event.clone(),
-                },
-            )?;
-
-            // Reply with TxMsg to send funds
-            Ok(Response::new()
-                .add_message(BankMsg::Send {
-                    to_address: to,
-                    amount: coins,
-                })
-                .add_event(event))
+            bank_send(deps, env, info, coins, to)
         }
-
-        ExecuteMsg::ToggleHalt {} => {
-            cw_ownable::assert_owner(deps.storage, &info.sender)?;
-            let new_is_halted = !IS_HALTED.load(deps.storage)?;
-            IS_HALTED.save(deps.storage, &new_is_halted)?;
-            Ok(Response::new().add_event(event_toggle_halt(&new_is_halted)))
-        }
-
+        ExecuteMsg::ToggleHalt {} => toggle_halt(deps, env, info),
         ExecuteMsg::UpdateOwnership(action) => {
-            Ok(execute_update_ownership(deps, env, info, action)?)
+            execute_update_ownership(deps, env, info, action)
         }
-
-        ExecuteMsg::EditOpers(action) => {
-            cw_ownable::assert_owner(deps.storage, &info.sender)?;
-            let mut perms = Permissions::load(deps.storage)?;
-            let api = deps.api;
-            match action {
-                oper_perms::Action::AddOper { address } => {
-                    let addr = api.addr_validate(address.as_str())?;
-                    perms.operators.insert(addr.into_string());
-                    OPERATORS.save(deps.storage, &perms.operators)?;
-
-                    let res = Response::new().add_attributes(vec![
-                        attr("action", "add_operator"),
-                        attr("address", address),
-                    ]);
-                    Ok(res)
-                }
-
-                oper_perms::Action::RemoveOper { address } => {
-                    perms.operators.remove(address.as_str());
-                    OPERATORS.save(deps.storage, &perms.operators)?;
-
-                    let res = Response::new().add_attributes(vec![
-                        attr("action", "remove_operator"),
-                        attr("address", address),
-                    ]);
-                    Ok(res)
-                }
-            }
-        }
-
+        ExecuteMsg::EditOpers(action) => edit_opers(deps, env, info, action),
         ExecuteMsg::WithdrawAll { to } => {
-            cw_ownable::assert_owner(deps.storage, &info.sender)?;
-            let to_addr: String = match to {
-                Some(given_to_addr) => given_to_addr,
-                None => info.sender.to_string(),
-            };
-            let balances = query_bank_balances(contract_addr, deps.as_ref())?;
-            let tx_msg = BankMsg::Send {
-                to_address: to_addr.to_string(),
-                amount: balances.amount.clone(),
-            };
-            let event = event_withdraw(
-                serde_json::to_string(&balances.amount)?.as_str(),
-                &to_addr,
-            );
-            LOGS.push_front(
-                deps.storage,
-                &Log {
-                    block_height: env.block.height,
-                    sender_addr: info.sender.to_string(),
-                    event: event.clone(),
-                },
-            )?;
-            Ok(Response::new().add_message(tx_msg).add_event(event))
+            withdraw_all(deps, env, info, to, contract_addr)
         }
-
         ExecuteMsg::Withdraw { to, denoms } => {
-            cw_ownable::assert_owner(deps.storage, &info.sender)?;
-            let to_addr: String = match to {
-                Some(given_to_addr) => given_to_addr,
-                None => info.sender.to_string(),
-            };
-            let balances: AllBalanceResponse =
-                query_bank_balances(contract_addr, deps.as_ref())?;
-            let balances: Vec<cw_std::Coin> = balances
-                .amount
-                .iter()
-                .filter(|b_coin| denoms.contains(&b_coin.denom))
-                .cloned()
-                .collect();
-
-            let tx_msg = BankMsg::Send {
-                to_address: to_addr.to_string(),
-                amount: balances.clone(),
-            };
-            let event = event_withdraw(
-                serde_json::to_string(&balances)?.as_str(),
-                &to_addr,
-            );
-            LOGS.push_front(
-                deps.storage,
-                &Log {
-                    block_height: env.block.height,
-                    sender_addr: info.sender.to_string(),
-                    event: event.clone(),
-                },
-            )?;
-            Ok(Response::new().add_message(tx_msg).add_event(event))
+            withdraw(deps, env, info, to, denoms, contract_addr)
         }
     }
 }
 
-fn execute_update_ownership(
+pub fn withdraw(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    action: cw_ownable::Action,
-) -> Result<Response, cw_ownable::OwnershipError> {
-    let ownership =
-        cw_ownable::update_ownership(deps, &env.block, &info.sender, action)?;
+    to: Option<String>,
+    denoms: BTreeSet<String>,
+    contract_addr: String,
+) -> Result<Response, ContractError> {
+    nibiru_ownable::assert_owner(deps.storage, info.sender.as_str())?;
+    let to_addr: String = match to {
+        Some(given_to_addr) => given_to_addr,
+        None => info.sender.to_string(),
+    };
+    let balances: Vec<cw_std::Coin> =
+        query_bank_balances(contract_addr, deps.as_ref())?;
+    let balances: Vec<cw_std::Coin> = balances
+        .iter()
+        .filter(|b_coin| denoms.contains(&b_coin.denom))
+        .cloned()
+        .collect();
+
+    let tx_msg = BankMsg::Send {
+        to_address: to_addr.to_string(),
+        amount: balances.clone(),
+    };
+    let event =
+        event_withdraw(serde_json::to_string(&balances)?.as_str(), &to_addr);
+    LOGS.push_front(
+        deps.storage,
+        &Log {
+            block_height: env.block.height,
+            sender_addr: info.sender.to_string(),
+            event: event.clone(),
+        },
+    )?;
+    Ok(Response::new().add_message(tx_msg).add_event(event))
+}
+
+pub fn withdraw_all(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    to: Option<String>,
+    contract_addr: String,
+) -> Result<Response, ContractError> {
+    nibiru_ownable::assert_owner(deps.storage, info.sender.as_str())?;
+    let to_addr: String = match to {
+        Some(given_to_addr) => given_to_addr,
+        None => info.sender.to_string(),
+    };
+    let balances = query_bank_balances(contract_addr, deps.as_ref())?;
+    let tx_msg = BankMsg::Send {
+        to_address: to_addr.to_string(),
+        amount: balances.clone(),
+    };
+    let event =
+        event_withdraw(serde_json::to_string(&balances)?.as_str(), &to_addr);
+    LOGS.push_front(
+        deps.storage,
+        &Log {
+            block_height: env.block.height,
+            sender_addr: info.sender.to_string(),
+            event: event.clone(),
+        },
+    )?;
+    Ok(Response::new().add_message(tx_msg).add_event(event))
+}
+
+pub fn edit_opers(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    action: oper_perms::Action,
+) -> Result<Response, ContractError> {
+    nibiru_ownable::assert_owner(deps.storage, info.sender.as_str())?;
+    let mut perms = Permissions::load(deps.storage)?;
+    match action {
+        oper_perms::Action::AddOper { address } => {
+            perms.operators.insert(address.clone());
+            OPERATORS.save(deps.storage, &perms.operators)?;
+
+            let res = Response::new().add_attributes(vec![
+                attr("action", "add_operator"),
+                attr("address", address),
+            ]);
+            Ok(res)
+        }
+
+        oper_perms::Action::RemoveOper { address } => {
+            perms.operators.remove(address.as_str());
+            OPERATORS.save(deps.storage, &perms.operators)?;
+
+            let res = Response::new().add_attributes(vec![
+                attr("action", "remove_operator"),
+                attr("address", address),
+            ]);
+            Ok(res)
+        }
+    }
+}
+
+pub fn toggle_halt(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    nibiru_ownable::assert_owner(deps.storage, info.sender.as_str())?;
+    let new_is_halted = !IS_HALTED.load(deps.storage)?;
+    IS_HALTED.save(deps.storage, &new_is_halted)?;
+    Ok(Response::new().add_event(event_toggle_halt(&new_is_halted)))
+}
+
+pub fn bank_send(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    coins: Vec<cw_std::Coin>,
+    to: String,
+) -> Result<Response, ContractError> {
+    // assert sender is operator
+    Permissions::assert_operator(deps.storage, info.sender.to_string())?;
+    // assert: Operator execute calls should not be halted.
+    let is_halted = IS_HALTED.load(deps.storage)?;
+    assert_not_halted(is_halted)?;
+
+    // assert: Recipient addr must be in the TO_ADDRS set.
+    if !TO_ADDRS.load(deps.storage)?.contains(&to) {
+        return Err(ContractError::ToAddrNotAllowed {
+            to_addr: to.to_string(),
+        });
+    }
+
+    // Events and tx history logging
+    let coins_json = serde_json::to_string(&coins)?;
+    let event = event_bank_send(&coins_json, info.sender.as_str());
+    LOGS.push_front(
+        deps.storage,
+        &Log {
+            block_height: env.block.height,
+            sender_addr: info.sender.to_string(),
+            event: event.clone(),
+        },
+    )?;
+
+    // Reply with TxMsg to send funds
+    Ok(Response::new()
+        .add_message(BankMsg::Send {
+            to_address: to,
+            amount: coins,
+        })
+        .add_event(event))
+}
+
+pub fn execute_update_ownership(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    action: nibiru_ownable::Action,
+) -> Result<Response, ContractError> {
+    let ownership = nibiru_ownable::update_ownership(
+        deps,
+        &env.block,
+        info.sender.as_str(),
+        action,
+    )?;
     Ok(Response::new().add_attributes(ownership.into_attributes()))
 }
 
-fn assert_not_halted(is_halted: bool) -> Result<(), ContractError> {
+pub fn assert_not_halted(is_halted: bool) -> Result<(), ContractError> {
     match is_halted {
         true => Err(ContractError::OperationsHalted),
         false => Ok(()),
@@ -220,9 +257,9 @@ pub fn query(
             let perms_status: PermsStatus = query_perms_status(deps)?;
             Ok(to_json_binary(&perms_status)?)
         }
-        QueryMsg::Ownership {} => {
-            Ok(to_json_binary(&cw_ownable::get_ownership(deps.storage)?)?)
-        }
+        QueryMsg::Ownership {} => Ok(to_json_binary(
+            &nibiru_ownable::get_ownership(deps.storage)?,
+        )?),
     }
 }
 
@@ -236,28 +273,25 @@ pub fn query_accepted_denoms(deps: Deps) -> StdResult<BTreeSet<String>> {
 /// use broker_bank::contract::query_bank_balances;
 /// use cosmwasm_std::{
 ///     testing::{mock_dependencies, mock_env},
-///     AllBalanceResponse, DepsMut, Env, StdResult};
+///     DepsMut, Env, StdResult, Coin};
 ///
 /// let env: Env = mock_env();
 /// let mut deps = mock_dependencies();
 /// let mut deps: DepsMut = deps.as_mut();
 /// let contract_addr = env.contract.address.to_string();
-/// let balances: StdResult<AllBalanceResponse> =
+/// let balances: StdResult<Vec<Coin>> =
 ///    query_bank_balances(contract_addr.to_string(), deps.as_ref());
 /// assert!(balances.is_ok())
 /// ```
-pub fn query_bank_balances(
-    addr: String,
-    deps: Deps,
-) -> StdResult<AllBalanceResponse> {
-    let query_result =
+pub fn query_bank_balances(addr: String, deps: Deps) -> StdResult<Vec<Coin>> {
+    let query_result: Option<AllBalanceResponse> =
         deps.querier
             .query(&QueryRequest::Bank(BankQuery::AllBalances {
                 address: addr,
             }))?;
-    let balances: AllBalanceResponse = match query_result {
-        Some(res) => res,
-        None => AllBalanceResponse::default(),
+    let balances: Vec<Coin> = match query_result {
+        Some(res) => res.amount,
+        None => Vec::new(),
     };
     Ok(balances)
 }
@@ -332,7 +366,7 @@ pub mod tests {
                 opers: opers.to_vec(),
                 sender: not_owner,
                 exec_msg: ExecuteMsg::UpdateOwnership(
-                    cw_ownable::Action::TransferOwnership {
+                    nibiru_ownable::Action::TransferOwnership {
                         new_owner: String::from("new_owner"),
                         expiry: None,
                     },
