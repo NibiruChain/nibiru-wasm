@@ -31,3 +31,7 @@ serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 
 [dev-dependencies]
 anyhow = { workspace = true }
+
+[[example]]
+name = "token-vesting-schema"
+path = "examples/schema.rs"
