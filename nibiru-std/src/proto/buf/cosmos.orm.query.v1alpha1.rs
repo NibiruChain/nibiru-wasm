@@ -39,7 +39,7 @@ pub struct ListRequest {
     pub index: ::prost::alloc::string::String,
     /// pagination is the pagination request.
     #[prost(message, optional, tag="5")]
-    pub pagination: ::core::option::Option<crate::proto::cosmos::base::query::v1beta1::PageRequest>,
+    pub pagination: ::core::option::Option<super::super::super::base::query::v1beta1::PageRequest>,
     /// query is the query expression corresponding to the provided index. If
     /// neither prefix nor range is specified, the query will list all the fields
     /// in the index.
@@ -96,7 +96,7 @@ pub struct ListResponse {
     pub results: ::prost::alloc::vec::Vec<::prost_types::Any>,
     /// pagination is the pagination response.
     #[prost(message, optional, tag="5")]
-    pub pagination: ::core::option::Option<crate::proto::cosmos::base::query::v1beta1::PageResponse>,
+    pub pagination: ::core::option::Option<super::super::super::base::query::v1beta1::PageResponse>,
 }
 /// IndexValue represents the value of a field in an ORM index expression.
 #[allow(clippy::derive_partial_eq_without_eq)]

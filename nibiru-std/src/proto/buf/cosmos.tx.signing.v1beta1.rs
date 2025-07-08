@@ -54,7 +54,7 @@ pub mod signature_descriptor {
         pub struct Multi {
             /// bitarray specifies which keys within the multisig are signing
             #[prost(message, optional, tag="1")]
-            pub bitarray: ::core::option::Option<crate::proto::cosmos::crypto::multisig::v1beta1::CompactBitArray>,
+            pub bitarray: ::core::option::Option<super::super::super::super::super::crypto::multisig::v1beta1::CompactBitArray>,
             /// signatures is the signatures of the multi-signature
             #[prost(message, repeated, tag="2")]
             pub signatures: ::prost::alloc::vec::Vec<super::Data>,
@@ -91,12 +91,13 @@ pub enum SignMode {
     Direct = 1,
     /// SIGN_MODE_TEXTUAL is a future signing mode that will verify some
     /// human-readable textual representation on top of the binary representation
-    /// from SIGN_MODE_DIRECT. It is currently not supported.
+    /// from SIGN_MODE_DIRECT.
+    ///
+    /// Since: cosmos-sdk 0.50
     Textual = 2,
     /// SIGN_MODE_DIRECT_AUX specifies a signing mode which uses
     /// SignDocDirectAux. As opposed to SIGN_MODE_DIRECT, this sign mode does not
-    /// require signers signing over other signers' `signer_info`. It also allows
-    /// for adding Tips in transactions.
+    /// require signers signing over other signers' `signer_info`.
     ///
     /// Since: cosmos-sdk 0.46
     DirectAux = 3,
@@ -113,6 +114,11 @@ pub enum SignMode {
     /// EIP-191 in the future.
     ///
     /// Since: cosmos-sdk 0.45.2
+    /// Deprecated: post 0.47.x Sign mode refers to a method of encoding string data for
+    /// signing, but in the SDK, it also refers to how to encode a transaction into a string.
+    /// This opens the possibility for additional EIP191 sign modes, like SIGN_MODE_EIP_191_TEXTUAL,
+    /// SIGN_MODE_EIP_191_LEGACY_JSON, and more.
+    /// Each new EIP191 sign mode should be accompanied by an associated ADR.
     Eip191 = 191,
 }
 impl SignMode {

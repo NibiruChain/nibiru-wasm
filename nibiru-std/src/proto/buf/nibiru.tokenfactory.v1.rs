@@ -21,7 +21,7 @@ pub struct EventChangeAdmin {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventMint {
     #[prost(message, optional, tag="1")]
-    pub coin: ::core::option::Option<crate::proto::cosmos::base::v1beta1::Coin>,
+    pub coin: ::core::option::Option<super::super::super::cosmos::base::v1beta1::Coin>,
     #[prost(string, tag="2")]
     pub to_addr: ::prost::alloc::string::String,
     #[prost(string, tag="3")]
@@ -31,7 +31,7 @@ pub struct EventMint {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventBurn {
     #[prost(message, optional, tag="1")]
-    pub coin: ::core::option::Option<crate::proto::cosmos::base::v1beta1::Coin>,
+    pub coin: ::core::option::Option<super::super::super::cosmos::base::v1beta1::Coin>,
     #[prost(string, tag="2")]
     pub from_addr: ::prost::alloc::string::String,
     #[prost(string, tag="3")]
@@ -45,7 +45,7 @@ pub struct EventSetDenomMetadata {
     /// Metadata: Official x/bank metadata for the denom. All token factory denoms
     /// are standard, native assets. The "metadata.base" is the denom.
     #[prost(message, optional, tag="2")]
-    pub metadata: ::core::option::Option<crate::proto::cosmos::bank::v1beta1::Metadata>,
+    pub metadata: ::core::option::Option<super::super::super::cosmos::bank::v1beta1::Metadata>,
     #[prost(string, tag="3")]
     pub caller: ::prost::alloc::string::String,
 }
@@ -173,7 +173,7 @@ pub struct QueryDenomInfoResponse {
     /// Metadata: Official x/bank metadata for the denom. All token factory denoms
     /// are standard, native assets.
     #[prost(message, optional, tag="2")]
-    pub metadata: ::core::option::Option<crate::proto::cosmos::bank::v1beta1::Metadata>,
+    pub metadata: ::core::option::Option<super::super::super::cosmos::bank::v1beta1::Metadata>,
 }
 /// MsgCreateDenom: sdk.Msg that registers an a token factory denom.
 /// A denom has the form "tf/\[creatorAddr]/[subdenom\]".
@@ -239,7 +239,7 @@ pub struct MsgMint {
     pub sender: ::prost::alloc::string::String,
     /// coin: The denom identifier and amount to mint.
     #[prost(message, optional, tag="2")]
-    pub coin: ::core::option::Option<crate::proto::cosmos::base::v1beta1::Coin>,
+    pub coin: ::core::option::Option<super::super::super::cosmos::base::v1beta1::Coin>,
     /// mint_to_addr: An address to which tokens will be minted. If blank,
     /// tokens are minted to the "sender".
     #[prost(string, tag="3")]
@@ -263,7 +263,7 @@ pub struct MsgBurn {
     pub sender: ::prost::alloc::string::String,
     /// coin: The denom identifier and amount to burn.
     #[prost(message, optional, tag="2")]
-    pub coin: ::core::option::Option<crate::proto::cosmos::base::v1beta1::Coin>,
+    pub coin: ::core::option::Option<super::super::super::cosmos::base::v1beta1::Coin>,
     /// burn_from: The address from which tokens will be burned.
     #[prost(string, tag="3")]
     pub burn_from: ::prost::alloc::string::String,
@@ -282,10 +282,50 @@ pub struct MsgSetDenomMetadata {
     /// Metadata: Official x/bank metadata for the denom. All token factory denoms
     /// are standard, native assets. The "metadata.base" is the denom.
     #[prost(message, optional, tag="2")]
-    pub metadata: ::core::option::Option<crate::proto::cosmos::bank::v1beta1::Metadata>,
+    pub metadata: ::core::option::Option<super::super::super::cosmos::bank::v1beta1::Metadata>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSetDenomMetadataResponse {
+}
+/// MsgSudoSetDenomMetadata: sdk.Msg (TxMsg) enabling Nibiru's "sudoers" to change
+/// bank metadata.
+/// \[SUDO\] Only callable by sudoers.
+///
+/// Use Cases:
+///    - To define metadata for ICS20 assets brought
+///      over to the chain via IBC, as they don't have metadata by default.
+///    - To set metadata for Bank Coins created via the Token Factory
+///      module in case the admin forgets to do so. This is important because of
+///      the relationship Token Factory assets can have with ERC20s with the
+///      [FunToken Mechanism].
+///
+/// [FunToken Mechanism]: <https://nibiru.fi/docs/evm/funtoken.html>
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSudoSetDenomMetadata {
+    #[prost(string, tag="1")]
+    pub sender: ::prost::alloc::string::String,
+    /// Metadata: Official x/bank metadata for the denom. The "metadata.base" is
+    /// the denom.
+    #[prost(message, optional, tag="2")]
+    pub metadata: ::core::option::Option<super::super::super::cosmos::bank::v1beta1::Metadata>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSudoSetDenomMetadataResponse {
+}
+/// Burn a native token such as unibi
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgBurnNative {
+    #[prost(string, tag="1")]
+    pub sender: ::prost::alloc::string::String,
+    #[prost(message, optional, tag="2")]
+    pub coin: ::core::option::Option<super::super::super::cosmos::base::v1beta1::Coin>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgBurnNativeResponse {
 }
 // @@protoc_insertion_point(module)

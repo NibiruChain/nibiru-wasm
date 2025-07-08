@@ -7,11 +7,11 @@ pub struct Block {
     #[prost(message, optional, tag="1")]
     pub header: ::core::option::Option<Header>,
     #[prost(message, optional, tag="2")]
-    pub data: ::core::option::Option<crate::proto::tendermint::types::Data>,
+    pub data: ::core::option::Option<super::super::super::super::cometbft::types::v1::Data>,
     #[prost(message, optional, tag="3")]
-    pub evidence: ::core::option::Option<crate::proto::tendermint::types::EvidenceList>,
+    pub evidence: ::core::option::Option<super::super::super::super::cometbft::types::v1::EvidenceList>,
     #[prost(message, optional, tag="4")]
-    pub last_commit: ::core::option::Option<crate::proto::tendermint::types::Commit>,
+    pub last_commit: ::core::option::Option<super::super::super::super::cometbft::types::v1::Commit>,
 }
 /// Header defines the structure of a Tendermint block header.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -19,7 +19,7 @@ pub struct Block {
 pub struct Header {
     /// basic block info
     #[prost(message, optional, tag="1")]
-    pub version: ::core::option::Option<crate::proto::tendermint::version::Consensus>,
+    pub version: ::core::option::Option<super::super::super::super::cometbft::version::v1::Consensus>,
     #[prost(string, tag="2")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(int64, tag="3")]
@@ -28,7 +28,7 @@ pub struct Header {
     pub time: ::core::option::Option<::prost_types::Timestamp>,
     /// prev block info
     #[prost(message, optional, tag="5")]
-    pub last_block_id: ::core::option::Option<crate::proto::tendermint::types::BlockId>,
+    pub last_block_id: ::core::option::Option<super::super::super::super::cometbft::types::v1::BlockId>,
     /// hashes of block data
     ///
     /// commit from validators from the last block
@@ -75,7 +75,7 @@ pub struct GetValidatorSetByHeightRequest {
     pub height: i64,
     /// pagination defines an pagination for the request.
     #[prost(message, optional, tag="2")]
-    pub pagination: ::core::option::Option<crate::proto::cosmos::base::query::v1beta1::PageRequest>,
+    pub pagination: ::core::option::Option<super::super::query::v1beta1::PageRequest>,
 }
 /// GetValidatorSetByHeightResponse is the response type for the Query/GetValidatorSetByHeight RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -87,7 +87,7 @@ pub struct GetValidatorSetByHeightResponse {
     pub validators: ::prost::alloc::vec::Vec<Validator>,
     /// pagination defines an pagination for the response.
     #[prost(message, optional, tag="3")]
-    pub pagination: ::core::option::Option<crate::proto::cosmos::base::query::v1beta1::PageResponse>,
+    pub pagination: ::core::option::Option<super::super::query::v1beta1::PageResponse>,
 }
 /// GetLatestValidatorSetRequest is the request type for the Query/GetValidatorSetByHeight RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -95,7 +95,7 @@ pub struct GetValidatorSetByHeightResponse {
 pub struct GetLatestValidatorSetRequest {
     /// pagination defines an pagination for the request.
     #[prost(message, optional, tag="1")]
-    pub pagination: ::core::option::Option<crate::proto::cosmos::base::query::v1beta1::PageRequest>,
+    pub pagination: ::core::option::Option<super::super::query::v1beta1::PageRequest>,
 }
 /// GetLatestValidatorSetResponse is the response type for the Query/GetValidatorSetByHeight RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -107,7 +107,7 @@ pub struct GetLatestValidatorSetResponse {
     pub validators: ::prost::alloc::vec::Vec<Validator>,
     /// pagination defines an pagination for the response.
     #[prost(message, optional, tag="3")]
-    pub pagination: ::core::option::Option<crate::proto::cosmos::base::query::v1beta1::PageResponse>,
+    pub pagination: ::core::option::Option<super::super::query::v1beta1::PageResponse>,
 }
 /// Validator is the type for the validator-set.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -134,11 +134,10 @@ pub struct GetBlockByHeightRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetBlockByHeightResponse {
     #[prost(message, optional, tag="1")]
-    pub block_id: ::core::option::Option<crate::proto::tendermint::types::BlockId>,
+    pub block_id: ::core::option::Option<super::super::super::super::cometbft::types::v1::BlockId>,
     /// Deprecated: please use `sdk_block` instead
     #[prost(message, optional, tag="2")]
-    pub block: ::core::option::Option<crate::proto::tendermint::types::Block>,
-    /// Since: cosmos-sdk 0.47
+    pub block: ::core::option::Option<super::super::super::super::cometbft::types::v1::Block>,
     #[prost(message, optional, tag="3")]
     pub sdk_block: ::core::option::Option<Block>,
 }
@@ -152,11 +151,10 @@ pub struct GetLatestBlockRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetLatestBlockResponse {
     #[prost(message, optional, tag="1")]
-    pub block_id: ::core::option::Option<crate::proto::tendermint::types::BlockId>,
+    pub block_id: ::core::option::Option<super::super::super::super::cometbft::types::v1::BlockId>,
     /// Deprecated: please use `sdk_block` instead
     #[prost(message, optional, tag="2")]
-    pub block: ::core::option::Option<crate::proto::tendermint::types::Block>,
-    /// Since: cosmos-sdk 0.47
+    pub block: ::core::option::Option<super::super::super::super::cometbft::types::v1::Block>,
     #[prost(message, optional, tag="3")]
     pub sdk_block: ::core::option::Option<Block>,
 }
@@ -182,7 +180,7 @@ pub struct GetNodeInfoRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetNodeInfoResponse {
     #[prost(message, optional, tag="1")]
-    pub default_node_info: ::core::option::Option<crate::proto::tendermint::p2p::DefaultNodeInfo>,
+    pub default_node_info: ::core::option::Option<super::super::super::super::cometbft::p2p::v1::DefaultNodeInfo>,
     #[prost(message, optional, tag="2")]
     pub application_version: ::core::option::Option<VersionInfo>,
 }
@@ -204,7 +202,6 @@ pub struct VersionInfo {
     pub go_version: ::prost::alloc::string::String,
     #[prost(message, repeated, tag="7")]
     pub build_deps: ::prost::alloc::vec::Vec<Module>,
-    /// Since: cosmos-sdk 0.43
     #[prost(string, tag="8")]
     pub cosmos_sdk_version: ::prost::alloc::string::String,
 }
@@ -256,12 +253,12 @@ pub struct AbciQueryResponse {
     pub key: ::prost::bytes::Bytes,
     #[prost(bytes="bytes", tag="7")]
     pub value: ::prost::bytes::Bytes,
-    #[prost(message, optional, tag="8")]
-    pub proof_ops: ::core::option::Option<ProofOps>,
     #[prost(int64, tag="9")]
     pub height: i64,
     #[prost(string, tag="10")]
     pub codespace: ::prost::alloc::string::String,
+    #[prost(message, optional, tag="11")]
+    pub proof_ops: ::core::option::Option<super::super::super::super::cometbft::crypto::v1::ProofOps>,
 }
 /// ProofOp defines an operation used for calculating Merkle root. The data could
 /// be arbitrary format, providing necessary data for example neighbouring node

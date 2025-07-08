@@ -10,7 +10,7 @@ pub struct PubKey {
     #[prost(bytes="bytes", tag="1")]
     pub key: ::prost::bytes::Bytes,
 }
-/// Deprecated: PrivKey defines a ed25519 private key.
+/// PrivKey defines a ed25519 private key.
 /// NOTE: ed25519 keys must not be used in SDK apps except in a tendermint validator context.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
