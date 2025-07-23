@@ -228,11 +228,12 @@ mod tests {
                 // Various network errors are acceptable here.
                 let err_str = err.to_string();
                 assert!(
-                    err_str.contains("failed to lookup address") ||
-                    err_str.contains("error sending request") ||
-                    err_str.contains("connection") ||
-                    err_str.contains("timed out") ||
-                    err_str.contains("network"),
+                    err_str.contains("failed to lookup address")
+                        || err_str.contains("API rate limit exceeded")
+                        || err_str.contains("error sending request")
+                        || err_str.contains("connection")
+                        || err_str.contains("timed out")
+                        || err_str.contains("network"),
                     "Unexpected error: {}",
                     err_str
                 )
@@ -252,11 +253,12 @@ mod tests {
                 // Various network errors are acceptable here.
                 let err_str = err.to_string();
                 assert!(
-                    err_str.contains("failed to lookup address") ||
-                    err_str.contains("error sending request") ||
-                    err_str.contains("connection") ||
-                    err_str.contains("timed out") ||
-                    err_str.contains("network"),
+                    err_str.contains("failed to lookup address")
+                        || err_str.contains("API rate limit exceeded")
+                        || err_str.contains("error sending request")
+                        || err_str.contains("connection")
+                        || err_str.contains("timed out")
+                        || err_str.contains("network"),
                     "Unexpected error: {}",
                     err_str
                 )
