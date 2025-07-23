@@ -34,3 +34,7 @@ broker-bank = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
+
+[[example]]
+name = "broker-staking-schema"
+path = "examples/schema.rs"
