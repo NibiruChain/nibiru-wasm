@@ -6,7 +6,7 @@
 pub struct EthAccount {
     /// base_account is an authtypes.BaseAccount
     #[prost(message, optional, tag="1")]
-    pub base_account: ::core::option::Option<super::super::super::cosmos::auth::v1beta1::BaseAccount>,
+    pub base_account: ::core::option::Option<crate::proto::cosmos::auth::v1beta1::BaseAccount>,
     /// code_hash is the hash calculated from the code contents
     #[prost(string, tag="2")]
     pub code_hash: ::prost::alloc::string::String,
