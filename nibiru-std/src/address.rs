@@ -26,7 +26,7 @@ use crate::errors::{NibiruError, NibiruResult};
 /// 
 /// let bech32_addr = "nibi1gc24lt74ses9swkq6g7cug4e5y72p7e34jqgul";
 /// let eth_addr = nibiru_bech32_to_eth_address(bech32_addr).unwrap();
-/// assert_eq!(eth_addr, "0x46155fAfd58660583ac0d23d8E22B9A13Ca0fb31");
+/// assert_eq!(eth_addr, "0x46155fafd58660583ac0d23d8e22b9a13ca0fb31");
 /// ```
 pub fn nibiru_bech32_to_eth_address(bech32_addr: &str) -> NibiruResult<String> {
     // Decode the bech32 address
