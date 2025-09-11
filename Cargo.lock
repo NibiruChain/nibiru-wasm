@@ -1252,7 +1252,7 @@ dependencies = [
 
 [[package]]
 name = "easy-addr"
-version = "0.2.0"
+version = "0.6.0"
 dependencies = [
  "cosmwasm-std 1.5.11",
  "proc-macro2",
@@ -2197,7 +2197,7 @@ dependencies = [
 
 [[package]]
 name = "nibiru-ownable"
-version = "0.2.0"
+version = "0.6.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std 1.5.11",
@@ -2209,7 +2209,7 @@ dependencies = [
 
 [[package]]
 name = "nibiru-ownable-derive"
-version = "0.2.0"
+version = "0.6.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std 1.5.11",
