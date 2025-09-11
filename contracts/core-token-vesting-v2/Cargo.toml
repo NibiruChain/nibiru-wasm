@@ -17,6 +17,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 # for quicker tests, cargo test --lib
+library = []
 
 [dependencies]
 cosmwasm-schema = "1.4.0"

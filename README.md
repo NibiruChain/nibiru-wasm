@@ -1,11 +1,11 @@
 # NibiruChain/nibiru-wasm
 
-Wasm smart contract sandbox for Nibiru Chain.
+Wasm smart contract sandbox for Nibiru.
 
 ```bash
 ⚡ NibiruChain/nibiru-wasm
 ├── 📂 artifacts         # compiled .wasm smart contracts for nibiru-wasm
-├── 📂 contracts         # Smart contracts for Nibiru Chain
+├── 📂 contracts         # Smart contracts for Nibiru
     └── 📂 nibi-stargate # Example contract using nibiru-std for CosmosMsg::Stargate
     └── 📂 incentives    # Generalized incentives over time for locked tokens
     └── 📂 lockup        # For locking and unlocking tokens like LP tokens
@@ -15,7 +15,7 @@ Wasm smart contract sandbox for Nibiru Chain.
     └── 📂 core-controller    # Calls other admin calls from Nibiru foundation.
     └── 📂 core-token-vesting # Token linear vesting contracts with optional cliffs.
     └── 📂 core-token-vesting-v2 # Improved version of core-token-vesting-v2.
-├── 📂 nibiru-std      # Nibiru Chain standard library for smart contracts
+├── 📂 nibiru-std      # Nibiru standard library for smart contracts
     └── 📦 proto       # Types and traits for QueryRequest::Stargate and CosmosMsg::Stargate
          └──           #   Includes constructors for Cosmos, IBC, and Nibiru. 
     └── 📦 bindings    # For sending CosmosMsg::Custom msgs on Nibiru (soon deprecated).
