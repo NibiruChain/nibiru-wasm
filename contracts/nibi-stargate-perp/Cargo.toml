@@ -26,6 +26,6 @@ nibiru-std = { workspace = true }
 broker-bank = { workspace = true }
 
 [dev-dependencies]
-cosmwasm-vm = "2.0.2"
+cosmwasm-vm = "1"
 serde_json = "1.0.108"
 anyhow = { workspace = true }

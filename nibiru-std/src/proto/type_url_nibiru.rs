@@ -411,8 +411,7 @@ pub mod tests {
     use crate::{
         errors::TestResult,
         proto::{
-            cosmos,
-            eth,
+            cosmos, eth,
             nibiru::{self},
             NibiruProstMsg, NibiruStargateMsg, NibiruStargateQuery,
         },

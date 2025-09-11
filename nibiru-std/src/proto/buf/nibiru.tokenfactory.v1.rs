@@ -73,7 +73,7 @@ pub struct DenomAuthorityMetadata {
 /// For IBC token transfers, it's unclear who should pay the fee—the contract,
 /// the relayer, or the original sender?
 /// > "Charging fees will mess up composability, the same way Terra transfer tax
-///    caused all kinds of headaches for contract devs." - @ethanfrey
+/// > caused all kinds of headaches for contract devs." - @ethanfrey
 ///
 /// ### Recommended Solution
 ///
