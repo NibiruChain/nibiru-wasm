@@ -99,3 +99,11 @@ gen-schema:
     cargo schema
     mv ./schema ../../schema/$dir_name
   done
+
+# (Safe) Dry run for publishing coupled packages (default behavior)
+publish:
+  bash scripts/publish-coupled.sh
+
+# Publish coupled packages that share "workspace.version" to crates.io
+publish-run:
+  bash scripts/publish-coupled.sh --run

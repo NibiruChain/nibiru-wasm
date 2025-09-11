@@ -18,15 +18,16 @@ package.edition = "2021"
 serde = { version = "1.0.189", default-features = false, features = ["derive"] }
 serde_json = "1.0.108"
 
-# deps: packages
+# deps: Coupled packages. Each uses workspace.package.version.
 nibiru-std = { path = "nibiru-std" }
+# Macros for controlling ownership of CosmWasm smart contracts
+nibiru-ownable    = { path = "packages/nibiru-ownable" }
+nibiru-ownable-derive    = { path = "packages/nibiru-ownable-derive", version = "0.6.0" }
+
+# deps: Independent packages
 prost = "0.12.3"
 prost-types = "0.12.3"
 bash-rs           = { path = "packages/bash-rs" }
-# Macros for controlling ownership of CosmWasm smart contracts
-nibiru-ownable    = { path = "packages/nibiru-ownable" }
-# nibiru-ownable-derive    = { version = "0.1.0" }
-nibiru-ownable-derive    = { path = "packages/nibiru-ownable-derive" }
 cw-address-like   = { path = "packages/cw-address-like" }
 easy-addr = { path = "packages/easy-addr" }
 
