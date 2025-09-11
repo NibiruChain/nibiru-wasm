@@ -2,7 +2,7 @@
 members = ["scripts", "packages/*", "nibiru-std", "contracts/*"]
 exclude = ["packages/msig-ez"]
 resolver = "2"
-package.version = "0.6.0"
+package.version = "0.7.0"
 package.homepage = "https://github.com/NibiruChain/nibiru-wasm"
 package.repository = "https://github.com/NibiruChain/nibiru-wasm"
 package.edition = "2021"
@@ -22,7 +22,7 @@ serde_json = "1.0.108"
 nibiru-std = { path = "nibiru-std" }
 # Macros for controlling ownership of CosmWasm smart contracts
 nibiru-ownable    = { path = "packages/nibiru-ownable" }
-nibiru-ownable-derive    = { path = "packages/nibiru-ownable-derive", version = "0.6.0" }
+nibiru-ownable-derive    = { path = "packages/nibiru-ownable-derive", version = "0.7.0" }
 
 # deps: Independent packages
 prost = "0.12.3"
@@ -66,6 +66,7 @@ toml = "0.8"
 quote = "1.0"
 syn = { version = "1", features = ["full"] } # NOTE: This needs to stay v1
 proc-macro2 = "1.0"
+ed25519-zebra = { version = "4.1", features = ["alloc"] }
 
 [profile.release]
 opt-level = 3

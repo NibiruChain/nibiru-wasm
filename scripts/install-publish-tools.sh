@@ -10,3 +10,4 @@ cargo install cargo-publish-all
 echo "Tools installed! You can now use:"
 echo "  cargo workspaces publish --help"
 echo "  cargo publish-all --help"
+

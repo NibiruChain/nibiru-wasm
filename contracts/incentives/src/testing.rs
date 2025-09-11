@@ -265,7 +265,10 @@ mod integration_test {
             withdraw_rewards(&mut app, contracts.clone(), &alice, 1);
 
         // expected: 200 + 0.33*200 ATOM coins
-        assert_eq!(vec![Coin::new((200u32 + 66u32).into(), "ATOM")], alice_balance,);
+        assert_eq!(
+            vec![Coin::new((200u32 + 66u32).into(), "ATOM")],
+            alice_balance,
+        );
 
         // withdraw rewards for bob at epoch 2
         let bob_balance = withdraw_rewards(&mut app, contracts.clone(), &bob, 1);

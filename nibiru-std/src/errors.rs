@@ -30,7 +30,9 @@ pub enum NibiruError {
     #[error("Invalid bech32 prefix: expected '{expected}', got '{actual}'")]
     InvalidBech32Prefix { expected: String, actual: String },
 
-    #[error("Invalid address length: Ethereum addresses must be at least 20 bytes")]
+    #[error(
+        "Invalid address length: Ethereum addresses must be at least 20 bytes"
+    )]
     InvalidAddressLength,
 
     #[error("Invalid Ethereum address format: {0}")]

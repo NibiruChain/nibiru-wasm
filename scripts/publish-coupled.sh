@@ -33,11 +33,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Read workspace version from Cargo.toml
-VERSION=$(grep 'package.version' Cargo.toml | sed 's/.*= *"\([^"]*\)".*/\1/')
+VERSION=$(grep '^package.version' Cargo.toml | sed 's/.*= *"\([^"]*\)".*/\1/')
 echo "📖 Reading workspace version from Cargo.toml: $VERSION"
 
 # Verify the workspace dependency has the correct version
-WORKSPACE_DEP_VERSION=$(grep 'nibiru-ownable-derive.*=.*{ path = "packages/nibiru-ownable-derive"' Cargo.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
+WORKSPACE_DEP_VERSION=$(grep 'nibiru-ownable-derive.*=.*{ path = "packages/nibiru-ownable-derive"' Cargo.toml | sed 's/.*version = "\([^"]*\)".*/\1/' | head -1)
 if [ "$WORKSPACE_DEP_VERSION" != "$VERSION" ]; then
     echo "⚠️  Warning: Workspace dependency version ($WORKSPACE_DEP_VERSION) doesn't match workspace version ($VERSION)"
     echo "   Please update the workspace dependency version in Cargo.toml to match the workspace version"
@@ -56,16 +56,16 @@ fi
 publish_package() {
     local package=$1
     local package_dir="packages/$package"
-    
+
     echo "📦 Publishing $package..."
-    
+
     if [ ! -d "$package_dir" ]; then
         echo "❌ Package directory $package_dir not found"
         exit 1
     fi
-    
+
     cd "$package_dir"
-    
+
     if [ "$DRY_RUN" = true ]; then
         echo "🔍 Dry run: would publish $package@$VERSION"
         cargo publish --dry-run --allow-dirty
@@ -73,7 +73,7 @@ publish_package() {
         echo "🚀 Publishing $package@$VERSION to crates.io..."
         cargo publish --allow-dirty
     fi
-    
+
     cd - > /dev/null
     echo "✅ $package published successfully"
     echo ""
