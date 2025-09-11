@@ -21,8 +21,3 @@ tempfile = "3.8"
 [[bin]]
 name = "proto_clean"
 path = "proto_clean.rs"
-
-# cargo run --bin wasm_out -- all
-[[bin]]
-name = "wasm_out"
-path = "wasm_out.rs"
