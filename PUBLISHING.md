@@ -16,10 +16,10 @@ We've created a script that handles the publishing order automatically.
 
 ```bash
 # Dry run (default - safe to run anytime)
-just publish-coupled
+just publish
 
 # Actually publish to crates.io
-just publish-coupled-run
+just publish-run
 ```
 
 ### Manual Usage
@@ -55,10 +55,10 @@ nibiru-ownable-derive = { path = "packages/nibiru-ownable-derive", version = "0.
 
 ```bash
 # Test first (dry run is default - safe to run)
-just publish-coupled
+just publish
 
 # If everything looks good, actually publish
-just publish-coupled-run
+just publish-run
 ```
 
 ### 4. Verify Publication

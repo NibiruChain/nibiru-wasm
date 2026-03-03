@@ -45,10 +45,10 @@ if [ "$WORKSPACE_DEP_VERSION" != "$VERSION" ]; then
 fi
 
 if [ "$DRY_RUN" = true ]; then
-    echo "🔍 DRY RUN: Publishing coupled packages version $VERSION"
+    echo "📦 DRY RUN: Publishing coupled packages version $VERSION"
     echo "========================================================"
 else
-    echo "🚀 Publishing coupled packages version $VERSION"
+    echo "📦 Publishing coupled packages version $VERSION"
     echo "================================================"
 fi
 
@@ -84,7 +84,7 @@ for package in "${PACKAGES[@]}"; do
     publish_package "$package"
 done
 
-echo "🎉 All coupled packages published successfully!"
+echo "✅ All coupled packages published successfully!"
 echo ""
 echo "Published packages:"
 for package in "${PACKAGES[@]}"; do

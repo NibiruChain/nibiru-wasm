@@ -69,8 +69,8 @@ Add both crates to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-nibiru-ownable = "0.6.0"
-nibiru-ownable-derive = "0.6.0"
+nibiru-ownable = "0.7.0"
+nibiru-ownable-derive = "0.7.0"
 ```
 
 Import the macros from `nibiru-ownable` (they are re-exported):
