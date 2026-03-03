@@ -195,7 +195,7 @@ fn calculate_median_price(mut prices: Vec<Decimal>) -> Decimal {
 
     prices.sort();
 
-    if l % 2 == 0 {
+    if l.is_multiple_of(2) {
         // calculate median
         let (p1, p2) = (prices[l / 2 - 1], prices[l / 2]);
         let sum = p1 + p2;

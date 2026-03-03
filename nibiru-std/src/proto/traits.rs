@@ -21,6 +21,34 @@ pub trait NibiruProstMsg: prost::Message {
     /// prost::Name and have a `Name.type_url()` function. This method attempts
     /// to downcast the message to prost::Name, and if successful, constructs a
     /// `CosmosMsg::Stargate` object corresponding to the type.
+    ///
+    /// This is commonly used when the protobuf type does not implement
+    /// `prost::Name`, so the type URL must be provided explicitly.
+    ///
+    /// ```rust
+    /// use cosmwasm_std::CosmosMsg;
+    /// use nibiru_std::proto::{self, NibiruProstMsg};
+    ///
+    /// let bank_coin = proto::cosmos::base::v1beta1::Coin {
+    ///     denom: "unibi".to_string(),
+    ///     amount: "42".to_string(),
+    /// };
+    ///
+    /// let msg = proto::eth::evm::MsgConvertCoinToEvm {
+    ///     sender: "nibi1contractaddr".to_string(),
+    ///     to_eth_addr: "0x000000000000000000000000000000000000dEaD".to_string(),
+    ///     bank_coin: Some(bank_coin),
+    /// };
+    ///
+    /// let stargate_msg =
+    ///     msg.try_into_stargate_msg("/eth.evm.v1.MsgConvertCoinToEvm");
+    ///
+    /// if let CosmosMsg::Stargate { type_url, .. } = stargate_msg {
+    ///     assert_eq!(type_url, "/eth.evm.v1.MsgConvertCoinToEvm");
+    /// } else {
+    ///     panic!("Expected CosmosMsg::Stargate variant");
+    /// }
+    /// ```
     fn try_into_stargate_msg(&self, type_url: &str) -> CosmosMsg {
         let value = self.to_binary();
         CosmosMsg::Stargate {
@@ -63,6 +91,27 @@ where
     M: prost::Message + prost::Name,
 {
     /// Returns the `prost::Message` as a `CosmosMsg::Stargate` object.
+    ///
+    /// ```rust
+    /// use cosmwasm_std::CosmosMsg;
+    /// use nibiru_std::proto::{self, NibiruStargateMsg};
+    ///
+    /// let msg = proto::nibiru::tokenfactory::MsgMint {
+    ///     sender: "nibi1sender".to_string(),
+    ///     mint_to: "nibi1recipient".to_string(),
+    ///     coin: Some(proto::cosmos::base::v1beta1::Coin {
+    ///         denom: "unibi".to_string(),
+    ///         amount: "7".to_string(),
+    ///     }),
+    /// };
+    ///
+    /// let stargate_msg = msg.into_stargate_msg();
+    /// if let CosmosMsg::Stargate { type_url, .. } = stargate_msg {
+    ///     assert_eq!(type_url, "/nibiru.tokenfactory.v1.MsgMint");
+    /// } else {
+    ///     panic!("Expected CosmosMsg::Stargate variant");
+    /// }
+    /// ```
     fn into_stargate_msg(&self) -> CosmosMsg {
         CosmosMsg::Stargate {
             type_url: self.type_url(),
@@ -107,6 +156,23 @@ where
     /// Returns the `prost::Message` as a `QueryRequest::Stargate` object.
     /// Errors if the `prost::Name::type_url` does not indicate the type is a
     /// query.
+    ///
+    /// ```rust
+    /// use cosmwasm_std::{Empty, QueryRequest};
+    /// use nibiru_std::proto::{cosmos, NibiruStargateQuery};
+    ///
+    /// let query = cosmos::bank::v1beta1::QuerySupplyOfRequest {
+    ///     denom: "unibi".to_string(),
+    /// };
+    ///
+    /// let stargate_query: QueryRequest<Empty> =
+    ///     query.into_stargate_query().expect("query conversion should work");
+    /// if let QueryRequest::Stargate { path, .. } = stargate_query {
+    ///     assert_eq!(path, "/cosmos.bank.v1beta1.Query/SupplyOf");
+    /// } else {
+    ///     panic!("Expected QueryRequest::Stargate variant");
+    /// }
+    /// ```
     fn into_stargate_query(
         &self,
     ) -> NibiruResult<QueryRequest<cosmwasm_std::Empty>> {

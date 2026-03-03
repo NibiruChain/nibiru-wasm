@@ -224,15 +224,15 @@ pub fn execute(
                     to_address: to.clone(),
                     amount: vec![funds_value],
                 };
-                return Ok(Response::new()
+                Ok(Response::new()
                     .add_message(transfer_msg)
                     .add_attribute(
                         event_key,
                         format!("successfully claimed to {}", to),
-                    ));
+                    ))
             } else {
-                return Err(StdError::generic_err(
-                    "either the 'funds' or 'claim_all' arguments must be specified"));
+                Err(StdError::generic_err(
+                    "either the 'funds' or 'claim_all' arguments must be specified"))
             }
         } // TODO test: add member
           // TODO test: remove member
