@@ -41,7 +41,7 @@ just publish-run
 
 ```bash
 # Edit Cargo.toml and update:
-package.version = "0.7.0"
+package.version = "X.Y.Z"
 ```
 
 ### 2. Update Workspace Dependency Version
