@@ -49,7 +49,7 @@ impl SystemInfo {
                 Ok(Curl::WgetInsecure)
             }
         } else {
-            return Err(SystemInfoError::CurlVariantUnknown);
+            Err(SystemInfoError::CurlVariantUnknown)
         }
     }
 
