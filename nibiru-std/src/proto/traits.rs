@@ -43,15 +43,11 @@ pub trait NibiruProstMsg: prost::Message {
     /// let stargate_msg =
     ///     msg.try_into_stargate_msg("/eth.evm.v1.MsgConvertCoinToEvm");
     ///
-    /// assert!(matches!(stargate_msg, CosmosMsg::Stargate { .. }));
-    ///
-    /// let type_url = if let CosmosMsg::Stargate { type_url, .. } = stargate_msg
-    /// {
-    ///     type_url
+    /// if let CosmosMsg::Stargate { type_url, .. } = stargate_msg {
+    ///     assert_eq!(type_url, "/eth.evm.v1.MsgConvertCoinToEvm");
     /// } else {
-    ///     unreachable!("already asserted stargate variant")
-    /// };
-    /// assert_eq!(type_url, "/eth.evm.v1.MsgConvertCoinToEvm");
+    ///     panic!("Expected CosmosMsg::Stargate variant");
+    /// }
     /// ```
     fn try_into_stargate_msg(&self, type_url: &str) -> CosmosMsg {
         let value = self.to_binary();
@@ -110,15 +106,11 @@ where
     /// };
     ///
     /// let stargate_msg = msg.into_stargate_msg();
-    /// assert!(matches!(stargate_msg, CosmosMsg::Stargate { .. }));
-    ///
-    /// let type_url = if let CosmosMsg::Stargate { type_url, .. } = stargate_msg
-    /// {
-    ///     type_url
+    /// if let CosmosMsg::Stargate { type_url, .. } = stargate_msg {
+    ///     assert_eq!(type_url, "/nibiru.tokenfactory.v1.MsgMint");
     /// } else {
-    ///     unreachable!("already asserted stargate variant")
-    /// };
-    /// assert_eq!(type_url, "/nibiru.tokenfactory.v1.MsgMint");
+    ///     panic!("Expected CosmosMsg::Stargate variant");
+    /// }
     /// ```
     fn into_stargate_msg(&self) -> CosmosMsg {
         CosmosMsg::Stargate {
@@ -175,14 +167,11 @@ where
     ///
     /// let stargate_query: QueryRequest<Empty> =
     ///     query.into_stargate_query().expect("query conversion should work");
-    /// assert!(matches!(stargate_query, QueryRequest::Stargate { .. }));
-    ///
-    /// let path = if let QueryRequest::Stargate { path, .. } = stargate_query {
-    ///     path
+    /// if let QueryRequest::Stargate { path, .. } = stargate_query {
+    ///     assert_eq!(path, "/cosmos.bank.v1beta1.Query/SupplyOf");
     /// } else {
-    ///     unreachable!("already asserted stargate variant")
-    /// };
-    /// assert_eq!(path, "/cosmos.bank.v1beta1.Query/SupplyOf");
+    ///     panic!("Expected QueryRequest::Stargate variant");
+    /// }
     /// ```
     fn into_stargate_query(
         &self,
