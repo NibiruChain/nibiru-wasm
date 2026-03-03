@@ -48,7 +48,7 @@ package.version = "0.7.0"
 
 ```bash
 # Also update the workspace dependency version to match:
-nibiru-ownable-derive = { path = "packages/nibiru-ownable-derive", version = "0.7.0" }
+nibiru-ownable-derive = { path = "packages/nibiru-ownable-derive", version = "X.Y.Z" }
 ```
 
 ### 3. Publish Coupled Packages
