@@ -26,8 +26,5 @@ pub fn denom_set_json(
 }
 
 pub fn event_migrate(_arg0: &u64, _arg1: &bool) -> Event {
-    // Event::new("migrate_nusd_valuator")
-    //     .add_attribute("id", _arg0.to_string())
-    //     .add_attribute("new_done", _arg1.to_string())
     todo!(); // TODO: event migrate
 }
