@@ -237,9 +237,7 @@ where
     Req: NibiruStargateQuery,
     Resp: prost::Message + Default,
 {
-    let query = req.into_stargate_query().map_err(|e| {
-        StdError::generic_err(format!("stargate query build error: {e}"))
-    })?;
+    let query = req.into_stargate_query()?;
     let raw_query = to_json_vec(&query)?;
 
     let response = match querier.raw_query(&raw_query) {
