@@ -202,29 +202,44 @@ pub fn execute_vote(
         .is_voting_member(&deps.querier, &info.sender, prop.start_height)?
         .ok_or(ContractError::Unauthorized {})?;
 
-    // cast vote if no vote previously cast
-    BALLOTS.update(
-        deps.storage,
-        (proposal_id, &info.sender),
-        |bal| match bal {
-            Some(_) => Err(ContractError::AlreadyVoted {}),
-            None => Ok(Ballot {
-                weight: vote_power,
-                vote,
-            }),
-        },
-    )?;
+    let previous_ballot =
+        BALLOTS.may_load(deps.storage, (proposal_id, &info.sender))?;
+    if let Some(ballot) = previous_ballot.as_ref() {
+        subtract_vote(&mut prop.votes, ballot.vote, ballot.weight);
+    }
+
+    let ballot = Ballot {
+        weight: vote_power,
+        vote,
+    };
+    BALLOTS.save(deps.storage, (proposal_id, &info.sender), &ballot)?;
 
     // update vote tally
     prop.votes.add_vote(vote, vote_power);
+    prop.status = Status::Open;
     prop.update_status(&env.block);
     PROPOSALS.save(deps.storage, proposal_id, &prop)?;
 
-    Ok(Response::new()
+    let response = Response::new()
         .add_attribute("action", "vote")
         .add_attribute("sender", info.sender)
         .add_attribute("proposal_id", proposal_id.to_string())
-        .add_attribute("status", format!("{:?}", prop.status)))
+        .add_attribute("status", format!("{:?}", prop.status));
+
+    Ok(if let Some(ballot) = previous_ballot.as_ref() {
+        response.add_attribute("previous_vote", format!("{:?}", ballot.vote))
+    } else {
+        response
+    })
+}
+
+fn subtract_vote(votes: &mut Votes, vote: Vote, weight: u64) {
+    match vote {
+        Vote::Yes => votes.yes -= weight,
+        Vote::No => votes.no -= weight,
+        Vote::Abstain => votes.abstain -= weight,
+        Vote::Veto => votes.veto -= weight,
+    }
 }
 
 pub fn execute_execute(
@@ -1181,16 +1196,25 @@ mod tests {
             ],
         );
 
-        // VOTER1 cannot vote again
-        let err = app
+        // Voting the same way again is idempotent and does not double-count weight.
+        let res = app
             .execute_contract(
                 Addr::unchecked(VOTER1),
                 flex_addr.clone(),
                 &yes_vote,
                 &[],
             )
-            .unwrap_err();
-        assert_eq!(ContractError::AlreadyVoted {}, err.downcast().unwrap());
+            .unwrap();
+        assert_eq!(
+            res.custom_attrs(1),
+            [
+                ("action", "vote"),
+                ("sender", VOTER1),
+                ("proposal_id", proposal_id.to_string().as_str()),
+                ("status", "Open"),
+                ("previous_vote", "Yes"),
+            ],
+        );
 
         // No/Veto votes have no effect on the tally
         // Compute the current tally
@@ -1228,15 +1252,25 @@ mod tests {
         // Tally unchanged
         assert_eq!(tally, get_tally(&app, flex_addr.as_ref(), proposal_id));
 
-        let err = app
+        let res = app
             .execute_contract(
                 Addr::unchecked(VOTER3),
                 flex_addr.clone(),
                 &yes_vote,
                 &[],
             )
-            .unwrap_err();
-        assert_eq!(ContractError::AlreadyVoted {}, err.downcast().unwrap());
+            .unwrap();
+        assert_eq!(
+            res.custom_attrs(1),
+            [
+                ("action", "vote"),
+                ("sender", VOTER3),
+                ("proposal_id", proposal_id.to_string().as_str()),
+                ("status", "Open"),
+                ("previous_vote", "Veto"),
+            ],
+        );
+        assert_eq!(4, get_tally(&app, flex_addr.as_ref(), proposal_id));
 
         // Expired proposals cannot be voted
         app.update_block(expire(voting_period));
@@ -1397,6 +1431,202 @@ mod tests {
                 ("status", "Rejected"),
             ],
         );
+    }
+
+    #[test]
+    fn test_vote_replacement_works() {
+        let init_funds = coins(10, "BTC");
+        let mut app = mock_app(&init_funds);
+
+        let threshold = Threshold::ThresholdQuorum {
+            threshold: Decimal::percent(51),
+            quorum: Decimal::percent(1),
+        };
+        let voting_period = Duration::Time(2000000);
+        let (flex_addr, _) = setup_test_case(
+            &mut app,
+            threshold,
+            voting_period,
+            init_funds,
+            true,
+            None,
+            None,
+        );
+        let prop_status = |app: &App, proposal_id: u64| -> Status {
+            let prop: ProposalResponse = app
+                .wrap()
+                .query_wasm_smart(
+                    &flex_addr,
+                    &QueryMsg::Proposal { proposal_id },
+                )
+                .unwrap();
+            prop.status
+        };
+
+        let res = app
+            .execute_contract(
+                Addr::unchecked(OWNER),
+                flex_addr.clone(),
+                &pay_somebody_proposal(),
+                &[],
+            )
+            .unwrap();
+        let proposal_id: u64 = res.custom_attrs(1)[2].value.parse().unwrap();
+        let voter4_yes = ExecuteMsg::Vote {
+            proposal_id,
+            vote: Vote::Yes,
+        };
+        let voter4_no = ExecuteMsg::Vote {
+            proposal_id,
+            vote: Vote::No,
+        };
+
+        app.execute_contract(
+            Addr::unchecked(VOTER4),
+            flex_addr.clone(),
+            &voter4_yes,
+            &[],
+        )
+        .unwrap();
+        assert_eq!(prop_status(&app, proposal_id), Status::Passed);
+
+        app.execute_contract(
+            Addr::unchecked(VOTER4),
+            flex_addr.clone(),
+            &voter4_yes,
+            &[],
+        )
+        .unwrap();
+        assert_eq!(get_tally(&app, flex_addr.as_ref(), proposal_id), 12);
+
+        let res = app
+            .execute_contract(
+                Addr::unchecked(VOTER4),
+                flex_addr.clone(),
+                &voter4_no,
+                &[],
+            )
+            .unwrap();
+        assert_eq!(
+            res.custom_attrs(1),
+            [
+                ("action", "vote"),
+                ("sender", VOTER4),
+                ("proposal_id", proposal_id.to_string().as_str()),
+                ("status", "Open"),
+                ("previous_vote", "Yes"),
+            ],
+        );
+        assert_eq!(prop_status(&app, proposal_id), Status::Open);
+        assert_eq!(get_tally(&app, flex_addr.as_ref(), proposal_id), 0);
+
+        let err = app
+            .execute_contract(
+                Addr::unchecked(SOMEBODY),
+                flex_addr.clone(),
+                &ExecuteMsg::Execute { proposal_id },
+                &[],
+            )
+            .unwrap_err();
+        assert_eq!(
+            ContractError::WrongExecuteStatus {},
+            err.downcast().unwrap()
+        );
+
+        let res = app
+            .execute_contract(
+                Addr::unchecked(VOTER4),
+                flex_addr.clone(),
+                &voter4_yes,
+                &[],
+            )
+            .unwrap();
+        assert_eq!(
+            res.custom_attrs(1),
+            [
+                ("action", "vote"),
+                ("sender", VOTER4),
+                ("proposal_id", proposal_id.to_string().as_str()),
+                ("status", "Passed"),
+                ("previous_vote", "No"),
+            ],
+        );
+        assert_eq!(prop_status(&app, proposal_id), Status::Passed);
+
+        app.execute_contract(
+            Addr::unchecked(SOMEBODY),
+            flex_addr.clone(),
+            &ExecuteMsg::Execute { proposal_id },
+            &[],
+        )
+        .unwrap();
+
+        let err = app
+            .execute_contract(
+                Addr::unchecked(VOTER4),
+                flex_addr.clone(),
+                &voter4_no,
+                &[],
+            )
+            .unwrap_err();
+        assert_eq!(ContractError::NotOpen {}, err.downcast().unwrap());
+
+        let res = app
+            .execute_contract(
+                Addr::unchecked(OWNER),
+                flex_addr.clone(),
+                &pay_somebody_proposal(),
+                &[],
+            )
+            .unwrap();
+        let expired_proposal_id: u64 =
+            res.custom_attrs(1)[2].value.parse().unwrap();
+        let expired_no = ExecuteMsg::Vote {
+            proposal_id: expired_proposal_id,
+            vote: Vote::No,
+        };
+        let expired_yes = ExecuteMsg::Vote {
+            proposal_id: expired_proposal_id,
+            vote: Vote::Yes,
+        };
+        app.execute_contract(
+            Addr::unchecked(VOTER4),
+            flex_addr.clone(),
+            &expired_no,
+            &[],
+        )
+        .unwrap();
+        app.update_block(expire(voting_period));
+
+        let err = app
+            .execute_contract(
+                Addr::unchecked(VOTER4),
+                flex_addr.clone(),
+                &expired_yes,
+                &[],
+            )
+            .unwrap_err();
+        assert_eq!(ContractError::Expired {}, err.downcast().unwrap());
+
+        app.execute_contract(
+            Addr::unchecked(SOMEBODY),
+            flex_addr.clone(),
+            &ExecuteMsg::Close {
+                proposal_id: expired_proposal_id,
+            },
+            &[],
+        )
+        .unwrap();
+
+        let err = app
+            .execute_contract(
+                Addr::unchecked(VOTER4),
+                flex_addr,
+                &expired_yes,
+                &[],
+            )
+            .unwrap_err();
+        assert_eq!(ContractError::Expired {}, err.downcast().unwrap());
     }
 
     #[test]
