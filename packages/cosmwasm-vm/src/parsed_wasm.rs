@@ -28,6 +28,7 @@ impl<T> fmt::Debug for OpaqueDebug<T> {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum FunctionValidator<'a> {
     Pending(
@@ -220,6 +221,7 @@ impl<'a> ParsedWasm<'a> {
     /// Perform the expensive operation of validating each function body
     ///
     /// Note: This function caches the output of this function into the field `func_validator` so repeated invocations are cheap.
+    #[allow(dead_code)]
     pub fn validate_funcs(&mut self) -> VmResult<()> {
         match self.func_validator {
             FunctionValidator::Pending(OpaqueDebug(ref mut funcs)) => {

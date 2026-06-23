@@ -29,7 +29,7 @@ const THREADS: usize = STORE_CODE_THREADS + INSTANTIATION_THREADS;
 
 pub fn main() {
     let options = CacheOptions {
-        base_dir: TempDir::new().unwrap().into_path(),
+        base_dir: TempDir::new().unwrap().keep(),
         available_capabilities: capabilities_from_csv("iterator,staking"),
         memory_cache_size: MEMORY_CACHE_SIZE,
         instance_memory_limit: DEFAULT_MEMORY_LIMIT,

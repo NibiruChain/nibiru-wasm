@@ -1,12 +1,12 @@
 use std::sync::Arc;
+use wasmer::sys::BaseTunables;
 #[cfg(feature = "cranelift")]
 use wasmer::Cranelift;
 use wasmer::NativeEngineExt;
 #[cfg(not(feature = "cranelift"))]
 use wasmer::Singlepass;
 use wasmer::{
-    wasmparser::Operator, BaseTunables, CompilerConfig, Engine, Pages, Target,
-    WASM_PAGE_SIZE,
+    wasmparser::Operator, CompilerConfig, Engine, Pages, Target, WASM_PAGE_SIZE,
 };
 
 use crate::size::Size;
