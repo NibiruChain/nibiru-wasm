@@ -15,7 +15,16 @@ env:
 
 jobs:
   rust-test:
-    runs-on: ubuntu-latest
+    name: rust-test (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
     steps:
       - name: "Checkout branch"
         uses: actions/checkout@v4
@@ -31,7 +40,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+          key: ${{ matrix.runner }}-cargo-${{ hashFiles('Cargo.lock') }}
       - name: "Run tests"
         # Test all packages
         run: cargo test --all --verbose
