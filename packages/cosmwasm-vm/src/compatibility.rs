@@ -107,7 +107,7 @@ fn check_wasm_tables(module: &ParsedWasm) -> VmResult<()> {
         1 => {
             let limits = &module.tables[0];
             if let Some(maximum) = limits.maximum {
-                if maximum > TABLE_SIZE_LIMIT {
+                if maximum > TABLE_SIZE_LIMIT.into() {
                     return Err(VmError::static_validation_err(
                         "Wasm contract's first table section has a too large max limit",
                     ));

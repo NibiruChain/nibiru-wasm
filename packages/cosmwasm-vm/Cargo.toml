@@ -57,9 +57,12 @@ serde = { version = "1.0.103", default-features = false, features = ["derive", "
 serde_json = "1.0.40"
 sha2 = "0.10.3"
 thiserror = "1.0.26"
-wasmer = { version = "=4.3.7", default-features = false, features = ["cranelift", "singlepass"] }
-wasmer-types = "=4.3.7"
-wasmer-middlewares = "=4.3.7"
+# Keep this on the Wasmer 5 line: 5.0.6 is the latest MIT-licensed
+# Singlepass release we validated, while Wasmer 6+ relicenses Singlepass to
+# BUSL and older 4.x releases fail to link on newer Rust toolchains.
+wasmer = { version = "=5.0.6", default-features = false, features = ["cranelift", "singlepass"] }
+wasmer-types = "=5.0.6"
+wasmer-middlewares = "=5.0.6"
 
 # Dependencies that we do not use ourself. We add those entries
 # to bump the min version of them.
