@@ -1,6 +1,6 @@
 [workspace]
 members = ["scripts", "packages/*", "nibiru-std", "contracts/*"]
-exclude = ["packages/msig-ez"]
+exclude = ["packages/msig-ez", "packages/wasmer"]
 resolver = "2"
 package.version = "0.7.0"
 package.homepage = "https://github.com/NibiruChain/nibiru-wasm"
