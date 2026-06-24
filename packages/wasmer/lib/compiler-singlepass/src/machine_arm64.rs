@@ -4963,7 +4963,7 @@ impl Machine for MachineARM64 {
         let dest = self.location_to_reg(Size::S64, ret, &mut temps, ImmType::None, false, None)?;
 
         self.assembler
-            .emit_cbz_label(Size::S64, src2, integer_division_by_zero)?;
+            .emit_cbz_label_far(Size::S64, src2, integer_division_by_zero)?;
         let offset = self.mark_instruction_with_trap_code(TrapCode::IntegerOverflow);
         self.assembler.emit_udiv(Size::S64, src1, src2, dest)?;
         if ret != dest {
@@ -5040,7 +5040,7 @@ impl Machine for MachineARM64 {
             dest
         };
         self.assembler
-            .emit_cbz_label(Size::S64, src2, integer_division_by_zero)?;
+            .emit_cbz_label_far(Size::S64, src2, integer_division_by_zero)?;
         let offset = self.mark_instruction_with_trap_code(TrapCode::IntegerOverflow);
         self.assembler.emit_udiv(Size::S64, src1, src2, dest)?;
         // unsigned remainder : src1 - (src1/src2)*src2
@@ -5078,7 +5078,7 @@ impl Machine for MachineARM64 {
             dest
         };
         self.assembler
-            .emit_cbz_label(Size::S64, src2, integer_division_by_zero)?;
+            .emit_cbz_label_far(Size::S64, src2, integer_division_by_zero)?;
         let offset = self.mark_instruction_with_trap_code(TrapCode::IntegerOverflow);
         self.assembler.emit_sdiv(Size::S64, src1, src2, dest)?;
         // unsigned remainder : src1 - (src1/src2)*src2
