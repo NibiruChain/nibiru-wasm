@@ -62,9 +62,9 @@ just gen-schema
 - **contracts/** - Smart contracts implementing specific functionality (incentives, lockup, vesting, etc.)
 - **nibiru-std/** - Nibiru standard library providing proto types and bindings for Stargate messages
 - **packages/** - Utility packages including:
-  - `bash-rs` - Bash command execution from Rust
-  - `nibi-dev` - Development tooling
-  - `ownable` - Ownership patterns for contracts
+  - `cw-address-like` - Address-like helper traits for CosmWasm types
+  - `easy-addr` - Address construction helpers for tests
+  - `nibiru-ownable` - Ownership patterns for contracts
 - **artifacts/** - Compiled WASM binaries
 - **schema/** - JSON schemas for contract interfaces
 

@@ -8,9 +8,7 @@ edition = "2021"
 [dependencies]
 walkdir = "2.4.0"
 regex = "1.9.6"
-bash-rs = { workspace = true }
 anyhow = { workspace = true }
-clap = { workspace = true }
 
 [dev-dependencies]
 assert_cmd = { workspace = true }
