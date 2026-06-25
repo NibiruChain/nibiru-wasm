@@ -20,9 +20,9 @@ Wasm smart contract sandbox for Nibiru.
          └──           #   Includes constructors for Cosmos, IBC, and Nibiru. 
     └── 📦 bindings    # For sending CosmosMsg::Custom msgs on Nibiru (soon deprecated).
 ├── 📂 packages        # Other Rust packages
-    └── 📦 bash-rs     # Easily run bash from Rust. Used for writing testable and maintainable scripts.
-    └── 📦 nibi-dev    # Dev tooling package for Nibiru. 
-    └── 📦 nibiru-macro  # Implements procedural macros for the "nibiru-macro" package. 
+    └── 📦 cw-address-like # Address-like helper traits for CosmWasm types.
+    └── 📦 easy-addr       # Address construction helpers for tests.
+    └── 📦 nibiru-ownable  # Ownership patterns for contracts.
 ├── Cargo.toml
 ├── Cargo.lock
 └── README.md

@@ -1,6 +1,6 @@
 [workspace]
 members = ["scripts", "packages/*", "nibiru-std", "contracts/*"]
-exclude = ["packages/msig-ez", "packages/wasmer"]
+exclude = ["packages/wasmer"]
 resolver = "2"
 package.version = "0.7.0"
 package.homepage = "https://github.com/NibiruChain/nibiru-wasm"
@@ -27,7 +27,6 @@ nibiru-ownable-derive    = { path = "packages/nibiru-ownable-derive", version = 
 # deps: Independent packages
 prost = "0.12.3"
 prost-types = "0.12.3"
-bash-rs           = { path = "packages/bash-rs" }
 cw-address-like   = { path = "packages/cw-address-like" }
 easy-addr = { path = "packages/easy-addr" }
 
@@ -59,7 +58,6 @@ anyhow = "1"
 thiserror = "1.0.50"
 assert_cmd = "2"
 lazy_static = "1.4.0"
-clap = { version = "4.4.7", features = ["derive", "cargo", "env", "string"] }
 schemars = "0.8.15"
 home = "0.5"
 toml = "0.8"
